@@ -79,6 +79,51 @@ const operatingStages = [
   },
 ];
 
+const capabilityCoverage = [
+  {
+    number: "01",
+    icon: Target,
+    title: "Market readiness",
+    text: "Know where your offer can compete, what must change and what should happen next.",
+    href: "#brief",
+  },
+  {
+    number: "02",
+    icon: ShieldCheck,
+    title: "Compliance & evidence",
+    text: "Turn destination requirements into sourced, reviewed and owned actions—not guesswork.",
+    href: "#process",
+  },
+  {
+    number: "03",
+    icon: UsersRound,
+    title: "Buyer development",
+    text: "Research, qualify and progress the right international buyers in one export-specific pipeline.",
+    href: "#process",
+  },
+  {
+    number: "04",
+    icon: PackageCheck,
+    title: "Trade execution",
+    text: "Coordinate RFQs, samples, quotations, orders, quality, documents and shipments.",
+    href: "#process",
+  },
+  {
+    number: "05",
+    icon: CircleDollarSign,
+    title: "Commercial control",
+    text: "Track landed costs, invoices, payments, exposure and export performance across markets.",
+    href: "#managed",
+  },
+  {
+    number: "06",
+    icon: Headphones,
+    title: "Accountable experts",
+    text: "Your Export HQ team executes work through the same workspace, with visible ownership.",
+    href: "#managed",
+  },
+];
+
 const processStages = [
   {
     step: "01",
@@ -354,6 +399,28 @@ export default function HomePage() {
             <div className="action-row"><span className="owner hq">HQ</span><span><strong>Review destination requirements</strong><small>Anna · Market specialist</small></span><em>In progress</em></div>
             <div className="action-row"><span className="owner partner">3P</span><span><strong>Verify test evidence scope</strong><small>Approved external laboratory</small></span><em>Waiting</em></div>
             <footer><span><i /> Export HQ team online</span><a href={appUrl}>Open workspace <ArrowUpRight size={14} /></a></footer>
+          </div>
+        </div>
+      </section>
+
+      <section className="capability-coverage" id="capabilities" aria-labelledby="capability-coverage-title">
+        <div className="container">
+          <div className="section-heading coverage-heading">
+            <div>
+              <p className="section-label">ONE EXPORT HEADQUARTERS</p>
+              <h2 id="capability-coverage-title">From possibility to repeatable international growth.</h2>
+            </div>
+            <p>Start with readiness. Add only what your business needs. Keep every step connected as your export operation matures.</p>
+          </div>
+          <div className="coverage-grid">
+            {capabilityCoverage.map(({ number, icon: Icon, title, text, href }) => (
+              <article key={title}>
+                <header><span>{number}</span><Icon size={22} /></header>
+                <h3>{title}</h3>
+                <p>{text}</p>
+                <a href={href} aria-label={`Learn more about ${title}`}>Learn more <ArrowUpRight size={14} /></a>
+              </article>
+            ))}
           </div>
         </div>
       </section>

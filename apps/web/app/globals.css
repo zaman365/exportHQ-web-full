@@ -199,6 +199,19 @@ button { cursor: pointer; }
 .action-card footer span i { width: 6px; height: 6px; border-radius: 50%; background: #5da97e; }
 .action-card footer a { color: var(--green-2); font-weight: 800; }
 
+.capability-coverage { padding: 110px 0; background: white; }
+.coverage-heading h2 { max-width: 760px; }
+.coverage-grid { display: grid; grid-template-columns: repeat(3, 1fr); overflow: hidden; border: 1px solid var(--line); border-radius: 16px; }
+.coverage-grid article { min-height: 285px; padding: 25px 27px; display: flex; flex-direction: column; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: white; transition: background .2s ease; }
+.coverage-grid article:hover { background: #fbfcf9; }
+.coverage-grid article:nth-child(3n) { border-right: 0; }
+.coverage-grid article:nth-last-child(-n + 3) { border-bottom: 0; }
+.coverage-grid header { display: flex; align-items: center; justify-content: space-between; color: var(--green-2); }
+.coverage-grid header span { color: #9aa49f; font-size: 9px; font-weight: 850; }
+.coverage-grid h3 { margin: 48px 0 13px; font-size: 17px; }
+.coverage-grid p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.75; }
+.coverage-grid a { margin-top: auto; display: inline-flex; align-items: center; gap: 7px; color: var(--green-2); font-size: 9px; font-weight: 850; }
+
 .process { padding: 110px 0; background: white; }
 .process-accordion { border-top: 1px solid var(--line); }
 .process-accordion details { border-bottom: 1px solid var(--line); }
@@ -290,6 +303,11 @@ footer { padding: 58px 0 24px; background: #0c2720; color: #9fb2ab; }
   .operating-grid article, .operating-grid article:nth-child(4), .operating-grid article:nth-child(5) { grid-column: auto; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
   .operating-grid article:nth-child(2n) { border-right: 0; }
   .operating-grid article:last-child { grid-column: 1 / -1; border-right: 0; border-bottom: 0; }
+  .coverage-grid { grid-template-columns: 1fr 1fr; }
+  .coverage-grid article:nth-child(3n) { border-right: 1px solid var(--line); }
+  .coverage-grid article:nth-child(2n) { border-right: 0; }
+  .coverage-grid article:nth-last-child(-n + 3) { border-bottom: 1px solid var(--line); }
+  .coverage-grid article:nth-last-child(-n + 2) { border-bottom: 0; }
   .editorial-art { order: 2; }
   .questions-grid > div:first-child { position: static; }
 }
@@ -313,7 +331,7 @@ footer { padding: 58px 0 24px; background: #0c2720; color: #9fb2ab; }
   .workspace-stats { grid-template-columns: 1fr 1fr; }
   .workspace-stats > span:first-child { grid-column: 1 / -1; }
   .workspace-feed { display: none; }
-  .brief, .platform, .editorial-break, .managed, .process, .industries, .scenarios, .trust, .questions { padding: 78px 0; }
+  .brief, .platform, .editorial-break, .managed, .capability-coverage, .process, .industries, .scenarios, .trust, .questions { padding: 78px 0; }
   .brief-grid, .editorial-grid, .managed-grid, .trust-grid, .questions-grid { gap: 38px; }
   .brief-copy h2, .section-heading h2, .scenario-heading h2, .questions h2 { font-size: 36px; }
   .form-pair { grid-template-columns: 1fr; }
@@ -322,6 +340,10 @@ footer { padding: 58px 0 24px; background: #0c2720; color: #9fb2ab; }
   .operating-grid { grid-template-columns: 1fr; }
   .operating-grid article, .operating-grid article:nth-child(4), .operating-grid article:nth-child(5), .operating-grid article:nth-child(2n), .operating-grid article:last-child { grid-column: auto; border-right: 0; border-bottom: 1px solid var(--line); }
   .operating-grid article:last-child { border-bottom: 0; }
+  .coverage-grid { grid-template-columns: 1fr; }
+  .coverage-grid article, .coverage-grid article:nth-child(3n), .coverage-grid article:nth-child(2n), .coverage-grid article:nth-last-child(-n + 3), .coverage-grid article:nth-last-child(-n + 2) { border-right: 0; border-bottom: 1px solid var(--line); }
+  .coverage-grid article:last-child { border-bottom: 0; }
+  .coverage-grid article { min-height: 245px; }
   .editorial-grid h2, .managed h2, .trust h2 { font-size: 38px; }
   .editorial-art { height: 300px; }
   .art-map { top: 74px; }
