@@ -4,6 +4,7 @@ Export HQ is a managed export operating system: one shared workspace where expor
 
 ## Workspace
 
+- `apps/web` — public cross-industry Export HQ website
 - `apps/app` — customer command center and Phase 1 vertical slice
 - `apps/ops` — internal operator view over the same domain model
 - `packages/domain` — export domain types, health scoring, and application services
@@ -20,6 +21,6 @@ pnpm install
 pnpm dev
 ```
 
-Customer app: `http://localhost:3000`. Operator app: `http://localhost:3001`.
+Public website: `http://localhost:3000`. Customer app: `http://localhost:3001`. Operator app: `http://localhost:3002`.
 
 Demo mode is intentionally limited to local development. Production must provide Clerk and PostgreSQL configuration. See `docs/implementation-status.md`.
