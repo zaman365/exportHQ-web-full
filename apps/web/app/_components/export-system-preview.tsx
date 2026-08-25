@@ -69,7 +69,7 @@ export function ExportSystemPreview({ appUrl }: { appUrl: string }) {
             <div><small>LANDED ESTIMATE</small><strong>$50,884</strong><span>Duty/tax assumptions shown</span></div>
           </div>
           <div className="export-system__warning"><CircleDollarSign size={15} /><span><strong>Not a generic profit promise.</strong> Every assumption stays visible and must be confirmed for the product, buyer, Incoterm, shipment date and destination.</span></div>
-          <Link href={`${appUrl}/studio`}>Open Export Studio <ArrowRight size={15} /></Link>
+          <Link href={`${appUrl}/studio?access=public`}>Open Export Studio <ArrowRight size={15} /></Link>
         </div>
       </div>
 
@@ -82,7 +82,7 @@ export function ExportSystemPreview({ appUrl }: { appUrl: string }) {
           <li><span>4</span><div><strong>Scale or Managed</strong><small>Coordinate multiple lanes, teams and execution</small></div></li>
         </ol>
         <div className="export-system__trust-actions">
-          <a href={`${appUrl}/studio`}>Explore the system <ArrowRight size={15} /></a>
+          <a href={`${appUrl}/studio?access=public`}>Explore the system <ArrowRight size={15} /></a>
           <a href={`${appUrl}/sign-up`}><BadgeCheck size={15} /> Create Basic account</a>
         </div>
       </div>

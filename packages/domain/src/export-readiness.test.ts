@@ -38,8 +38,13 @@ describe("export readiness catalog", () => {
   });
 
   it("removes solution, evidence and provider details from member views", () => {
+    const publicView = readinessRequirementViews("public", profile);
     const member = readinessRequirementViews("member", profile);
     const full = readinessRequirementViews("full", profile);
+    expect(publicView).toHaveLength(8);
+    expect(new Set(publicView.map((item) => item.section)).size).toBe(8);
+    expect(publicView.length).toBeLessThan(member.length);
+    expect(publicView.every((item) => item.sources.length <= 1)).toBe(true);
     expect(member.every((item) => item.fullResolution === undefined)).toBe(true);
     expect(full.every((item) => item.fullResolution !== undefined)).toBe(true);
     expect(JSON.stringify(member)).not.toContain("Board resolution or power of attorney");

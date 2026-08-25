@@ -36,6 +36,7 @@ import type {
 import type { BusinessVerificationStatus, ReadinessAccess } from "@exporthq/authorization";
 import type { ReadinessProgressInput } from "@exporthq/validation";
 import { HintButton } from "../_components/hint-button";
+import { exportPanelPath } from "../_lib/export-panel-paths";
 import { requestReadinessProviderMatch, saveReadinessProgress } from "./actions";
 
 type EvidenceItem = ReadinessProgressInput["evidence"][number];
@@ -154,6 +155,9 @@ function AccessBanner({ access, tierName, verification }: { access: ReadinessAcc
   if (access === "full") {
     return <section className="readiness-access readiness-access--full"><span><ShieldCheck size={19} /></span><div><strong>Full resolution layer active</strong><p>{verification === "verified" ? "Verified-business access" : `${tierName} access`} includes evidence checklists, blocker playbooks, document review and provider matching.</p></div><Link href="/verify-business">Trust & access <ArrowRight size={14} /></Link></section>;
   }
+  if (access === "public") {
+    return <section className="readiness-access"><span><Sparkles size={19} /></span><div><strong>You are exploring a public readiness sample</strong><p>Review one representative checkpoint in each of eight readiness areas. Create a free account to open the complete conditional assessment and save it to your business.</p></div><div><Link href="/sign-up">Create free account</Link><Link href="/sign-in">Sign in</Link></div></section>;
+  }
   return <section className="readiness-access"><span><Sparkles size={19} /></span><div><strong>Your Basic assessment is active</strong><p>Complete every checkpoint and save your score. Verify the business or subscribe to reveal resolution steps, evidence criteria and verified provider matching.</p></div><div><Link href="/verify-business">Verify business</Link><Link href="/plans">See plans</Link></div></section>;
 }
 
@@ -191,7 +195,7 @@ function ProviderDrawer({
 
   return <aside className="readiness-provider" aria-label={`Get help with ${item.title}`}>
     <header><div><span><Handshake size={17} /></span><p>VERIFIED HELP PATH</p><h2>Find help for this blocker</h2></div><button type="button" onClick={onClose} aria-label="Close provider matching"><X size={18} /></button></header>
-    {access === "member" ? <div className="readiness-provider__locked"><LockKeyhole size={24} /><h3>Provider matching unlocks with trust</h3><p>Verify this business or activate a paid plan to see the relevant professional categories and request a qualified match.</p><div><Link href="/verify-business">Verify business <ArrowRight size={14} /></Link><Link href="/plans">Compare plans</Link></div></div> : <>
+    {access !== "full" ? <div className="readiness-provider__locked"><LockKeyhole size={24} /><h3>{access === "public" ? "Create an account before requesting help" : "Provider matching unlocks with trust"}</h3><p>{access === "public" ? "A free account opens the complete assessment. Business verification or a paid plan then reveals qualified professional categories and match requests." : "Verify this business or activate a paid plan to see the relevant professional categories and request a qualified match."}</p><div>{access === "public" ? <><Link href="/sign-up">Create free account <ArrowRight size={14} /></Link><Link href="/sign-in">Sign in</Link></> : <><Link href="/verify-business">Verify business <ArrowRight size={14} /></Link><Link href="/plans">Compare plans</Link></>}</div></div> : <>
       <div className="readiness-provider__context"><small>BLOCKER</small><strong>{item.title}</strong><p>{item.memberSummary}</p></div>
       <div className="readiness-provider__list">
         <p>CHOOSE THE HELP YOU NEED</p>
@@ -243,6 +247,8 @@ export default function ReadinessClient({
   const visible = requirements.filter((item) => item.section === currentSection);
   const completedCount = requirements.filter((item) => ["verified", "not_applicable"].includes(responses[item.id] ?? "not_started")).length;
   const reviewCount = evidence.filter((item) => item.status === "under_review" || item.status === "staged").length;
+  const isPublic = access === "public";
+  const learningHref = (topic: string) => `/learn?topic=${topic}${isPublic ? "&access=public" : ""}`;
 
   useEffect(() => {
     try {
@@ -347,7 +353,8 @@ export default function ReadinessClient({
 
     <section className="readiness-context">
       <header><div><p>ASSESSMENT CONTEXT</p><h2>{businessName}</h2><span>Bangladesh origin · change the product, operating model or destination to rebuild the applicable path.</span></div><div><span><RefreshCw size={13} /> Conditional rules update with this context</span></div></header>
-      <form method="get" action="/readiness">
+      <form method="get" action={exportPanelPath("/readiness")}>
+        {access === "public" && <input type="hidden" name="access" value="public" />}
         {access === "member" && <input type="hidden" name="access" value="basic" />}
         {access === "member" && <input type="hidden" name="business" value={businessName} />}
         <label><span>Business model</span><select name="businessModel" defaultValue={profile.businessModel}><option value="manufacturer">Manufacturer</option><option value="trader">Trader / merchant exporter</option><option value="service">Service exporter</option></select></label>
@@ -390,7 +397,7 @@ export default function ReadinessClient({
                 <span><small>{item.priority} · {item.section}</small><strong>{item.title}</strong><p>{item.memberSummary}</p><span className="readiness-checkpoint__meta"><StatusPill value={status} />{files > 0 && <em><Paperclip size={12} /> {files}</em>}</span></span>
                 <ChevronRight size={16} />
               </button>
-              <div className="readiness-checkpoint__aids" aria-label={`Help options for ${item.title}`}><Link className="readiness-aid" href={`/learn?topic=${item.learnTopic}`} title="Open the knowledge path" aria-label={`Learn how to resolve ${item.title}`}><BookOpenCheck size={15} /></Link><button className="readiness-aid" type="button" onClick={() => setProviderItem(item)} title="Find qualified professional help" aria-label={`Find qualified help for ${item.title}`}><Handshake size={15} />{access === "member" && <LockKeyhole size={8} />}</button></div>
+              <div className="readiness-checkpoint__aids" aria-label={`Help options for ${item.title}`}><Link className="readiness-aid" href={learningHref(item.learnTopic)} title="Open the knowledge path" aria-label={`Learn how to resolve ${item.title}`}><BookOpenCheck size={15} /></Link><button className="readiness-aid" type="button" onClick={() => setProviderItem(item)} title="Find qualified professional help" aria-label={`Find qualified help for ${item.title}`}><Handshake size={15} />{access !== "full" && <LockKeyhole size={8} />}</button></div>
             </article>;
           })}
           {!visible.length && <div className="readiness-empty"><CheckCircle2 size={23} /><strong>No checkpoints apply in this section.</strong><p>ExportPanel removed them based on the current business and product context.</p></div>}
@@ -401,19 +408,19 @@ export default function ReadinessClient({
         <header><div><small>{selected.priority} checkpoint</small><h2>{selected.title}</h2></div><button type="button" aria-label="Close details" onClick={() => setSelectedId("")}><X size={17} /></button></header>
         <div className="readiness-detail__body">
           <section className="readiness-detail__check"><p>WHAT ExportPanel IS CHECKING</p><strong>{selected.checkpoint}</strong><label><span>Your position</span><select value={responses[selected.id] ?? "not_started"} onChange={(event) => updateStatus(selected.id, event.target.value as ReadinessStatus)}>{statusOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label></section>
-          <div className="readiness-detail__paths"><Link href={`/learn?topic=${selected.learnTopic}`}><BookOpenCheck size={16} /><span><small>KNOWLEDGE PATH</small><strong>Understand and solve it yourself</strong></span><ArrowRight size={14} /></Link><button type="button" onClick={() => setProviderItem(selected)}><Handshake size={16} /><span><small>HELP PATH</small><strong>Find a qualified specialist</strong></span>{access === "member" ? <LockKeyhole size={13} /> : <ArrowRight size={14} />}</button></div>
+          <div className="readiness-detail__paths"><Link href={learningHref(selected.learnTopic)}><BookOpenCheck size={16} /><span><small>KNOWLEDGE PATH</small><strong>Understand and solve it yourself</strong></span><ArrowRight size={14} /></Link><button type="button" onClick={() => setProviderItem(selected)}><Handshake size={16} /><span><small>HELP PATH</small><strong>Find a qualified specialist</strong></span>{access !== "full" ? <LockKeyhole size={13} /> : <ArrowRight size={14} />}</button></div>
           {selected.fullResolution ? <>
             <section className="readiness-playbook"><p>RESOLUTION PLAYBOOK</p><ol>{selected.fullResolution.resolution.map((step, index) => <li key={step}><span>{index + 1}</span><p>{step}</p></li>)}</ol></section>
             <section className="readiness-evidence"><div><p>EVIDENCE ExportPanel EXPECTS</p><HintButton topic="readiness-product-file" /></div><ul>{selected.fullResolution.evidence.map((item) => <li key={item}><FileText size={14} />{item}</li>)}</ul><input ref={fileInput} hidden type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => { const file = event.target.files?.[0]; if (file) void addEvidence(file); event.target.value = ""; }} /><button type="button" onClick={() => fileInput.current?.click()}><Upload size={14} /> Add PDF or image <small>max 25 MB</small></button><span className="readiness-evidence__privacy"><ShieldCheck size={12} /> File stays in protected browser staging; review metadata syncs when you save.</span></section>
             {evidence.filter((item) => item.requirementId === selected.id).map((item) => <article className="readiness-file" key={item.id}><span><FileCheck2 size={17} /></span><div><strong>{item.fileName}</strong><small>{formatBytes(item.byteSize)} · {item.status.replaceAll("_", " ")}</small><p>{item.feedback}</p><div><button type="button" onClick={() => void openEvidence(item)}>Open</button><button type="button" onClick={() => void removeEvidence(item)}>Remove</button></div></div></article>)}
-          </> : <section className="readiness-locked"><LockKeyhole size={22} /><p>FULL RESOLUTION LAYER</p><h3>Open the exact steps, evidence and expert route</h3><ul><li><Check size={13} /> Requirement-specific resolution plan</li><li><Check size={13} /> Document checklist and evidence review</li><li><Check size={13} /> Qualified lawyer, bank, lab or agency matching</li></ul><div><Link href="/verify-business">Verify business <ArrowRight size={14} /></Link><Link href="/plans">Upgrade</Link></div></section>}
-          <section className="readiness-notes"><p>PRIVATE WORKING NOTE</p><textarea value={notes[selected.id] ?? ""} onChange={(event) => setNotes((current) => ({ ...current, [selected.id]: event.target.value.slice(0, 1000) }))} placeholder="Record the owner, gap, response from an authority, or next follow-up…" /></section>
+          </> : <section className="readiness-locked"><LockKeyhole size={22} /><p>{isPublic ? "ACCOUNT + TRUST LAYERS" : "FULL RESOLUTION LAYER"}</p><h3>Open the exact steps, evidence and expert route</h3><ul><li><Check size={13} /> Requirement-specific resolution plan</li><li><Check size={13} /> Document checklist and evidence review</li><li><Check size={13} /> Qualified lawyer, bank, lab or agency matching</li></ul><div>{isPublic ? <><Link href="/sign-up">Create free account <ArrowRight size={14} /></Link><Link href="/sign-in">Sign in</Link></> : <><Link href="/verify-business">Verify business <ArrowRight size={14} /></Link><Link href="/plans">Upgrade</Link></>}</div></section>}
+          {isPublic ? <section className="readiness-notes"><p>PRIVATE WORKING NOTE</p><div className="readiness-note-lock"><LockKeyhole size={16} /><span><strong>Create an account to keep private notes</strong><small>Notes belong to your business workspace and are never included in the public sample.</small></span></div></section> : <section className="readiness-notes"><p>PRIVATE WORKING NOTE</p><textarea value={notes[selected.id] ?? ""} onChange={(event) => setNotes((current) => ({ ...current, [selected.id]: event.target.value.slice(0, 1000) }))} placeholder="Record the owner, gap, response from an authority, or next follow-up…" /></section>}
           <section className="readiness-sources"><p>AUTHORITY SOURCES</p>{selected.sources.map((item) => <a href={item.url} target="_blank" rel="noreferrer" key={item.url}><span><strong>{item.label}</strong><small>{item.publisher} · reviewed {item.reviewedAt}</small></span><ExternalLink size={13} /></a>)}</section>
         </div>
       </aside>}
     </div>
 
-    <footer className="readiness-savebar"><div><span className={loaded ? "is-ready" : ""}><span />{loaded ? "Autosaved on this device" : "Loading saved draft…"}</span>{savedAt && <small><Clock3 size={12} /> Workspace saved {new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(new Date(savedAt))}</small>}{saveMessage && <small role="status">{saveMessage}</small>}</div><button type="button" onClick={saveAssessment} disabled={isSaving}>{isSaving ? <LoaderCircle className="spin" size={15} /> : <Save size={15} />} Save & continue later</button></footer>
+    {isPublic ? <footer className="readiness-savebar readiness-savebar--public"><div><span className={loaded ? "is-ready" : ""}><span />{loaded ? "Sample progress saved on this device" : "Loading sample…"}</span><small>Create an account for the full checklist and secure workspace saving.</small></div><Link href="/sign-up"><Save size={15} /> Create account to continue</Link></footer> : <footer className="readiness-savebar"><div><span className={loaded ? "is-ready" : ""}><span />{loaded ? "Autosaved on this device" : "Loading saved draft…"}</span>{savedAt && <small><Clock3 size={12} /> Workspace saved {new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(new Date(savedAt))}</small>}{saveMessage && <small role="status">{saveMessage}</small>}</div><button type="button" onClick={saveAssessment} disabled={isSaving}>{isSaving ? <LoaderCircle className="spin" size={15} /> : <Save size={15} />} Save & continue later</button></footer>}
 
     {providerItem && <><button className="readiness-provider-backdrop" type="button" aria-label="Close provider matching" onClick={() => setProviderItem(null)} /><ProviderDrawer access={access} item={providerItem} providerCatalog={providerCatalog} onClose={() => setProviderItem(null)} /></>}
     <footer className="readiness-method"><span>Bangladesh Export Readiness v1.0 · rules reviewed 25 Aug 2026</span><span>Decision support; official authority and qualified professional advice remain controlling.</span></footer>

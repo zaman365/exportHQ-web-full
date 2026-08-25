@@ -394,10 +394,18 @@ export function applicableReadinessRequirements(profile: ReadinessProfile): read
 }
 
 export function readinessRequirementViews(
-  access: "member" | "full",
+  access: "public" | "member" | "full",
   profile: ReadinessProfile
 ): readonly ReadinessRequirementView[] {
-  return applicableReadinessRequirements(profile).map((requirement) => ({
+  const applicable = applicableReadinessRequirements(profile);
+  const visible = access === "public"
+    ? readinessSections.flatMap((section) => {
+        const example = applicable.find((requirement) => requirement.section === section.id);
+        return example ? [example] : [];
+      })
+    : applicable;
+
+  return visible.map((requirement) => ({
     id: requirement.id,
     section: requirement.section,
     title: requirement.title,
@@ -405,7 +413,7 @@ export function readinessRequirementViews(
     priority: requirement.priority,
     memberSummary: requirement.memberSummary,
     learnTopic: requirement.learnTopic,
-    sources: requirement.sources,
+    sources: access === "public" ? requirement.sources.slice(0, 1) : requirement.sources,
     weight: requirement.weight,
     hasProviderSupport: requirement.providerCategories.length > 0,
     ...(access === "full" ? {

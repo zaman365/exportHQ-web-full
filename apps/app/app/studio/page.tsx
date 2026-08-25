@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { resolveTrustGatedAccess, subscriptionCatalog } from "@exporthq/authorization";
 import { operatingSystemView } from "@exporthq/domain";
 import { WorkspaceShell } from "../_components/workspace-shell";
-import { requireWorkspaceFeature } from "../_lib/session";
+import { getWorkspaceFeatureSession } from "../_lib/session";
 import ExportStudioClient from "./studio-client";
 
 export const metadata: Metadata = {
@@ -12,10 +12,14 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-export default async function ExportStudioPage() {
-  const session = await requireWorkspaceFeature("export-studio");
+export default async function ExportStudioPage({ searchParams }: { searchParams: Promise<{ access?: string }> }) {
+  const params = await searchParams;
+  const session = await getWorkspaceFeatureSession("export-studio", {
+    allowPublicPreview: true,
+    forcePublicPreview: params.access === "public"
+  });
   const access = resolveTrustGatedAccess({
-    authenticated: true,
+    authenticated: Boolean(session.userId),
     businessVerification: session.businessVerification,
     tier: session.tier
   });
@@ -25,7 +29,7 @@ export default async function ExportStudioPage() {
       <ExportStudioClient
         tierName={subscriptionCatalog[session.tier].name}
         verification={session.businessVerification}
-        view={operatingSystemView(access === "full" ? "full" : "member")}
+        view={operatingSystemView(access)}
       />
     </WorkspaceShell>
   );

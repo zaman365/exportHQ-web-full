@@ -3,8 +3,8 @@
 import { redirect } from "next/navigation";
 import { getClerkClient } from "@exporthq/auth";
 import { businessVerificationSchema } from "@exporthq/validation";
-import { exportPanelPath } from "../_lib/export-panel-paths";
 import { getWorkspaceSession } from "../_lib/session";
+import { exportPanelPath } from "../_lib/export-panel-paths";
 
 export type VerificationActionState = { error?: string };
 

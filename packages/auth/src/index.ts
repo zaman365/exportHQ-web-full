@@ -44,6 +44,7 @@ export interface CustomerSession {
   features: readonly WorkspaceFeature[];
   principal: CustomerPrincipal | null;
   isDemo: boolean;
+  isPlatformAdmin: boolean;
   configurationMessage?: string;
 }
 
@@ -66,6 +67,19 @@ function configuredAuthorizedParties(): string[] {
   return configured?.length
     ? configured
     : ["https://export-hq.com", "http://localhost:3001"];
+}
+
+function normalizedEmail(value: string): string {
+  return value.trim().toLocaleLowerCase("en-US");
+}
+
+export function isPlatformAdministratorEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const administrators = process.env.EXPORTHQ_PLATFORM_ADMIN_EMAILS
+    ?.split(",")
+    .map(normalizedEmail)
+    .filter(Boolean) ?? [];
+  return administrators.includes(normalizedEmail(email));
 }
 
 function clerkConfiguration() {
@@ -138,7 +152,8 @@ function demoCustomerSession(): CustomerSession {
     businessVerification: "verified",
     features: featuresForTier("managed"),
     principal,
-    isDemo: true
+    isDemo: true,
+    isPlatformAdmin: true
   };
 }
 
@@ -160,6 +175,7 @@ export async function resolveCustomerSession(request: Request): Promise<Customer
       features: featuresForTier("preview"),
       principal: null,
       isDemo: false,
+      isPlatformAdmin: false,
       configurationMessage: "Production sign-in is awaiting Clerk activation."
     };
   }
@@ -186,7 +202,8 @@ export async function resolveCustomerSession(request: Request): Promise<Customer
       businessVerification: "unverified",
       features: featuresForTier("preview"),
       principal: null,
-      isDemo: false
+      isDemo: false,
+      isPlatformAdmin: false
     };
   }
 
@@ -197,6 +214,8 @@ export async function resolveCustomerSession(request: Request): Promise<Customer
 
   if (!organizationId) {
     const user = await userPromise;
+    const userEmail = user.primaryEmailAddress?.emailAddress ?? null;
+    const isPlatformAdmin = isPlatformAdministratorEmail(userEmail);
     return {
       status: "needs-organization",
       userId,
@@ -204,12 +223,13 @@ export async function resolveCustomerSession(request: Request): Promise<Customer
       organizationName: null,
       organizationRole: null,
       userName: [user.firstName, user.lastName].filter(Boolean).join(" ") || "ExportPanel member",
-      userEmail: user.primaryEmailAddress?.emailAddress ?? null,
-      tier: "explore",
-      businessVerification: "unverified",
-      features: featuresForTier("explore"),
+      userEmail,
+      tier: isPlatformAdmin ? "managed" : "explore",
+      businessVerification: isPlatformAdmin ? "verified" : "unverified",
+      features: featuresForTier(isPlatformAdmin ? "managed" : "explore"),
       principal: null,
-      isDemo: false
+      isDemo: false,
+      isPlatformAdmin
     };
   }
 
@@ -219,28 +239,35 @@ export async function resolveCustomerSession(request: Request): Promise<Customer
   ]);
   const metadata = organization.publicMetadata as ExportPanelOrganizationMetadata;
   const onboardingComplete = metadata.exportPanel?.onboardingComplete === true;
-  const businessVerification = businessVerificationStatus(metadata.exportPanel?.businessVerification);
-  const tier = resolveTier(auth.has);
+  const userEmail = user.primaryEmailAddress?.emailAddress ?? null;
+  const isPlatformAdmin = isPlatformAdministratorEmail(userEmail);
+  const businessVerification = isPlatformAdmin
+    ? "verified"
+    : businessVerificationStatus(metadata.exportPanel?.businessVerification);
+  const tier = isPlatformAdmin ? "managed" : resolveTier(auth.has);
   const principal: CustomerPrincipal = {
     kind: "customer",
     userId,
     organizationId,
-    permissions: roleScopedPermissions(tier, auth.orgRole, auth.orgPermissions)
+    permissions: isPlatformAdmin
+      ? permissionsForTier("managed")
+      : roleScopedPermissions(tier, auth.orgRole, auth.orgPermissions)
   };
 
   return {
-    status: onboardingComplete ? "active" : "needs-onboarding",
+    status: onboardingComplete || isPlatformAdmin ? "active" : "needs-onboarding",
     userId,
     organizationId,
     organizationName: organization.name,
-    organizationRole: auth.orgRole ?? null,
+    organizationRole: isPlatformAdmin ? "org:admin" : auth.orgRole ?? null,
     userName: [user.firstName, user.lastName].filter(Boolean).join(" ") || "ExportPanel member",
-    userEmail: user.primaryEmailAddress?.emailAddress ?? null,
+    userEmail,
     tier,
     businessVerification,
     features: featuresForTier(tier),
     principal,
-    isDemo: false
+    isDemo: false,
+    isPlatformAdmin
   };
 }
 
@@ -274,5 +301,14 @@ export async function getStaffPrincipal(request?: Request): Promise<StaffPrincip
   });
   if (!state.isAuthenticated) throw new Error("Staff authentication is required.");
   const session = state.toAuth();
-  return { kind: "staff", userId: session.userId, globalPermissions: new Set(), grants: [] };
+  const user = await client.users.getUser(session.userId);
+  const isPlatformAdmin = isPlatformAdministratorEmail(user.primaryEmailAddress?.emailAddress);
+  return {
+    kind: "staff",
+    userId: session.userId,
+    globalPermissions: isPlatformAdmin
+      ? new Set(["customers:view", "customers:manage", "platform:admin"] as const)
+      : new Set(),
+    grants: []
+  };
 }

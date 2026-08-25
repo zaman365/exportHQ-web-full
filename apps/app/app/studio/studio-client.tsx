@@ -56,18 +56,20 @@ function Metric({ icon: Icon, label, value, detail, tone = "green" }: { icon: ty
   return <article className={`studio-metric studio-metric--${tone}`}><span><Icon size={18} /></span><div><small>{label}</small><strong>{value}</strong><p>{detail}</p></div></article>;
 }
 
-function AccessStrip({ full, tierName, verification }: { full: boolean; tierName: string; verification: BusinessVerificationStatus }) {
-  if (full) return <section className="studio-access studio-access--full"><span><ShieldCheck size={19} /></span><div><strong>Complete operating layer active</strong><p>{verification === "verified" ? "Verified-business access" : `${tierName} access`} includes provider matching, Trust Passport detail and full commercial controls.</p></div><Link href="/verify-business">Trust & access <ArrowRight size={14} /></Link></section>;
+function AccessStrip({ access, tierName, verification }: { access: ExportOperatingSystemView["access"]; tierName: string; verification: BusinessVerificationStatus }) {
+  if (access === "full") return <section className="studio-access studio-access--full"><span><ShieldCheck size={19} /></span><div><strong>Complete operating layer active</strong><p>{verification === "verified" ? "Verified-business access" : `${tierName} access`} includes provider matching, Trust Passport detail and full commercial controls.</p></div><Link href="/verify-business">Trust & access <ArrowRight size={14} /></Link></section>;
+  if (access === "public") return <section className="studio-access"><span><Sparkles size={19} /></span><div><strong>Explore a public Export Lane</strong><p>See how one opportunity connects to readiness, buyers, delivery, finance and payment. Create a free account to model your own lane and save its economics.</p></div><div><Link href="/sign-up">Create free account</Link><Link href="/sign-in">Sign in</Link></div></section>;
   return <section className="studio-access"><span><Sparkles size={19} /></span><div><strong>Your Basic Export Lane is active</strong><p>Model economics and organize the lane now. Verify the business or subscribe to unlock provider identities, finance routes and the complete Trust Passport.</p></div><div><Link href="/verify-business">Verify free</Link><Link href="/plans">Compare plans</Link></div></section>;
 }
 
-function LockedAction({ title, detail }: { title: string; detail: string }) {
-  return <div className="studio-locked"><LockKeyhole size={20} /><div><strong>{title}</strong><p>{detail}</p></div><span><Link href="/verify-business">Verify</Link><Link href="/plans">Upgrade</Link></span></div>;
+function LockedAction({ title, detail, publicPreview = false }: { title: string; detail: string; publicPreview?: boolean }) {
+  return <div className="studio-locked"><LockKeyhole size={20} /><div><strong>{title}</strong><p>{detail}</p></div><span>{publicPreview ? <><Link href="/sign-up">Create account</Link><Link href="/sign-in">Sign in</Link></> : <><Link href="/verify-business">Verify</Link><Link href="/plans">Upgrade</Link></>}</span></div>;
 }
 
 export default function ExportStudioClient({ view, tierName, verification }: { view: ExportOperatingSystemView; tierName: string; verification: BusinessVerificationStatus }) {
   const lane = view.lane;
   const full = view.access === "full";
+  const isPublic = view.access === "public";
   const progress = exportLaneProgress(lane);
   const [scenario, setScenario] = useState<CommercialScenarioInput | null>(view.scenario ?? null);
   const [completed, setCompleted] = useState<Set<string>>(new Set());
@@ -76,6 +78,7 @@ export default function ExportStudioClient({ view, tierName, verification }: { v
   const [financeSelection, setFinanceSelection] = useState<string | null>(null);
   const [clusterJoined, setClusterJoined] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [buyerLinkReady, setBuyerLinkReady] = useState(false);
 
   useEffect(() => {
     setCompleted(readStoredSet(`${storagePrefix}.milestones.${lane.id}`));
@@ -144,7 +147,7 @@ export default function ExportStudioClient({ view, tierName, verification }: { v
       <Metric icon={Target} label="NEXT GATE" value="Offer" detail={lane.nextGate} tone="amber" />
     </section>
 
-    <AccessStrip full={full} tierName={tierName} verification={verification} />
+    <AccessStrip access={view.access} tierName={tierName} verification={verification} />
 
     <nav className="studio-jump" aria-label="Export Studio sections"><a href="#economics"><Calculator size={14} /> Economics</a><a href="#deal"><BriefcaseBusiness size={14} /> Deal room</a><a href="#buyers"><UsersRound size={14} /> Buyer trust</a><a href="#network"><Handshake size={14} /> Support network</a><a href="#delivery"><Ship size={14} /> Delivery & policy</a></nav>
 
@@ -170,7 +173,7 @@ export default function ExportStudioClient({ view, tierName, verification }: { v
           <dl><div><dt>Quote value</dt><dd>{money.format(economics.sellValueUsd)}</dd></div><div><dt>Seller cost</dt><dd>{money.format(economics.sellerCostUsd)}</dd></div><div><dt>Break-even unit</dt><dd>{money.format(economics.breakEvenUnitUsd)}</dd></div><div><dt>Estimated landed value</dt><dd>{money.format(economics.estimatedLandedValueUsd)}</dd></div></dl>
           <div className="studio-warnings">{economics.warnings.map((warning) => <p key={warning}><AlertTriangle size={13} /> {warning}</p>)}</div>
         </div>
-      </div> : <LockedAction title="Create an account to model this lane" detail="Public previews never receive organization economics." />}
+      </div> : <LockedAction title="Create an account to model this lane" detail="Public previews never receive organization economics." publicPreview={isPublic} />}
     </section>
 
     <div className="studio-two-column" id="deal">
@@ -185,7 +188,7 @@ export default function ExportStudioClient({ view, tierName, verification }: { v
 
       <section className="studio-panel studio-passport">
         <header><div><p>BUYER TRUST</p><h2>Trust Passport <HintButton topic="buyer-trust-passport" /></h2><span>A permission-safe projection—not a certification.</span></div><BadgeCheck size={21} /></header>
-        {view.passport ? <div className="studio-passport__body"><span className="studio-passport__seal"><ShieldCheck size={28} /></span><small>VERIFIED BUSINESS PROJECTION</small><h3>{lane.organizationName}</h3><p>{view.passport.capacityStatement}</p><div><span><strong>{view.passport.identityChecks}</strong><small>identity checks</small></span><span><strong>{view.passport.evidenceChecks}</strong><small>evidence checks</small></span></div><button type="button"><Link2 size={14} /> Prepare buyer link</button><em>Refreshed {view.passport.refreshedAt}</em></div> : <LockedAction title="Unlock the controlled buyer projection" detail="Verify the business or activate a paid plan to open Trust Passport details." />}
+        {view.passport ? <div className="studio-passport__body"><span className="studio-passport__seal"><ShieldCheck size={28} /></span><small>VERIFIED BUSINESS PROJECTION</small><h3>{lane.organizationName}</h3><p>{view.passport.capacityStatement}</p><div><span><strong>{view.passport.identityChecks}</strong><small>identity checks</small></span><span><strong>{view.passport.evidenceChecks}</strong><small>evidence checks</small></span></div><button className={buyerLinkReady ? "is-selected" : ""} type="button" onClick={() => setBuyerLinkReady(true)}>{buyerLinkReady ? <Check size={14} /> : <Link2 size={14} />} {buyerLinkReady ? "Buyer link prepared" : "Prepare buyer link"}</button>{buyerLinkReady && <p className="studio-status" role="status"><CheckCircle2 size={14} /> Controlled buyer projection is ready for a final permission review.</p>}<em>Refreshed {view.passport.refreshedAt}</em></div> : <LockedAction title="Unlock the controlled buyer projection" detail="Verify the business or activate a paid plan to open Trust Passport details." publicPreview={isPublic} />}
       </section>
     </div>
 
@@ -196,7 +199,7 @@ export default function ExportStudioClient({ view, tierName, verification }: { v
 
     <section className="studio-panel studio-network" id="network">
       <header><div><p>QUALIFIED SUPPORT NETWORK</p><h2>Resolve blockers with the right specialist <HintButton topic="provider-matching" /></h2><span>Quality ranking stays independent of commercial placement. Commissions are disclosed before sharing a request.</span></div><Handshake size={21} /></header>
-      <div className="studio-network__grid">{view.providers.map((provider) => <article key={provider.id}><span><FileCheck2 size={18} /></span><small>{provider.category}</small><h3>{provider.name ?? "Qualified identity unlocks with trust"}</h3><p>{provider.credential ?? "See verified scope, fee basis and contact route after business verification or subscription."}</p><div>{provider.responseTime && <span><Clock3 size={12} /> {provider.responseTime}</span>}{provider.verifiedAt && <span><BadgeCheck size={12} /> reviewed {provider.verifiedAt}</span>}</div><em>{provider.commissionDisclosure}</em>{full ? <button type="button" onClick={() => setProviderRequest(provider.id)}>{providerRequest === provider.id ? <Check size={14} /> : <Handshake size={14} />} {providerRequest === provider.id ? "Match request prepared" : "Request a match"}</button> : <Link href="/verify-business"><LockKeyhole size={14} /> Unlock matching</Link>}</article>)}</div>
+      <div className="studio-network__grid">{view.providers.map((provider) => <article key={provider.id}><span><FileCheck2 size={18} /></span><small>{provider.category}</small><h3>{provider.name ?? "Qualified identity unlocks with trust"}</h3><p>{provider.credential ?? "See verified scope, fee basis and contact route after business verification or subscription."}</p><div>{provider.responseTime && <span><Clock3 size={12} /> {provider.responseTime}</span>}{provider.verifiedAt && <span><BadgeCheck size={12} /> reviewed {provider.verifiedAt}</span>}</div><em>{provider.commissionDisclosure}</em>{full ? <button type="button" onClick={() => setProviderRequest(provider.id)}>{providerRequest === provider.id ? <Check size={14} /> : <Handshake size={14} />} {providerRequest === provider.id ? "Match request prepared" : "Request a match"}</button> : <Link href={isPublic ? "/sign-up" : "/verify-business"}><LockKeyhole size={14} /> {isPublic ? "Create account" : "Unlock matching"}</Link>}</article>)}</div>
       {providerRequest && <p className="studio-status" role="status"><CheckCircle2 size={15} /> Request draft prepared. No provider has been booked or received business data.</p>}
     </section>
 
@@ -204,7 +207,7 @@ export default function ExportStudioClient({ view, tierName, verification }: { v
       <section className="studio-panel studio-finance">
         <header><div><p>CAPITAL & PAYMENT</p><h2>Finance readiness <HintButton topic="trade-finance-preparation" /></h2><span>Preparation and comparison—not a credit decision.</span></div><Landmark size={20} /></header>
         <div>{view.finance.map((path) => <article className={financeSelection === path.id ? "is-selected" : ""} key={path.id}><span><HandCoins size={18} /></span><div><small>{path.readiness}% prepared</small><strong>{path.product}</strong><p>{path.purpose}</p><i><b style={{ width:`${path.readiness}%` }} /></i><em>{path.missing.length} preparation gaps</em></div>{full ? <button type="button" onClick={() => setFinanceSelection(path.id)}>{financeSelection === path.id ? <Check size={14} /> : <ArrowRight size={14} />}</button> : <LockKeyhole size={14} />}</article>)}</div>
-        {!full && <LockedAction title="Finance introductions require trust" detail="Complete business verification or activate Scale/Managed before a request can be prepared." />}
+        {!full && <LockedAction title="Finance introductions require trust" detail="Complete business verification or activate Scale/Managed before a request can be prepared." publicPreview={isPublic} />}
       </section>
 
       <section className="studio-panel studio-cluster">

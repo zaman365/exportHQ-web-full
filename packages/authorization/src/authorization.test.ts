@@ -51,8 +51,17 @@ describe("tenant isolation", () => {
 
 describe("subscription entitlements", () => {
   it("keeps the public preview read-only and progressively expands paid access", () => {
-    expect(featuresForTier("preview")).toEqual(["home", "learning"]);
+    expect(featuresForTier("preview")).toEqual([
+      "home",
+      "learning",
+      "plans",
+      "readiness",
+      "markets",
+      "opportunities",
+      "export-studio"
+    ]);
     expect(tierHasFeature("explore", "onboarding")).toBe(true);
+    expect(tierHasFeature("explore", "settings")).toBe(true);
     expect(tierHasFeature("explore", "opportunities")).toBe(true);
     expect(tierHasFeature("explore", "readiness")).toBe(true);
     expect(tierHasFeature("explore", "export-studio")).toBe(true);
@@ -74,6 +83,7 @@ describe("subscription entitlements", () => {
   });
 
   it("uses the same verified-business or paid-plan gate for full readiness solutions", () => {
+    expect(resolveReadinessAccess({ authenticated: false, businessVerification: "unverified", tier: "preview" })).toBe("public");
     expect(resolveReadinessAccess({ authenticated: true, businessVerification: "unverified", tier: "explore" })).toBe("member");
     expect(resolveReadinessAccess({ authenticated: true, businessVerification: "verified", tier: "explore" })).toBe("full");
     expect(resolveReadinessAccess({ authenticated: true, businessVerification: "pending", tier: "launch" })).toBe("full");

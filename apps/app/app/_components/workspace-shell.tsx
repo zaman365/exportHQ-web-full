@@ -5,8 +5,10 @@ import {
   Bell,
   CircleHelp,
   House,
+  LockKeyhole,
   Search,
   ShieldCheck,
+  Sparkles,
 } from "lucide-react";
 import { demoSnapshot } from "@exporthq/domain";
 import { Avatar, Logo } from "@exporthq/ui";
@@ -15,14 +17,14 @@ import type { CustomerSession } from "@exporthq/auth";
 import { WorkspaceAccountControl } from "./account-controls";
 import { DemoBanner } from "./demo-banner";
 import { MobileNavigation } from "./workspace-mobile-navigation";
-import { workspaceGroups, type WorkspaceDestination } from "./workspace-navigation";
+import { workspaceGroups, workspaceHref, type WorkspaceDestination } from "./workspace-navigation";
 
 export const workspaceWebsiteUrl =
   process.env.EXPORTHQ_WEB_URL ??
   process.env.NEXT_PUBLIC_WEB_URL ??
   "https://export-hq.com";
 
-function NavigationLinks({ active, features, mobile = false }: { active: WorkspaceDestination; features: CustomerSession["features"]; mobile?: boolean }) {
+function NavigationLinks({ active, features, mobile = false, publicPreview = false }: { active: WorkspaceDestination; features: CustomerSession["features"]; mobile?: boolean; publicPreview?: boolean }) {
   return (
     <nav aria-label={mobile ? "Mobile navigation" : "Primary navigation"}>
       {workspaceGroups.map((group) => {
@@ -31,7 +33,7 @@ function NavigationLinks({ active, features, mobile = false }: { active: Workspa
         return <div className="nav-group" key={group.label}>
           <p>{group.label}</p>
           {items.map(([label, Icon, href, id]) => (
-            <Link href={href} className={active === id ? "active" : ""} key={label}>
+            <Link href={workspaceHref(href, publicPreview)} className={active === id ? "active" : ""} key={label}>
               <Icon size={17} strokeWidth={1.8} />{label}
             </Link>
           ))}
@@ -42,32 +44,39 @@ function NavigationLinks({ active, features, mobile = false }: { active: Workspa
 }
 
 function WorkspaceSidebar({ active, session }: { active: WorkspaceDestination; session: CustomerSession }) {
+  const publicPreview = !session.userId;
   return (
     <aside className="sidebar">
       <div className="sidebar__head"><a className="sidebar__brand-home" href={workspaceWebsiteUrl} target="_blank" rel="noreferrer" aria-label="Open the Export HQ homepage in a new tab"><Logo /></a></div>
-      <NavigationLinks active={active} features={session.features} />
-      <div className="sidebar__team">
+      <NavigationLinks active={active} features={session.features} publicPreview={publicPreview} />
+      {publicPreview ? <div className="sidebar__team sidebar__team--guest">
+        <div><Sparkles size={12} /><small>PUBLIC SAMPLE</small></div>
+        <strong>Turn this into your export workspace.</strong>
+        <span>Create a free account to save assessments, shortlists and your business context.</span>
+        <Link href="/sign-up">Create free account <ArrowRight size={14} /></Link>
+        <Link className="sidebar__guest-signin" href="/sign-in">Already a member? Sign in</Link>
+      </div> : <div className="sidebar__team">
         <div><span className="status-dot" /><small>YOUR EXPORT HQ TEAM</small></div>
         <div className="avatar-stack">{demoSnapshot.team.map((person, index) => <Avatar key={person.name} initials={person.initials} tone={index} />)}</div>
         <strong>3 specialists assigned</strong>
         <span>Average response · 3h 24m</span>
         <Link href="/#team">Message your team <ArrowRight size={14} /></Link>
-      </div>
+      </div>}
     </aside>
   );
 }
 
 function WorkspaceTopbar({ active, session }: { active: WorkspaceDestination; session: CustomerSession }) {
-  const tierName = subscriptionCatalog[session.tier].name;
+  const publicPreview = !session.userId;
+  const tierName = session.isPlatformAdmin ? "Platform admin" : subscriptionCatalog[session.tier].name;
   return (
     <header className="topbar">
-      <MobileNavigation active={active} features={session.features} />
+      <MobileNavigation active={active} features={session.features} organizationName={session.organizationName ?? "Public sample"} publicPreview={publicPreview} />
       <a className="mobile-home" href={workspaceWebsiteUrl} target="_blank" rel="noreferrer" aria-label="Open the Export HQ homepage in a new tab"><House size={18} /></a>
-      <Link href="/learn" className="search"><Search size={17} /><span>Search ExportPanel help…</span><kbd>⌘ K</kbd></Link>
+      <Link href={workspaceHref("/learn", publicPreview)} className="search"><Search size={17} /><span>Search ExportPanel help…</span><kbd>⌘ K</kbd></Link>
       <div className="topbar__actions">
-        <Link href="/learn" aria-label="Help"><CircleHelp size={19} /></Link>
-        <Link href="/inbox" aria-label="Inbox notifications" className="notification"><Bell size={19} /><span /></Link>
-        <WorkspaceAccountControl enabled={!session.isDemo} userName={session.userName ?? "ExportPanel member"} organizationName={session.organizationName ?? "Your business"} tierName={tierName} />
+        <Link href={workspaceHref("/learn", publicPreview)} aria-label="Help"><CircleHelp size={19} /></Link>
+        {publicPreview ? <div className="topbar__guest"><span><LockKeyhole size={13} /> Public sample</span><Link href="/sign-in">Sign in</Link><Link href="/sign-up">Create account</Link></div> : <><Link href="/inbox" aria-label="Inbox notifications" className="notification"><Bell size={19} /><span /></Link><WorkspaceAccountControl enabled={!session.isDemo} userName={session.userName ?? "ExportPanel member"} organizationName={session.organizationName ?? "Your business"} tierName={tierName} /></>}
       </div>
     </header>
   );
@@ -90,9 +99,9 @@ export function WorkspaceShell({
       <main>
         <WorkspaceTopbar active={active} session={session} />
         <div className="content" id={contentId}>{children}</div>
-        <footer className="legal-footer"><span>Export HQ · Private workspace</span><span><ShieldCheck size={14} /> Evidence-aware compliance · Last data review 8 Aug 2026</span></footer>
+        <footer className="legal-footer"><span>Export HQ · {session.userId ? "Private workspace" : "Public sample · no customer data"}</span><span><ShieldCheck size={14} /> Evidence-aware compliance · Last data review 8 Aug 2026</span></footer>
       </main>
-      <DemoBanner />
+      {session.isDemo && <DemoBanner />}
     </div>
   );
 }

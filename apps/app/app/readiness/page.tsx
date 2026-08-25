@@ -15,7 +15,7 @@ import {
 } from "@exporthq/domain";
 import { readinessProgressSchema, type ReadinessProgressInput } from "@exporthq/validation";
 import { WorkspaceShell } from "../_components/workspace-shell";
-import { requireWorkspaceFeature } from "../_lib/session";
+import { getWorkspaceFeatureSession } from "../_lib/session";
 import ReadinessClient from "./readiness-client";
 
 export const metadata: Metadata = {
@@ -77,8 +77,12 @@ export default async function ReadinessPage({ searchParams }: { searchParams: Pr
   const query = await searchParams;
   const returnQuery = new URLSearchParams(Object.entries(query).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
   const returnTo = returnQuery.size ? `/readiness?${returnQuery.toString()}` : "/readiness";
-  const baseSession = await requireWorkspaceFeature("readiness", { signedOutRedirectTo: returnTo });
-  const basicBusiness = baseSession.isDemo && query.access === "basic"
+  const baseSession = await getWorkspaceFeatureSession("readiness", {
+    allowPublicPreview: true,
+    forcePublicPreview: query.access === "public",
+    signedOutRedirectTo: returnTo
+  });
+  const basicBusiness = baseSession.isDemo && baseSession.principal && query.access === "basic"
     ? query.business?.slice(0, 100) || "New business"
     : undefined;
   const session = basicBusiness ? {
@@ -87,14 +91,16 @@ export default async function ReadinessPage({ searchParams }: { searchParams: Pr
     tier: "explore" as const,
     businessVerification: "unverified" as const,
     features: featuresForTier("explore"),
-    principal: { ...baseSession.principal, permissions: permissionsForTier("explore") }
+    principal: baseSession.principal
+      ? { ...baseSession.principal, permissions: permissionsForTier("explore") }
+      : null
   } : baseSession;
   const access = resolveReadinessAccess({
-    authenticated: true,
+    authenticated: Boolean(session.userId),
     businessVerification: session.businessVerification,
     tier: session.tier
   });
-  const saved = await loadSavedProgress(session.organizationId, session.isDemo);
+  const saved = session.userId ? await loadSavedProgress(session.organizationId, session.isDemo) : undefined;
   const profile = profileFromQuery(query, saved);
   const requirements = readinessRequirementViews(access, profile);
   const providerCatalog = access === "full" ? readinessProviderCatalog : {};
@@ -103,7 +109,7 @@ export default async function ReadinessPage({ searchParams }: { searchParams: Pr
     <WorkspaceShell active="readiness" session={session}>
       <ReadinessClient
         access={access}
-        businessName={session.organizationName ?? "Your business"}
+        businessName={session.organizationName ?? `${profile.productName} export preview`}
         initialProgress={saved}
         profile={profile}
         providerCatalog={providerCatalog}

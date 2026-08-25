@@ -1504,64 +1504,160 @@
   text-align: center;
 }
 
-/* --- 13. Platform / stage bento ------------------------------------------ */
+/* --- 13. Platform / connected operating stages --------------------------- */
 
 .platform {
   background: var(--paper-0);
   border-block: 1px solid var(--line);
 }
 
-.stage-grid {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+.stage-system {
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--r-lg);
   background: var(--paper-0);
+  box-shadow: 0 24px 60px rgb(30 42 61 / 0.07);
+}
+
+.stage-system__spine {
+  display: grid;
+  grid-template-columns: max-content minmax(80px, 1fr) max-content;
+  align-items: center;
+  gap: 16px;
+  min-height: 58px;
+  padding: 0 clamp(20px, 2.4vw, 30px);
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(90deg, var(--signal-wash), var(--paper-1) 45%, var(--mint-wash));
+  color: var(--fg-3);
+  font-family: var(--data);
+  font-size: 0.6875rem;
+  font-weight: 560;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.stage-system__spine i {
+  position: relative;
+  display: block;
+  height: 1px;
+  background: linear-gradient(90deg, var(--signal), var(--tide), var(--mint));
+}
+
+.stage-system__spine i::before,
+.stage-system__spine i::after,
+.stage-system__spine i b {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 7px;
+  height: 7px;
+  border: 2px solid var(--paper-0);
+  border-radius: 999px;
+  background: currentcolor;
+  transform: translateY(-50%);
+}
+
+.stage-system__spine i::before {
+  left: 0;
+  color: var(--signal);
+}
+
+.stage-system__spine i b {
+  left: 50%;
+  color: var(--tide);
+  transform: translate(-50%, -50%);
+}
+
+.stage-system__spine i::after {
+  right: 0;
+  color: var(--mint);
+}
+
+.stage-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
 }
 
 .stage-card {
+  --stage-accent: var(--signal-deep);
+  --stage-wash: var(--signal-wash);
   position: relative;
   display: flex;
   flex-direction: column;
-  grid-column: span 2;
-  min-height: 320px;
-  padding: clamp(20px, 2.2vw, 28px);
+  min-width: 0;
+  min-height: 390px;
+  padding: clamp(20px, 2vw, 26px);
   border-right: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-  transition: background-color 0.25s var(--ease);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--stage-wash) 36%, var(--paper-0)) 0, var(--paper-0) 29%);
+  transition: background-color 0.25s var(--ease), transform 0.25s var(--ease);
 }
 
-.stage-card:nth-child(-n + 2) {
-  grid-column: span 3;
-}
-
-.stage-card:nth-child(2),
-.stage-card:nth-child(5) {
+.stage-card:last-child {
   border-right: 0;
 }
 
-.stage-card:nth-child(n + 3) {
-  border-bottom: 0;
+.stage-card:nth-child(2) {
+  --stage-accent: var(--tide);
+  --stage-wash: var(--tide-wash);
 }
 
-.stage-card::after {
+.stage-card:nth-child(3) {
+  --stage-accent: var(--ember-ink);
+  --stage-wash: var(--ember-wash);
+}
+
+.stage-card:nth-child(4) {
+  --stage-accent: var(--plum-ink);
+  --stage-wash: var(--plum-wash);
+}
+
+.stage-card:nth-child(5) {
+  --stage-accent: var(--mint);
+  --stage-wash: var(--mint-wash);
+}
+
+.stage-card::before {
   content: "";
   position: absolute;
   inset: 0 auto auto 0;
-  height: 2px;
-  width: var(--progress, 20%);
-  background: var(--signal);
-  opacity: 0;
-  transition: opacity 0.25s var(--ease);
+  width: 100%;
+  height: 3px;
+  background: var(--stage-accent);
 }
 
 .stage-card:hover {
-  background: var(--paper-1);
+  z-index: 1;
+  background-color: var(--paper-1);
+  transform: translateY(-3px);
 }
 
-.stage-card:hover::after {
-  opacity: 1;
+.stage-card__step {
+  display: grid;
+  gap: 4px;
+}
+
+.stage-card__step small {
+  color: var(--fg-4);
+  font-family: var(--data);
+  font-size: 0.625rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.stage-card__connector {
+  position: absolute;
+  z-index: 3;
+  top: 30px;
+  right: -14px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--paper-0);
+  color: var(--stage-accent);
+  box-shadow: 0 6px 16px rgb(30 42 61 / 0.09);
 }
 
 .stage-card header,
@@ -1591,25 +1687,26 @@
   color: var(--signal-deep);
 }
 
-.stage-card:nth-child(2) .card-icon,
+.stage-card .card-icon {
+  background: var(--stage-wash);
+  color: var(--stage-accent);
+}
+
 .coverage-card:nth-child(2) .card-icon {
   background: var(--tide-wash);
   color: var(--tide);
 }
 
-.stage-card:nth-child(3) .card-icon,
 .coverage-card:nth-child(3) .card-icon {
   background: var(--ember-wash);
   color: var(--ember-ink);
 }
 
-.stage-card:nth-child(4) .card-icon,
 .coverage-card:nth-child(4) .card-icon {
   background: var(--plum-wash);
   color: var(--plum-ink);
 }
 
-.stage-card:nth-child(5) .card-icon,
 .coverage-card:nth-child(5) .card-icon {
   background: var(--mint-wash);
   color: var(--mint);
@@ -1622,7 +1719,7 @@
 
 .stage-card h3,
 .coverage-card h3 {
-  margin: clamp(36px, 5vw, 52px) 0 12px;
+  margin: clamp(28px, 3.4vw, 42px) 0 12px;
   font-size: 1.1875rem;
   font-weight: 570;
   letter-spacing: -0.024em;
@@ -2638,22 +2735,24 @@
   }
 
   .stage-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(250px, 1fr));
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-color: var(--line-strong) transparent;
+    scrollbar-width: thin;
   }
 
   .stage-card,
   .stage-card:nth-child(-n + 2) {
-    grid-column: span 1;
+    grid-column: auto;
+    min-height: 370px;
     border-right: 1px solid var(--line);
-    border-bottom: 1px solid var(--line);
-  }
-
-  .stage-card:nth-child(2n) {
-    border-right: 0;
+    border-bottom: 0;
+    scroll-snap-align: start;
   }
 
   .stage-card:last-child {
-    grid-column: 1 / -1;
+    grid-column: auto;
     border-right: 0;
     border-bottom: 0;
   }
@@ -2818,6 +2917,25 @@
 
   .stage-card:last-child {
     border-bottom: 0;
+  }
+
+  .stage-system__spine {
+    grid-template-columns: max-content minmax(32px, 1fr) max-content;
+    gap: 10px;
+    padding-inline: 16px;
+  }
+
+  .stage-system__spine span {
+    font-size: 0.625rem;
+    letter-spacing: 0.08em;
+  }
+
+  .stage-card__connector {
+    top: auto;
+    right: auto;
+    bottom: -14px;
+    left: 25px;
+    transform: rotate(90deg);
   }
 
   .coverage-card,

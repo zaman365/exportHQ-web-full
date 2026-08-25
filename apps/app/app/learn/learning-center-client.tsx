@@ -22,6 +22,7 @@ import {
   type LearningResource
 } from "../_components/learning-catalog";
 import { HintButton } from "../_components/hint-button";
+import { exportPanelPath } from "../_lib/export-panel-paths";
 
 const completedStorageKey = "exportpanel.learning.completed.v1";
 
@@ -87,7 +88,7 @@ export default function LearningCenterClient({ initialTopic }: { initialTopic?: 
 
   function openResource(resource: LearningResource) {
     setSelectedId(resource.id);
-    window.history.replaceState(null, "", `/learn?topic=${resource.id}`);
+    window.history.replaceState(null, "", exportPanelPath(`/learn?topic=${resource.id}`));
   }
 
   function toggleCompleted(resourceId: string) {

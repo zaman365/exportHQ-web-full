@@ -2,11 +2,11 @@ import { authorizeOrganization, featuresForTier, permissionsForTier } from "@exp
 import { demoSnapshot, type TaskStatus } from "@exporthq/domain";
 import { ArrowRight, Check, Clock3, FileText, MessageSquareText, Package, Plus, ShieldCheck, Sparkles, Target } from "lucide-react";
 import Link from "next/link";
-import { Avatar, Badge, ButtonLink, Card, Progress } from "@exporthq/ui";
+import { Avatar, Badge, Card, Progress } from "@exporthq/ui";
 import { HintButton } from "./_components/hint-button";
 import { ExploreHome } from "./_components/explore-home";
 import { WorkspaceShell } from "./_components/workspace-shell";
-import { requireWorkspaceFeature } from "./_lib/session";
+import { getWorkspaceFeatureSession } from "./_lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -24,23 +24,36 @@ const statusTone: Record<TaskStatus, "neutral" | "success" | "warning" | "danger
   blocked: "danger"
 };
 
+const dashboardTaskRecords: Readonly<Record<string, string>> = {
+  task_oekotex: "work-oekotex-upload",
+  task_packaging: "work-packaging-model",
+  task_labelling: "work-label-blocks",
+  task_test_report: "work-supplier-declaration"
+};
+
 export default async function CommandCenterPage({ searchParams }: { searchParams: Promise<{ business?: string; access?: string }> }) {
-  const baseSession = await requireWorkspaceFeature("home");
   const params = await searchParams;
-  const demoBasicBusiness = baseSession.isDemo && params.access === "basic" ? params.business?.slice(0, 100) : undefined;
+  const baseSession = await getWorkspaceFeatureSession("home", {
+    allowPublicPreview: true,
+    forcePublicPreview: params.access === "public"
+  });
+  const demoBasicBusiness = baseSession.isDemo && baseSession.principal && params.access === "basic" ? params.business?.slice(0, 100) : undefined;
   const session = demoBasicBusiness ? {
     ...baseSession,
     organizationName: demoBasicBusiness,
     tier: "explore" as const,
     businessVerification: "unverified" as const,
     features: featuresForTier("explore"),
-    principal: { ...baseSession.principal, permissions: permissionsForTier("explore") }
+    principal: baseSession.principal
+      ? { ...baseSession.principal, permissions: permissionsForTier("explore") }
+      : null
   } : baseSession;
-  const principal = session.principal;
-  authorizeOrganization(principal, principal.organizationId, "company:view");
-  if (session.tier === "explore") {
+  if (!session.userId || session.tier === "explore") {
     return <WorkspaceShell active="dashboard" session={session}><ExploreHome session={session} /></WorkspaceShell>;
   }
+  const principal = session.principal;
+  if (!principal) return null;
+  authorizeOrganization(principal, principal.organizationId, "company:view");
   const customerTasks = demoSnapshot.tasks.filter((task) => task.responsibility === "customer");
   const exportHqTasks = demoSnapshot.tasks.filter((task) => task.responsibility === "export_hq");
   const thirdPartyTasks = demoSnapshot.tasks.filter((task) => task.responsibility === "third_party");
@@ -49,7 +62,7 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
     <WorkspaceShell active="dashboard" contentId="overview" session={session}>
           <section className="welcome">
             <div><p>HOME / DASHBOARD</p><h1>Good morning, {session.userName?.split(" ")[0] ?? "there"}. <HintButton topic="dashboard-overview" /></h1><span>Here&apos;s what needs attention across your export business.</span></div>
-            <div className="welcome__actions"><ButtonLink href="/onboarding" variant="secondary"><Plus size={16} /> Add product</ButtonLink><ButtonLink href="#team"><MessageSquareText size={16} /> Ask Export HQ</ButtonLink></div>
+            <div className="welcome__actions"><Link href="/onboarding" className="button button--secondary"><Plus size={16} /> Add product</Link><Link href="/team" className="button button--primary"><MessageSquareText size={16} /> Ask Export HQ</Link></div>
           </section>
 
           <section className="score-grid" aria-label="Export health summary">
@@ -70,7 +83,7 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
               <strong>{demoSnapshot.organization.onboardingPercent}%</strong>
               <Progress value={demoSnapshot.organization.onboardingPercent} label="Organization setup" />
               <p>Complete your facility profile and upload your current certification.</p>
-              <ButtonLink href="/onboarding" variant="secondary">Continue setup <ArrowRight size={15} /></ButtonLink>
+              <Link href="/onboarding" className="button button--secondary">Continue setup <ArrowRight size={15} /></Link>
             </Card>
           </section>
 
@@ -92,9 +105,9 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
               <div className="task-list">
                 {demoSnapshot.tasks.map((task) => (
                   <article className="task" key={task.id}>
-                    <button className="task-check" aria-label={`Mark ${task.title} complete`}><Check size={14} /></button>
+                    <span className="task-check" aria-hidden="true"><Check size={14} /></span>
                     <div><div className="task__title"><strong>{task.title}</strong><Badge tone={statusTone[task.status]}>{task.status.replaceAll("_", " ")}</Badge></div><p>{task.description}</p><footer><span><Clock3 size={14} /> Due {new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short" }).format(new Date(task.dueAt))}</span><span>Owner · {task.ownerName}</span><span>{task.relatedEntity}</span></footer></div>
-                    <button aria-label={`Open ${task.title}`}><ArrowRight size={17} /></button>
+                    <Link className="task-open" href={`/work?record=${dashboardTaskRecords[task.id] ?? ""}`} aria-label={`Open ${task.title}`}><ArrowRight size={17} /></Link>
                   </article>
                 ))}
               </div>
@@ -104,12 +117,12 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
               <div className="section-head"><div><p>EXPORT HQ IS WORKING ON</p><h2>Managed work <HintButton topic="waiting-export-hq" /></h2></div></div>
               <Card className="managed-card"><div className="managed-card__head"><span className="icon-box"><ShieldCheck size={18} /></span><Badge tone="info">In progress</Badge></div><h3>Germany compliance review</h3><p>4 of 7 requirements completed</p><Progress value={57} label="Germany compliance review" /><footer><div className="avatar-stack"><Avatar initials="LW" /><Avatar initials="AM" tone={1} /></div><span>Next update · Friday</span></footer></Card>
               <Card className="managed-card"><div className="managed-card__head"><span className="icon-box"><Target size={18} /></span><Badge tone="success">On track</Badge></div><h3>Netherlands buyer research</h3><p>12 new buyers qualified this week</p><div className="mini-stat"><strong>34</strong><span>qualified buyers</span></div><footer><div className="avatar-stack"><Avatar initials="AM" tone={1} /></div><span>Updated 2h ago</span></footer></Card>
-              <button className="service-card"><Sparkles size={18} /><span><strong>Need something else?</strong><small>Request an Export HQ service</small></span><ArrowRight size={17} /></button>
+              <Link className="service-card" href="/team"><Sparkles size={18} /><span><strong>Need something else?</strong><small>Request an Export HQ service</small></span><ArrowRight size={17} /></Link>
             </aside>
           </div>
 
           <section className="module-section" id="products">
-            <div className="section-head"><div><p>PRODUCT × MARKET</p><h2>Germany product readiness <HintButton topic="product-readiness" /></h2></div><ButtonLink href="/onboarding" variant="secondary"><Plus size={15} /> Add product</ButtonLink></div>
+            <div className="section-head"><div><p>PRODUCT × MARKET</p><h2>Germany product readiness <HintButton topic="product-readiness" /></h2></div><Link href="/onboarding" className="button button--secondary"><Plus size={15} /> Add product</Link></div>
             <div className="product-table" role="table" aria-label="Product readiness">
               <div className="table-head" role="row"><span>Product</span><span>HS code</span><span>Target market</span><span>Readiness</span><span>Status</span></div>
               {demoSnapshot.products.map((product) => <div className="table-row" role="row" key={product.id}><span><span className="product-thumb"><Package size={18} /></span><span><strong>{product.name}</strong><small>{product.sku} · {product.composition}</small></span></span><span>{product.hsCode}</span><span>🇩🇪 {product.market}</span><span><Progress value={product.readiness} label={`${product.name} readiness`} /><strong>{product.readiness}%</strong></span><span><Badge tone={product.status === "needs_work" ? "warning" : "info"}>{product.status.replaceAll("_", " ")}</Badge></span></div>)}
@@ -117,16 +130,16 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
           </section>
 
           <section className="module-section" id="requirements">
-            <div className="section-head"><div><p>COMPLIANCE EVIDENCE</p><h2>Requirements needing attention <HintButton topic="requirements-evidence" /></h2></div><a href="#requirements">Open requirement register <ArrowRight size={15} /></a></div>
+            <div className="section-head"><div><p>COMPLIANCE EVIDENCE</p><h2>Requirements needing attention <HintButton topic="requirements-evidence" /></h2></div><Link href="/readiness">Open requirement register <ArrowRight size={15} /></Link></div>
             <div className="requirement-grid">{demoSnapshot.requirements.map((requirement) => <Card key={requirement.id} className="requirement-card"><div><Badge tone={requirement.status === "action_required" ? "danger" : "info"}>{requirement.status.replaceAll("_", " ")}</Badge><span>{requirement.category} · {requirement.jurisdiction}</span></div><h3>{requirement.title}</h3><p><FileText size={15} /> {requirement.evidence}</p><footer><a href={requirement.sourceUrl} target="_blank" rel="noreferrer">{requirement.sourceLabel}</a><span>Verified {requirement.lastVerifiedAt}</span></footer></Card>)}</div>
           </section>
 
           <div className="bottom-grid">
-            <section className="module-section" id="documents"><div className="section-head"><div><p>DOCUMENT VAULT</p><h2>Recent documents <HintButton topic="document-vault" /></h2></div><ButtonLink href="/onboarding" variant="secondary">Upload document</ButtonLink></div><div className="document-list">{demoSnapshot.documents.map((document) => <div key={document.id}><span className="file-icon"><FileText size={17} /></span><span><strong>{document.name}</strong><small>{document.category} · {document.linkedTo}</small></span><Badge tone={document.status === "approved" ? "success" : document.status === "missing" ? "danger" : "info"}>{document.status.replaceAll("_", " ")}</Badge></div>)}</div></section>
+            <section className="module-section" id="documents"><div className="section-head"><div><p>DOCUMENT VAULT</p><h2>Recent documents <HintButton topic="document-vault" /></h2></div><Link href="/onboarding" className="button button--secondary">Upload document</Link></div><div className="document-list">{demoSnapshot.documents.map((document) => <div key={document.id}><span className="file-icon"><FileText size={17} /></span><span><strong>{document.name}</strong><small>{document.category} · {document.linkedTo}</small></span><Badge tone={document.status === "approved" ? "success" : document.status === "missing" ? "danger" : "info"}>{document.status.replaceAll("_", " ")}</Badge></div>)}</div></section>
             <section className="module-section" id="activity"><div className="section-head"><div><p>SHARED ACTIVITY</p><h2>Latest updates <HintButton topic="shared-activity" /></h2></div></div><div className="activity-list">{demoSnapshot.activity.map((item, index) => <div key={item.id}><Avatar initials={item.actor.split(" ").map((part) => part[0]).join("").slice(0, 2)} tone={index} /><span><strong>{item.actor}</strong><p>{item.action}</p><small>{item.at}</small></span></div>)}</div></section>
           </div>
 
-          <section className="team-banner" id="team"><div><div className="avatar-stack">{demoSnapshot.team.map((person, index) => <Avatar key={person.name} initials={person.initials} tone={index} />)}</div><span><p>YOUR ACCOUNTABLE TEAM</p><strong>Anna, Rahim and Lisa are here to move your Germany launch forward. <HintButton topic="accountable-team" /></strong></span></div><ButtonLink href="#team">Message Export HQ <MessageSquareText size={16} /></ButtonLink></section>
+          <section className="team-banner" id="team"><div><div className="avatar-stack">{demoSnapshot.team.map((person, index) => <Avatar key={person.name} initials={person.initials} tone={index} />)}</div><span><p>YOUR ACCOUNTABLE TEAM</p><strong>Anna, Rahim and Lisa are here to move your Germany launch forward. <HintButton topic="accountable-team" /></strong></span></div><Link href="/team" className="button button--primary">Message Export HQ <MessageSquareText size={16} /></Link></section>
     </WorkspaceShell>
   );
 }

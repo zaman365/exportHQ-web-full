@@ -312,7 +312,7 @@ export default function HomePage() {
                 any business ready to grow abroad.
               </p>
               <div className="hero-actions">
-                <a className="btn btn-signal btn-lg" href={`${appUrl}/readiness`}>
+                <a className="btn btn-signal btn-lg" href={`${appUrl}/readiness?access=public`}>
                   Prepare for export <ArrowRight size={17} strokeWidth={2.2} />
                 </a>
                 <a className="btn btn-outline btn-lg" href={`${appUrl}/preview`}>
@@ -446,6 +446,7 @@ export default function HomePage() {
               data-reveal
             >
               <span className="form-tab">Export brief</span>
+              <input type="hidden" name="access" value="public" />
               <label className="field">
                 <span>What does your business provide?</span>
                 <input
@@ -509,39 +510,50 @@ export default function HomePage() {
               </p>
             </div>
 
-            <div className="stage-grid" data-reveal>
-              {operatingStages.map(
-                ({ number, icon: Icon, title, text, outputs }, index) => (
-                  <article
-                    className="stage-card"
-                    key={title}
-                    style={
-                      {
-                        "--progress": `${((index + 1) / operatingStages.length) * 100}%`,
-                      } as React.CSSProperties
-                    }
-                  >
-                    <header>
-                      <span className="card-index">{number}</span>
-                      <span className="card-icon">
-                        <Icon size={19} strokeWidth={1.7} />
-                      </span>
-                    </header>
-                    <h3>{title}</h3>
-                    <p>{text}</p>
-                    <div className="card-outputs">
-                      <span className="data-label">What you can see</span>
-                      <ul>
-                        {outputs.map((output) => (
-                          <li key={output}>
-                            <Check size={13} strokeWidth={2.6} /> {output}
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </article>
-                ),
-              )}
+            <div className="stage-system" data-reveal>
+              <div className="stage-system__spine" aria-hidden="true">
+                <span>Start with evidence</span>
+                <i><b /></i>
+                <span>Compound what works</span>
+              </div>
+              <div
+                className="stage-grid"
+                role="list"
+                aria-label="Export HQ operating system stages"
+              >
+                {operatingStages.map(
+                  ({ number, icon: Icon, title, text, outputs }, index) => (
+                    <article className="stage-card" key={title} role="listitem">
+                      <header>
+                        <span className="stage-card__step">
+                          <span className="card-index">{number}</span>
+                          <small>Stage {index + 1} of {operatingStages.length}</small>
+                        </span>
+                        <span className="card-icon">
+                          <Icon size={19} strokeWidth={1.7} />
+                        </span>
+                      </header>
+                      {index < operatingStages.length - 1 ? (
+                        <span className="stage-card__connector" aria-hidden="true">
+                          <ArrowRight size={15} strokeWidth={2.2} />
+                        </span>
+                      ) : null}
+                      <h3>{title}</h3>
+                      <p>{text}</p>
+                      <div className="card-outputs">
+                        <span className="data-label">Visible output</span>
+                        <ul>
+                          {outputs.map((output) => (
+                            <li key={output}>
+                              <Check size={13} strokeWidth={2.6} /> {output}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </article>
+                  ),
+                )}
+              </div>
             </div>
           </div>
         </section>
@@ -928,7 +940,7 @@ export default function HomePage() {
               </p>
             </div>
             <div className="cta-actions" data-reveal>
-              <a className="btn btn-signal btn-lg" href={`${appUrl}/readiness`}>
+              <a className="btn btn-signal btn-lg" href={`${appUrl}/readiness?access=public`}>
                 Start readiness check{" "}
                 <ArrowRight size={17} strokeWidth={2.2} />
               </a>

@@ -4,8 +4,15 @@ import {
   resolveCustomerSession,
   type CustomerSession
 } from "@exporthq/auth";
-import type { WorkspaceFeature } from "@exporthq/authorization";
+import { featuresForTier, type WorkspaceFeature } from "@exporthq/authorization";
 import { exportPanelPath } from "./export-panel-paths";
+
+type WorkspaceFeatureOptions = {
+  allowIncompleteOnboarding?: boolean;
+  allowPublicPreview?: boolean;
+  forcePublicPreview?: boolean;
+  signedOutRedirectTo?: string;
+};
 
 function requestUrl(requestHeaders: Headers): string {
   const protocol = requestHeaders.get("x-forwarded-proto") ?? "https";
@@ -18,19 +25,60 @@ export async function getWorkspaceSession(): Promise<CustomerSession> {
   return resolveCustomerSession(new Request(requestUrl(requestHeaders), { headers: requestHeaders }));
 }
 
-export async function requireWorkspaceFeature(
+function publicPreviewSession(session: CustomerSession): CustomerSession {
+  return {
+    ...session,
+    status: "signed-out",
+    userId: null,
+    organizationId: null,
+    organizationName: null,
+    organizationRole: null,
+    userName: null,
+    userEmail: null,
+    tier: "preview",
+    businessVerification: "unverified",
+    features: featuresForTier("preview"),
+    principal: null,
+    isDemo: false,
+    isPlatformAdmin: false
+  };
+}
+
+/**
+ * Resolve a route against the normal organization entitlements while allowing
+ * selected value-led pages to render a deliberately redacted public sample.
+ */
+export async function getWorkspaceFeatureSession(
   feature: WorkspaceFeature,
-  options: { allowIncompleteOnboarding?: boolean; signedOutRedirectTo?: string } = {}
-): Promise<CustomerSession & { principal: NonNullable<CustomerSession["principal"]> }> {
+  options: WorkspaceFeatureOptions = {}
+): Promise<CustomerSession> {
   const session = await getWorkspaceSession();
+  const shouldUsePublicPreview = options.allowPublicPreview && (
+    options.forcePublicPreview
+    || session.status === "signed-out"
+    || session.status === "misconfigured"
+  );
+  if (shouldUsePublicPreview) {
+    const preview = publicPreviewSession(session);
+    if (preview.features.includes(feature)) return preview;
+  }
+
   if (session.status === "misconfigured") redirect(exportPanelPath("/sign-in?reason=configuration"));
   if (session.status === "signed-out") {
     const returnTo = options.signedOutRedirectTo?.startsWith("/") ? options.signedOutRedirectTo : undefined;
-    redirect(returnTo ? exportPanelPath(`/sign-in?redirect_url=${encodeURIComponent(exportPanelPath(returnTo))}`) : exportPanelPath("/sign-in"));
+    redirect(exportPanelPath(returnTo ? `/sign-in?redirect_url=${encodeURIComponent(exportPanelPath(returnTo))}` : "/sign-in"));
   }
   if (session.status === "needs-organization") redirect(exportPanelPath("/onboarding"));
   if (session.status === "needs-onboarding" && !options.allowIncompleteOnboarding) redirect(exportPanelPath("/onboarding"));
   if (!session.features.includes(feature)) redirect(exportPanelPath(`/plans?feature=${encodeURIComponent(feature)}`));
+  return session;
+}
+
+export async function requireWorkspaceFeature(
+  feature: WorkspaceFeature,
+  options: WorkspaceFeatureOptions = {}
+): Promise<CustomerSession & { principal: NonNullable<CustomerSession["principal"]> }> {
+  const session = await getWorkspaceFeatureSession(feature, options);
   if (!session.principal) redirect(exportPanelPath("/onboarding"));
   return session as CustomerSession & { principal: NonNullable<CustomerSession["principal"]> };
 }

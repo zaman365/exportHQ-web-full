@@ -56,6 +56,7 @@ import {
 } from "./settings-data";
 import { HintButton } from "../_components/hint-button";
 import { WorkspaceAccountControl } from "../_components/account-controls";
+import { exportPanelPath } from "../_lib/export-panel-paths";
 
 const storageKey = "exporthq.workspace-settings.v1";
 
@@ -401,7 +402,7 @@ export default function SettingsClient({
 
   function chooseSection(next: SettingsSection) {
     setSection(next);
-    window.history.pushState(null, "", `/settings#${next}`);
+    window.history.pushState(null, "", exportPanelPath(`/settings#${next}`));
   }
 
   function newAudit(action: string, category: AuditEvent["category"], detail: string): AuditEvent {

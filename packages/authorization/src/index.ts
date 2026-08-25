@@ -18,11 +18,12 @@ export type SubscriptionTier = "preview" | "explore" | "launch" | "scale" | "man
 export type BusinessVerificationStatus = "unverified" | "pending" | "verified";
 export type TrustGatedAccess = "public" | "member" | "full";
 export type MarketIntelligenceAccess = TrustGatedAccess;
-export type ReadinessAccess = Exclude<TrustGatedAccess, "public">;
+export type ReadinessAccess = TrustGatedAccess;
 
 export type WorkspaceFeature =
   | "home"
   | "learning"
+  | "settings"
   | "onboarding"
   | "plans"
   | "inbox"
@@ -54,15 +55,19 @@ export interface SubscriptionDefinition {
   features: readonly WorkspaceFeature[];
 }
 
-const previewFeatures = ["home", "learning"] as const satisfies readonly WorkspaceFeature[];
-const exploreFeatures = [
-  ...previewFeatures,
-  "onboarding",
+const previewFeatures = [
+  "home",
+  "learning",
   "plans",
   "readiness",
   "markets",
   "opportunities",
   "export-studio"
+] as const satisfies readonly WorkspaceFeature[];
+const exploreFeatures = [
+  ...previewFeatures,
+  "settings",
+  "onboarding"
 ] as const satisfies readonly WorkspaceFeature[];
 const launchFeatures = [
   ...exploreFeatures,
@@ -181,11 +186,11 @@ export function resolveMarketIntelligenceAccess(input: {
 }
 
 export function resolveReadinessAccess(input: {
-  authenticated: true;
+  authenticated: boolean;
   businessVerification: BusinessVerificationStatus;
   tier: SubscriptionTier;
 }): ReadinessAccess {
-  return resolveTrustGatedAccess(input) === "full" ? "full" : "member";
+  return resolveTrustGatedAccess(input);
 }
 
 export interface CustomerPrincipal {
