@@ -16,7 +16,9 @@ export const dynamic = "force-dynamic";
 const websiteUrl =
   process.env.EXPORTHQ_WEB_URL ??
   process.env.NEXT_PUBLIC_WEB_URL ??
-  "http://localhost:3103";
+  (process.env.NODE_ENV === "production"
+    ? "https://exporthq-web.zaman-ase365.workers.dev"
+    : "http://localhost:3103");
 
 function Sidebar({ websiteUrl }: { websiteUrl: string }) {
   return (

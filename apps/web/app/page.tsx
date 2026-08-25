@@ -33,7 +33,11 @@ import { Console } from "./_components/console";
 import { SiteHeader } from "./_components/site-header";
 import { Wordmark } from "./_components/brand";
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3001";
+const appUrl =
+  process.env.NEXT_PUBLIC_APP_URL ??
+  (process.env.NODE_ENV === "production"
+    ? "https://exporthq-app.zaman-ase365.workers.dev"
+    : "http://localhost:3001");
 
 const serviceRibbon = [
   "Export readiness",

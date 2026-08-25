@@ -7,7 +7,10 @@ const ownerPermissions: Permission[] = [
 ];
 
 function isDemoMode() {
-  return process.env.NODE_ENV !== "production" && process.env.EXPORTHQ_DEMO_MODE !== "false";
+  return (
+    process.env.EXPORTHQ_DEMO_MODE === "true" ||
+    (process.env.NODE_ENV !== "production" && process.env.EXPORTHQ_DEMO_MODE !== "false")
+  );
 }
 
 export async function getCustomerPrincipal(): Promise<CustomerPrincipal> {
