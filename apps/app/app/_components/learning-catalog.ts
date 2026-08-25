@@ -7,6 +7,7 @@ export type LearningCategoryId =
   | "workflows"
   | "actions"
   | "markets"
+  | "trade-operations"
   | "compliance"
   | "collaboration"
   | "settings";
@@ -37,6 +38,7 @@ export const learningCategories: readonly LearningCategory[] = [
   { id: "workflows", label: "Decisions & ideas", description: "Structured choices, opportunity triage, and record creation." },
   { id: "actions", label: "Attention & actions", description: "Signals, capture, requests, personal priorities, ownership, blockers, due dates, and next steps." },
   { id: "markets", label: "Markets & opportunities", description: "Country-product fit, evidence, entry routes, buyer signals, and validation plans." },
+  { id: "trade-operations", label: "Export operations", description: "Export Lanes, economics, buyers, deals, providers, finance, shipments, payments, and clusters." },
   { id: "compliance", label: "Compliance & evidence", description: "Requirements, sources, files, reviews, and expiry." },
   { id: "collaboration", label: "Teams & collaboration", description: "Members, specialists, handoffs, and accountability." },
   { id: "settings", label: "Settings & security", description: "Integrations, access, audit history, and data portability." }
@@ -44,10 +46,10 @@ export const learningCategories: readonly LearningCategory[] = [
 
 export const learningCatalog: readonly LearningResource[] = [
   {
-    id: "trevv-tour",
-    title: "Take the TREVV workspace tour",
+    id: "exportpanel-tour",
+    title: "Take the ExportPanel workspace tour",
     summary: "Learn the rail, dashboard, Attention Center, Inbox, My Work, waiting queue, blueprints, and settings in one guided pass.",
-    content: "TREVV keeps plans, evidence, owners, and decisions in one operational workspace. Start with the Dashboard for orientation, use Attention Center to understand cross-project pressure, use Inbox to capture and triage, turn commitments into a focused day in My Work, use Waiting for work that needs a person, and use Blueprints when a process should be repeatable.",
+    content: "ExportPanel keeps plans, evidence, owners, and decisions in one operational workspace. Start with the Dashboard for orientation, use Attention Center to understand cross-project pressure, use Inbox to capture and triage, turn commitments into a focused day in My Work, use Waiting for work that needs a person, and use Blueprints when a process should be repeatable.",
     category: "getting-started",
     kind: "tutorial",
     minutes: 6,
@@ -150,7 +152,7 @@ export const learningCatalog: readonly LearningResource[] = [
     id: "market-opportunity-index",
     title: "Use the country × product opportunity index",
     summary: "Compare specific export lanes instead of treating an entire country as one opportunity.",
-    content: "TREVV ranks a product in a destination—not a country by itself. The index combines observed destination demand, Bangladesh supply fit, route practicality and evidence confidence. Use it to create a shortlist for validation, not as a promise of sales.",
+    content: "ExportPanel ranks a product in a destination—not a country by itself. The index combines observed destination demand, Bangladesh supply fit, route practicality and evidence confidence. Use it to create a shortlist for validation, not as a promise of sales.",
     category: "markets",
     kind: "tutorial",
     minutes: 5,
@@ -160,7 +162,7 @@ export const learningCatalog: readonly LearningResource[] = [
   },
   {
     id: "market-fit-score",
-    title: "Understand the TREVV Fit score",
+    title: "Understand the ExportPanel Fit score",
     summary: "A transparent prioritization signal that combines demand, origin fit, route practicality and confidence.",
     content: "A high fit score means the available evidence supports spending validation time on that lane. It does not predict revenue. Compare the underlying demand, origin fit, evidence date, barriers and your own product readiness before committing resources.",
     category: "markets",
@@ -172,7 +174,7 @@ export const learningCatalog: readonly LearningResource[] = [
     id: "market-evidence",
     title: "Follow the market evidence trail",
     summary: "See the source, data period, metric and review date behind an opportunity.",
-    content: "TREVV keeps trade signals attached to their source and period. Open the evidence trail to distinguish observed imports from TREVV's interpretation. Older or medium-confidence evidence should trigger fresh validation before commercial action.",
+    content: "ExportPanel keeps trade signals attached to their source and period. Open the evidence trail to distinguish observed imports from ExportPanel's interpretation. Older or medium-confidence evidence should trigger fresh validation before commercial action.",
     category: "markets",
     kind: "reference",
     minutes: 3,
@@ -359,7 +361,7 @@ export const learningCatalog: readonly LearningResource[] = [
   },
   {
     id: "attention-ranking",
-    title: "Understand TREVV signal ranking",
+    title: "Understand ExportPanel signal ranking",
     summary: "Ranking combines consequence, urgency, dependency pressure, and project health instead of sorting by colour alone.",
     content: "Criticality establishes the consequence baseline. Needs-you, blocked, overdue, stale, and waiting conditions add operational pressure. Overdue duration and the related project's health add context. The score explains ordering; it does not replace human judgment, and the evidence trail remains authoritative.",
     category: "actions",
@@ -424,7 +426,7 @@ export const learningCatalog: readonly LearningResource[] = [
     id: "my-work-focus",
     title: "Plan three outcomes and protect the time",
     summary: "Plan my day recommends a small set of actionable, high-value outcomes and a focus-time estimate.",
-    content: "TREVV excludes blocked and completed work, then weighs urgency, priority, review state, due time, and estimated effort. Treat the recommendation as a starting point: star or remove items until the plan fits your real capacity, then use a 25-minute focus sprint to move one outcome without losing context.",
+    content: "ExportPanel excludes blocked and completed work, then weighs urgency, priority, review state, due time, and estimated effort. Treat the recommendation as a starting point: star or remove items until the plan fits your real capacity, then use a 25-minute focus sprint to move one outcome without losing context.",
     category: "actions",
     kind: "tutorial",
     minutes: 3,
@@ -455,8 +457,8 @@ export const learningCatalog: readonly LearningResource[] = [
   {
     id: "inbox-quick-capture",
     title: "Capture first, clarify just enough",
-    summary: "Record the thought, choose its type and Hub, then let TREVV route Tasks and Ideas to their real workflow.",
-    content: "Quick Capture should take seconds. Use Task for an observable next step, Idea for an opportunity, Link for a reference, and Note for context. A Hub adds useful scope without forcing a full record. TREVV suggests types and dates from simple language, but you remain in control.",
+    summary: "Record the thought, choose its type and Hub, then let ExportPanel route Tasks and Ideas to their real workflow.",
+    content: "Quick Capture should take seconds. Use Task for an observable next step, Idea for an opportunity, Link for a reference, and Note for context. A Hub adds useful scope without forcing a full record. ExportPanel suggests types and dates from simple language, but you remain in control.",
     category: "actions",
     kind: "tutorial",
     minutes: 3,
@@ -747,7 +749,7 @@ export const learningCatalog: readonly LearningResource[] = [
     id: "readiness-command-center",
     title: "Run the export readiness command center",
     summary: "Build a conditional path from Bangladesh business foundations to one product, destination and shipment route.",
-    content: "The assessment is not the onboarding brief and it is not a universal certificate. TREVV selects checkpoints from your business model, product family, target market and sales route. Record the current position, attach evidence, resolve blockers and rebuild the path whenever the commercial context changes.",
+    content: "The assessment is not the onboarding brief and it is not a universal certificate. ExportPanel selects checkpoints from your business model, product family, target market and sales route. Record the current position, attach evidence, resolve blockers and rebuild the path whenever the commercial context changes.",
     category: "compliance",
     kind: "tutorial",
     minutes: 7,
@@ -966,6 +968,103 @@ export const learningCatalog: readonly LearningResource[] = [
     minutes: 5,
     keywords: ["website", "domain", "catalogue", "localization", "trademark", "IT agency"],
     steps: ["Publish a verifiable business identity and company-domain contact route.", "Build controlled capability and product pages.", "Localize priority assets and clarify brand, image, design and software rights."]
+  },
+  {
+    id: "export-lane",
+    title: "Run one Export Lane",
+    summary: "Connect one controlled product, destination, buyer segment, offer, evidence trail, shipment and payment path.",
+    content: "An Export Lane is ExportPanel's commercial spine. It prevents market research, readiness, documents and buyer work from drifting apart. Change the lane context only when the product, destination, channel or buyer segment genuinely changes; otherwise keep decisions and evidence on the same record.",
+    category: "trade-operations",
+    kind: "tutorial",
+    minutes: 5,
+    keywords: ["export lane", "studio", "product", "country", "commercial"],
+    steps: ["Confirm the controlled product and HS code.", "Confirm the destination and buyer segment.", "Review readiness and blockers.", "Approve economics and the next commercial gate.", "Keep shipment and proceeds on the same lane."],
+    featured: true
+  },
+  {
+    id: "landed-economics",
+    title: "Model export economics without hiding assumptions",
+    summary: "Compare seller cost, quote, target margin and destination landed value before approving an offer.",
+    content: "Treat every figure as an assumption with an owner and review date. Model ex-factory, packaging, inland, testing, documents, freight, insurance, commissions, finance and FX risk. Duties and destination tax depend on classification, valuation, preference, importer and shipment date; confirm them before contracting.",
+    category: "trade-operations",
+    kind: "tutorial",
+    minutes: 7,
+    keywords: ["FOB", "CIF", "DDP", "costing", "margin", "landed cost"],
+    steps: ["Enter the sellable quantity and product cost.", "Choose the proposed Incoterm.", "Add route, finance and commission assumptions.", "Compare gross margin with the lane target.", "Confirm tariff and tax with a qualified route."],
+    featured: true
+  },
+  {
+    id: "buyer-trust-passport",
+    title: "Use the Buyer Trust Passport",
+    summary: "Share a controlled projection of verified identity, capacity and evidence without exposing the private workspace.",
+    content: "A Trust Passport is not a certification. It is a dated, permission-safe buyer projection showing the exporter identity, controlled capabilities, current evidence checks and clear caveats. Refresh it when capacity, product, certificates or ownership changes.",
+    category: "trade-operations",
+    kind: "reference",
+    minutes: 4,
+    keywords: ["trust passport", "buyer", "verification", "capacity", "evidence"]
+  },
+  {
+    id: "deal-room",
+    title: "Control a buyer deal room",
+    summary: "Keep specifications, samples, quotations, approvals and commercial decisions on one buyer opportunity.",
+    content: "The deal room records what was shared, which version controls, who approved it and what must happen next. A completed milestone means evidence exists; it does not mean a buyer accepted the offer unless that acceptance is recorded.",
+    category: "trade-operations",
+    kind: "tutorial",
+    minutes: 5,
+    keywords: ["deal room", "quotation", "sample", "buyer", "approval"],
+    steps: ["Confirm the buyer entity, request and controlling specification.", "Attach current evidence and prepare the sample or quotation gate.", "Record the owner, approval, due date and buyer response for every milestone."]
+  },
+  {
+    id: "provider-matching",
+    title: "Choose qualified export support",
+    summary: "Compare capability, credentials, response expectations, fee basis and disclosed commissions before requesting a match.",
+    content: "ExportPanel separates quality ranking from commercial placement. Verify the provider's current licence, scope, insurance and conflict position for the exact work. A request asks Export HQ to coordinate a match; it is not a booking or professional engagement.",
+    category: "trade-operations",
+    kind: "reference",
+    minutes: 4,
+    keywords: ["provider", "lawyer", "bank", "laboratory", "freight", "commission"]
+  },
+  {
+    id: "trade-finance-preparation",
+    title: "Prepare a trade-finance request",
+    summary: "Build a clean buyer, order, margin, evidence and proceeds file before approaching a bank or finance partner.",
+    content: "ExportPanel can identify missing preparation and compare product types, but only an authorized provider can assess and approve finance. Keep the order, buyer verification, production budget, security, shipment documents and repayment source consistent.",
+    category: "trade-operations",
+    kind: "tutorial",
+    minutes: 6,
+    keywords: ["trade finance", "pre-shipment", "post-shipment", "bank", "working capital"],
+    steps: ["Confirm the buyer, order, payment term and expected proceeds route.", "Reconcile the production budget, margin and requested finance purpose.", "Prepare the current evidence pack before requesting an authorized-provider comparison."]
+  },
+  {
+    id: "shipment-control",
+    title: "Operate the shipment control path",
+    summary: "Track the route, packaging, reconciled documents, cargo handover, buyer delivery and export proceeds as one chain.",
+    content: "A green shipment status requires more than a booking. Confirm cut-offs, marks, weights, inspection, origin, transport, insurance, bank and customs data. Assign an owner to every exception and continue tracking until proceeds are realized.",
+    category: "trade-operations",
+    kind: "tutorial",
+    minutes: 6,
+    keywords: ["shipment", "freight", "customs", "documents", "proceeds", "ETA"],
+    steps: ["Confirm the route, cut-offs, packaging and named handoff owners.", "Reconcile commercial, origin, transport, inspection and bank documents.", "Track delivery exceptions and export proceeds until the payment is realized."]
+  },
+  {
+    id: "policy-radar",
+    title: "Read lane-specific policy alerts",
+    summary: "Distinguish an applicable rule from a monitored scenario and a confirmed non-applicable screen.",
+    content: "Policy alerts are attached to a product, destination and review date. Open the source, read the applicability reason and update the commercial scenario when the shipment date, preference, HS code or product scope changes.",
+    category: "trade-operations",
+    kind: "reference",
+    minutes: 4,
+    keywords: ["policy", "LDC", "GSP", "CBAM", "BSW", "tariff"]
+  },
+  {
+    id: "export-clusters",
+    title: "Use an SME export cluster safely",
+    summary: "Share selected preparation or logistics costs without confusing separate businesses, evidence or obligations.",
+    content: "A cluster can coordinate training, testing, audits, capacity, orders or containers. Each exporter remains responsible for its identity, product, contract, documents and payment. Agree governance, confidentiality, allocation, quality and failure rules before combining activity.",
+    category: "trade-operations",
+    kind: "tip",
+    minutes: 5,
+    keywords: ["cluster", "SME", "container", "shared testing", "capacity"]
   }
 ];
 

@@ -163,7 +163,7 @@ function workFromRun(run: BlueprintRun): WorkItem | null {
       run.blueprintId === "manual-handoff" ? "Inbox capture" : "Blueprint run",
     relatedEntity: run.relatedEntity,
     createdBy:
-      run.blueprintId === "manual-handoff" ? "Nadia Rahman" : "TREVV Blueprint",
+      run.blueprintId === "manual-handoff" ? "Nadia Rahman" : "ExportPanel Blueprint",
     followers: [],
     views:
       run.ownerName === "Nadia Rahman" ? ["assigned", "created"] : ["assigned"],
@@ -485,7 +485,7 @@ export default function MyWorkClient({ canManage }: { canManage: boolean }) {
     <>
       <section className="workspace-page-head my-work-head">
         <div>
-          <p>TREVV / MY WORK</p>
+          <p>ExportPanel / MY WORK</p>
           <h1>
             Make progress before the day gets noisy.{" "}
             <HintButton topic="my-work-overview" />

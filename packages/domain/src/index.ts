@@ -1,6 +1,7 @@
 export type Responsibility = "customer" | "export_hq" | "third_party";
 export * from "./market-opportunities";
 export * from "./export-readiness";
+export * from "./export-operating-system";
 export type TaskStatus =
   | "todo"
   | "in_progress"

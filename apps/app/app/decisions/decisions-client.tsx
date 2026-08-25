@@ -174,7 +174,7 @@ export default function DecisionsClient({ canManage }: { canManage: boolean }) {
   }
 
   return <>
-    <section className="workspace-page-head"><div><p>TREVV / WORKFLOWS / DECISIONS</p><h1>Make the reasoning reusable. <HintButton topic="decisions-overview" /></h1><span>Compare viable options, connect evidence, capture approval, and preserve what changed without losing decision history.</span></div><button type="button" className="button button--primary" onClick={() => setCreateOpen(true)} disabled={!canManage}><Plus size={16} /> New decision</button></section>
+    <section className="workspace-page-head"><div><p>ExportPanel / WORKFLOWS / DECISIONS</p><h1>Make the reasoning reusable. <HintButton topic="decisions-overview" /></h1><span>Compare viable options, connect evidence, capture approval, and preserve what changed without losing decision history.</span></div><button type="button" className="button button--primary" onClick={() => setCreateOpen(true)} disabled={!canManage}><Plus size={16} /> New decision</button></section>
 
     <section className="workflow-summary" aria-label="Decision summary"><div><FileQuestion size={18} /><span><strong>{counts.open}</strong><small>open decisions</small></span></div><div><Users size={18} /><span><strong>{counts.review}</strong><small>in review</small></span></div><div><CheckCircle2 size={18} /><span><strong>{counts.approved}</strong><small>approved directions</small></span></div><div><FileCheck2 size={18} /><span><strong>{counts.evidence}</strong><small>linked evidence items</small></span></div></section>
 

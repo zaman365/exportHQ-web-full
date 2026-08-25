@@ -34,8 +34,8 @@ export interface WorkGroup {
   items: WorkItem[];
 }
 
-export const myWorkStorageKey = "trevv.my-work.v1";
-export const myWorkFocusStorageKey = "trevv.my-work.focus.v1";
+export const myWorkStorageKey = "exportpanel.my-work.v1";
+export const myWorkFocusStorageKey = "exportpanel.my-work.focus.v1";
 
 export const workStatusLabels: Record<WorkStatus, string> = {
   todo: "Ready",

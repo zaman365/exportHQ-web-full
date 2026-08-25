@@ -6,8 +6,8 @@ import { subscriptionCatalog, type SubscriptionTier } from "@exporthq/authorizat
 import { Logo } from "@exporthq/ui";
 
 export const metadata: Metadata = {
-  title: "TREVV plans — Export HQ",
-  description: "Compare Launch, Scale, and Managed access to the TREVV workspace."
+  title: "ExportPanel plans — Export HQ",
+  description: "Compare Launch, Scale, and Managed access to the ExportPanel workspace."
 };
 
 const planCopy: ReadonlyArray<{
@@ -20,13 +20,13 @@ const planCopy: ReadonlyArray<{
     tier: "launch",
     icon: Rocket,
     bestFor: "Preparing or proving a first priority market",
-    highlights: ["Readiness and requirements", "Evidence and documents", "Decisions, Inbox, My Work, and Waiting"]
+    highlights: ["Readiness, evidence, and requirements", "Export Studio economics and deal basics", "Decisions, Inbox, My Work, and Waiting"]
   },
   {
     tier: "scale",
     icon: Sparkles,
     bestFor: "Teams coordinating several projects or markets",
-    highlights: ["Everything in Launch", "Attention Center and Blueprints", "Team, market, buyer, audit, and export controls"]
+    highlights: ["Everything in Launch", "Buyer cohorts, finance readiness, and shipment control", "Team, market, audit, and multi-lane export controls"]
   },
   {
     tier: "managed",
@@ -40,9 +40,9 @@ export default function PlansPage() {
   const configured = Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
   return (
     <main className="plans-page">
-      <header className="plans-topbar"><a href="https://export-hq.com"><Logo /></a><div><Link href="/preview"><ArrowLeft size={14} /> Preview TREVV</Link><Link href="/sign-in">Sign in</Link></div></header>
+      <header className="plans-topbar"><a href="https://export-hq.com"><Logo /></a><div><Link href="/preview"><ArrowLeft size={14} /> Preview ExportPanel</Link><Link href="/sign-in">Sign in</Link></div></header>
       <section className="plans-hero">
-        <p>TREVV ACCESS</p>
+        <p>ExportPanel ACCESS</p>
         <h1>Start with the work in front of you.<br />Expand when the operation does.</h1>
         <span>Every tier is enforced on the server by organization and role. Upgrading adds capability without moving your evidence, decisions, or action history.</span>
       </section>

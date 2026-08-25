@@ -110,11 +110,11 @@ function evidence(
   return { label, publisher: "World Bank WITS / UN Comtrade", url, period, metric, checkedAt };
 }
 
-export const MARKET_INTELLIGENCE_METHOD_VERSION = "TREVV Opportunity Fit v1.0";
+export const MARKET_INTELLIGENCE_METHOD_VERSION = "ExportPanel Opportunity Fit v1.0";
 export const MARKET_INTELLIGENCE_UPDATED_AT = checkedAt;
 
 /**
- * A versioned starter catalog for the Bangladesh-origin demo. Scores are TREVV
+ * A versioned starter catalog for the Bangladesh-origin demo. Scores are ExportPanel
  * decision-support signals, not trade forecasts. Each score combines observed
  * destination demand, an existing Bangladesh supply signal, route practicality,
  * and evidence confidence. Production ingestion can replace these seed rows

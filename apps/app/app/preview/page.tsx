@@ -3,6 +3,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   BookOpenCheck,
+  Calculator,
   CheckCircle2,
   CircleGauge,
   FileQuestion,
@@ -13,14 +14,16 @@ import {
   ListChecks,
   LockKeyhole,
   Radar,
+  Route,
   ShieldCheck,
+  Ship,
   Sparkles
 } from "lucide-react";
 import { Logo } from "@exporthq/ui";
 
 export const metadata: Metadata = {
-  title: "Preview TREVV — Export HQ",
-  description: "Explore a safe, limited view of the TREVV export operating workspace."
+  title: "Preview ExportPanel — Export HQ",
+  description: "Explore a safe, limited view of the ExportPanel export operating workspace."
 };
 
 const lockedDestinations = [
@@ -30,7 +33,7 @@ const lockedDestinations = [
   ["Decisions", FileQuestion]
 ] as const;
 
-export default function TrevvPreviewPage() {
+export default function ExportPanelPreviewPage() {
   return (
     <div className="preview-shell">
       <aside className="preview-sidebar">
@@ -56,7 +59,7 @@ export default function TrevvPreviewPage() {
         </header>
         <div className="preview-content" id="dashboard">
           <section className="preview-welcome">
-            <div><p>TREVV / HOME</p><h1>Dashboard</h1><span>See the signals, decisions, and next actions that keep export work moving.</span></div>
+            <div><p>ExportPanel / HOME</p><h1>Dashboard</h1><span>See the signals, decisions, and next actions that keep export work moving.</span></div>
             <Link href="/sign-up" className="button button--primary">Build my workspace <ArrowRight size={15} /></Link>
           </section>
 
@@ -72,6 +75,19 @@ export default function TrevvPreviewPage() {
             <article><span>EVIDENCE READY</span><strong>74%</strong><small>Across one target market</small></article>
           </section>
 
+          <section className="preview-studio-card">
+            <div className="preview-studio-card__copy">
+              <p>NEW / EXPORT STUDIO</p>
+              <h2>Connect one opportunity all the way to export payment.</h2>
+              <span>See how ExportPanel links readiness, evidence, buyer work, offer economics, delivery and proceeds through one Export Lane.</span>
+              <div><span><Calculator size={14} /> Viable economics</span><span><Route size={14} /> Owned next gates</span><span><Ship size={14} /> Shipment-to-payment control</span></div>
+              <Link href="/sign-up">Build my first lane <ArrowRight size={14} /></Link>
+            </div>
+            <div className="preview-studio-card__lane" aria-label="Sample export lane">
+              {["Opportunity", "Readiness", "Evidence", "Buyer", "Offer", "Shipment", "Payment"].map((stage, index) => <span className={index < 2 ? "is-complete" : index === 2 ? "is-active" : ""} key={stage}><i>{index < 2 ? "✓" : index + 1}</i><b>{stage}</b></span>)}
+            </div>
+          </section>
+
           <div className="preview-grid">
             <section className="preview-card">
               <header><span><p>NEXT ACTIONS</p><h2>What needs attention</h2></span><ShieldCheck size={19} /></header>
@@ -79,7 +95,7 @@ export default function TrevvPreviewPage() {
               <div className="preview-action"><CheckCircle2 size={18} /><span><strong>Review evidence checklist</strong><small>Germany readiness · 3 sources linked</small></span><b>Review</b></div>
             </section>
             <section className="preview-card preview-learning" id="learning">
-              <header><span><p>LEARNING CENTER</p><h2>Understand TREVV as you work</h2></span><BookOpenCheck size={19} /></header>
+              <header><span><p>LEARNING CENTER</p><h2>Understand ExportPanel as you work</h2></span><BookOpenCheck size={19} /></header>
               <p>Contextual hints explain scores, states, evidence, and recommended actions. The complete Learning Center organizes every tutorial, tip, and workflow guide.</p>
               <Link href="/sign-up">Unlock guided onboarding <ArrowRight size={14} /></Link>
             </section>
@@ -88,7 +104,7 @@ export default function TrevvPreviewPage() {
           <section className="preview-locked">
             <span><FolderLock size={23} /></span>
             <div><p>SUBSCRIPTION-GATED WORKSPACE</p><h2>Projects, evidence, collaboration, and managed execution appear after onboarding.</h2><small>Every page is checked on the server against your organization, role, onboarding status, and subscription—not just hidden in the navigation.</small></div>
-            <Link href="/plans">View TREVV plans <ArrowRight size={15} /></Link>
+            <Link href="/plans">View ExportPanel plans <ArrowRight size={15} /></Link>
           </section>
         </div>
       </main>

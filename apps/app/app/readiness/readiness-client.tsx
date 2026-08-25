@@ -79,7 +79,7 @@ const statusCredit: Readonly<Record<ReadinessStatus, number | null>> = {
   not_applicable: null
 };
 
-const evidenceDbName = "trevv-evidence-drafts-v1";
+const evidenceDbName = "exportpanel-evidence-drafts-v1";
 
 function openEvidenceDb(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -226,7 +226,7 @@ export default function ReadinessClient({
   tierName: string;
   verification: BusinessVerificationStatus;
 }) {
-  const storageKey = `trevv.readiness.v1.${businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
+  const storageKey = `exportpanel.readiness.v1.${businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   const [currentSection, setCurrentSection] = useState<ReadinessSectionId>(initialProgress?.currentSection ?? "business");
   const [responses, setResponses] = useState<Record<string, ReadinessStatus>>(initialProgress?.responses ?? {});
   const [notes, setNotes] = useState<Record<string, string>>(initialProgress?.notes ?? {});
@@ -339,7 +339,7 @@ export default function ReadinessClient({
 
   return <div className="readiness-page">
     <section className="readiness-hero">
-      <div><p>MANAGE / EXPORT READINESS</p><div className="readiness-title"><h1>Your route from blocker to export-ready.</h1><HintButton topic="readiness-command-center" /></div><span>TREVV checks Bangladesh business foundations, your exact product, the destination market and the shipment path—then connects every gap to knowledge or qualified help.</span></div>
+      <div><p>MANAGE / EXPORT READINESS</p><div className="readiness-title"><h1>Your route from blocker to export-ready.</h1><HintButton topic="readiness-command-center" /></div><span>ExportPanel checks Bangladesh business foundations, your exact product, the destination market and the shipment path—then connects every gap to knowledge or qualified help.</span></div>
       <div className="readiness-hero__score"><CircleGauge size={28} /><span><small>CURRENT READINESS</small><strong>{score.overall}%</strong><em>{score.blockers.length} blockers open</em></span></div>
     </section>
 
@@ -393,18 +393,18 @@ export default function ReadinessClient({
               <div className="readiness-checkpoint__aids" aria-label={`Help options for ${item.title}`}><Link className="readiness-aid" href={`/learn?topic=${item.learnTopic}`} title="Open the knowledge path" aria-label={`Learn how to resolve ${item.title}`}><BookOpenCheck size={15} /></Link><button className="readiness-aid" type="button" onClick={() => setProviderItem(item)} title="Find qualified professional help" aria-label={`Find qualified help for ${item.title}`}><Handshake size={15} />{access === "member" && <LockKeyhole size={8} />}</button></div>
             </article>;
           })}
-          {!visible.length && <div className="readiness-empty"><CheckCircle2 size={23} /><strong>No checkpoints apply in this section.</strong><p>TREVV removed them based on the current business and product context.</p></div>}
+          {!visible.length && <div className="readiness-empty"><CheckCircle2 size={23} /><strong>No checkpoints apply in this section.</strong><p>ExportPanel removed them based on the current business and product context.</p></div>}
         </div>
       </section>
 
       {selected && <aside className="readiness-detail" aria-label={`${selected.title} details`}>
         <header><div><small>{selected.priority} checkpoint</small><h2>{selected.title}</h2></div><button type="button" aria-label="Close details" onClick={() => setSelectedId("")}><X size={17} /></button></header>
         <div className="readiness-detail__body">
-          <section className="readiness-detail__check"><p>WHAT TREVV IS CHECKING</p><strong>{selected.checkpoint}</strong><label><span>Your position</span><select value={responses[selected.id] ?? "not_started"} onChange={(event) => updateStatus(selected.id, event.target.value as ReadinessStatus)}>{statusOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label></section>
+          <section className="readiness-detail__check"><p>WHAT ExportPanel IS CHECKING</p><strong>{selected.checkpoint}</strong><label><span>Your position</span><select value={responses[selected.id] ?? "not_started"} onChange={(event) => updateStatus(selected.id, event.target.value as ReadinessStatus)}>{statusOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label></section>
           <div className="readiness-detail__paths"><Link href={`/learn?topic=${selected.learnTopic}`}><BookOpenCheck size={16} /><span><small>KNOWLEDGE PATH</small><strong>Understand and solve it yourself</strong></span><ArrowRight size={14} /></Link><button type="button" onClick={() => setProviderItem(selected)}><Handshake size={16} /><span><small>HELP PATH</small><strong>Find a qualified specialist</strong></span>{access === "member" ? <LockKeyhole size={13} /> : <ArrowRight size={14} />}</button></div>
           {selected.fullResolution ? <>
             <section className="readiness-playbook"><p>RESOLUTION PLAYBOOK</p><ol>{selected.fullResolution.resolution.map((step, index) => <li key={step}><span>{index + 1}</span><p>{step}</p></li>)}</ol></section>
-            <section className="readiness-evidence"><div><p>EVIDENCE TREVV EXPECTS</p><HintButton topic="readiness-product-file" /></div><ul>{selected.fullResolution.evidence.map((item) => <li key={item}><FileText size={14} />{item}</li>)}</ul><input ref={fileInput} hidden type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => { const file = event.target.files?.[0]; if (file) void addEvidence(file); event.target.value = ""; }} /><button type="button" onClick={() => fileInput.current?.click()}><Upload size={14} /> Add PDF or image <small>max 25 MB</small></button><span className="readiness-evidence__privacy"><ShieldCheck size={12} /> File stays in protected browser staging; review metadata syncs when you save.</span></section>
+            <section className="readiness-evidence"><div><p>EVIDENCE ExportPanel EXPECTS</p><HintButton topic="readiness-product-file" /></div><ul>{selected.fullResolution.evidence.map((item) => <li key={item}><FileText size={14} />{item}</li>)}</ul><input ref={fileInput} hidden type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => { const file = event.target.files?.[0]; if (file) void addEvidence(file); event.target.value = ""; }} /><button type="button" onClick={() => fileInput.current?.click()}><Upload size={14} /> Add PDF or image <small>max 25 MB</small></button><span className="readiness-evidence__privacy"><ShieldCheck size={12} /> File stays in protected browser staging; review metadata syncs when you save.</span></section>
             {evidence.filter((item) => item.requirementId === selected.id).map((item) => <article className="readiness-file" key={item.id}><span><FileCheck2 size={17} /></span><div><strong>{item.fileName}</strong><small>{formatBytes(item.byteSize)} · {item.status.replaceAll("_", " ")}</small><p>{item.feedback}</p><div><button type="button" onClick={() => void openEvidence(item)}>Open</button><button type="button" onClick={() => void removeEvidence(item)}>Remove</button></div></div></article>)}
           </> : <section className="readiness-locked"><LockKeyhole size={22} /><p>FULL RESOLUTION LAYER</p><h3>Open the exact steps, evidence and expert route</h3><ul><li><Check size={13} /> Requirement-specific resolution plan</li><li><Check size={13} /> Document checklist and evidence review</li><li><Check size={13} /> Qualified lawyer, bank, lab or agency matching</li></ul><div><Link href="/verify-business">Verify business <ArrowRight size={14} /></Link><Link href="/plans">Upgrade</Link></div></section>}
           <section className="readiness-notes"><p>PRIVATE WORKING NOTE</p><textarea value={notes[selected.id] ?? ""} onChange={(event) => setNotes((current) => ({ ...current, [selected.id]: event.target.value.slice(0, 1000) }))} placeholder="Record the owner, gap, response from an authority, or next follow-up…" /></section>

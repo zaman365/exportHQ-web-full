@@ -47,8 +47,8 @@ export interface CustomerSession {
   configurationMessage?: string;
 }
 
-type TrevvOrganizationMetadata = {
-  trevv?: {
+type ExportPanelOrganizationMetadata = {
+  exportPanel?: {
     onboardingComplete?: boolean;
     businessVerification?: BusinessVerificationStatus;
   };
@@ -65,7 +65,7 @@ function configuredAuthorizedParties(): string[] {
     .filter(Boolean);
   return configured?.length
     ? configured
-    : ["https://trevv.export-hq.com", "http://localhost:3001"];
+    : ["https://export-hq.com", "http://localhost:3001"];
 }
 
 function clerkConfiguration() {
@@ -168,10 +168,10 @@ export async function resolveCustomerSession(request: Request): Promise<Customer
   const state = await client.authenticateRequest(request, {
     acceptsToken: "session_token",
     authorizedParties: configuredAuthorizedParties(),
-    signInUrl: "/sign-in",
-    signUpUrl: "/sign-up",
-    afterSignInUrl: "/",
-    afterSignUpUrl: "/onboarding"
+    signInUrl: "/ExportPanel/sign-in",
+    signUpUrl: "/ExportPanel/sign-up",
+    afterSignInUrl: "/ExportPanel",
+    afterSignUpUrl: "/ExportPanel/onboarding"
   });
   if (!state.isAuthenticated) {
     return {
@@ -203,7 +203,7 @@ export async function resolveCustomerSession(request: Request): Promise<Customer
       organizationId: null,
       organizationName: null,
       organizationRole: null,
-      userName: [user.firstName, user.lastName].filter(Boolean).join(" ") || "TREVV member",
+      userName: [user.firstName, user.lastName].filter(Boolean).join(" ") || "ExportPanel member",
       userEmail: user.primaryEmailAddress?.emailAddress ?? null,
       tier: "explore",
       businessVerification: "unverified",
@@ -217,9 +217,9 @@ export async function resolveCustomerSession(request: Request): Promise<Customer
     userPromise,
     client.organizations.getOrganization({ organizationId })
   ]);
-  const metadata = organization.publicMetadata as TrevvOrganizationMetadata;
-  const onboardingComplete = metadata.trevv?.onboardingComplete === true;
-  const businessVerification = businessVerificationStatus(metadata.trevv?.businessVerification);
+  const metadata = organization.publicMetadata as ExportPanelOrganizationMetadata;
+  const onboardingComplete = metadata.exportPanel?.onboardingComplete === true;
+  const businessVerification = businessVerificationStatus(metadata.exportPanel?.businessVerification);
   const tier = resolveTier(auth.has);
   const principal: CustomerPrincipal = {
     kind: "customer",
@@ -234,7 +234,7 @@ export async function resolveCustomerSession(request: Request): Promise<Customer
     organizationId,
     organizationName: organization.name,
     organizationRole: auth.orgRole ?? null,
-    userName: [user.firstName, user.lastName].filter(Boolean).join(" ") || "TREVV member",
+    userName: [user.firstName, user.lastName].filter(Boolean).join(" ") || "ExportPanel member",
     userEmail: user.primaryEmailAddress?.emailAddress ?? null,
     tier,
     businessVerification,

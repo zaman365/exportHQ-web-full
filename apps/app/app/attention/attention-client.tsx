@@ -426,7 +426,7 @@ export default function AttentionClient({ canManage }: { canManage: boolean }) {
       owner: signal.owner,
       workstream: project.name,
       relatedEntity: signal.source,
-      createdBy: "TREVV Attention Center",
+      createdBy: "ExportPanel Attention Center",
       followers: signal.watchers,
       views: ["assigned", "created"],
       estimatedMinutes: signal.severity === "critical" ? 30 : 20,
@@ -454,7 +454,7 @@ export default function AttentionClient({ canManage }: { canManage: boolean }) {
     <>
       <section className="workspace-page-head attention-head">
         <div>
-          <p>TREVV / ATTENTION CENTER</p>
+          <p>ExportPanel / ATTENTION CENTER</p>
           <h1>
             Hear the signal. Move the work.{" "}
             <HintButton topic="attention-overview" />
@@ -551,7 +551,7 @@ export default function AttentionClient({ canManage }: { canManage: boolean }) {
             Why this order? <HintButton topic="attention-ranking" />
           </strong>
           <p>
-            TREVV raises work when consequence, elapsed time, dependency
+            ExportPanel raises work when consequence, elapsed time, dependency
             pressure, and project health compound—not because a badge happens to
             be red.
           </p>

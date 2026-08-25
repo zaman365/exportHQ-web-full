@@ -19,7 +19,7 @@ import { requireWorkspaceFeature } from "../_lib/session";
 import ReadinessClient from "./readiness-client";
 
 export const metadata: Metadata = {
-  title: "Export readiness — TREVV",
+  title: "Export readiness — ExportPanel",
   description: "A Bangladesh-specific, product-and-market export readiness assessment with evidence, blockers and resolution paths."
 };
 
@@ -68,8 +68,8 @@ async function loadSavedProgress(organizationId: string | null, isDemo: boolean)
   if (!organizationId || isDemo) return undefined;
   const client = getClerkClient();
   const organization = await client.organizations.getOrganization({ organizationId });
-  const metadata = organization.privateMetadata as { trevv?: { readinessAssessment?: unknown } };
-  const parsed = readinessProgressSchema.safeParse(metadata.trevv?.readinessAssessment);
+  const metadata = organization.privateMetadata as { exportPanel?: { readinessAssessment?: unknown } };
+  const parsed = readinessProgressSchema.safeParse(metadata.exportPanel?.readinessAssessment);
   return parsed.success ? parsed.data : undefined;
 }
 

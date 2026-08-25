@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { groupWorkItems, recommendFocus, workSeeds } from "./my-work-data";
 
-describe("TREVV My Work", () => {
+describe("ExportPanel My Work", () => {
   it("keeps every seeded work item uniquely addressable and actionable", () => {
     expect(new Set(workSeeds.map((item) => item.id)).size).toBe(
       workSeeds.length,

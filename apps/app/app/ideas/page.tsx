@@ -6,7 +6,7 @@ import { requireWorkspaceFeature } from "../_lib/session";
 
 export const metadata: Metadata = {
   title: "Ideas — Export HQ",
-  description: "Capture, triage, and promote TREVV opportunities."
+  description: "Capture, triage, and promote ExportPanel opportunities."
 };
 
 export const dynamic = "force-dynamic";

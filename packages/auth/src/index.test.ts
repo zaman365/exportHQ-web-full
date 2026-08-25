@@ -12,7 +12,7 @@ describe("production authentication boundary", () => {
     vi.stubEnv("CLERK_SECRET_KEY", "");
     vi.stubEnv("NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY", "");
 
-    const session = await resolveCustomerSession(new Request("https://trevv.export-hq.com/"));
+    const session = await resolveCustomerSession(new Request("https://export-hq.com/ExportPanel/"));
 
     expect(session.status).toBe("misconfigured");
     expect(session.isDemo).toBe(false);

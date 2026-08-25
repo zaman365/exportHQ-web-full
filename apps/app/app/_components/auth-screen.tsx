@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { ArrowLeft, LockKeyhole, ShieldCheck } from "lucide-react";
 import { Logo } from "@exporthq/ui";
 
@@ -38,8 +39,8 @@ export function AuthConfigurationNotice() {
       <span><LockKeyhole size={22} /></span>
       <p>ACCOUNT ACCESS</p>
       <h2>Secure sign-in is being activated.</h2>
-      <small>The public TREVV preview remains available while production identity keys are connected.</small>
-      <a className="button button--primary" href="/preview">Open the limited preview</a>
+      <small>The public ExportPanel preview remains available while production identity keys are connected.</small>
+      <Link className="button button--primary" href="/preview">Open the limited preview</Link>
     </div>
   );
 }

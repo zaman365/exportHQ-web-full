@@ -6,7 +6,7 @@ import { requireWorkspaceFeature } from "../_lib/session";
 
 export const metadata: Metadata = {
   title: "Blueprints — Export HQ",
-  description: "Reusable TREVV workflows for repeatable export operations."
+  description: "Reusable ExportPanel workflows for repeatable export operations."
 };
 
 export const dynamic = "force-dynamic";

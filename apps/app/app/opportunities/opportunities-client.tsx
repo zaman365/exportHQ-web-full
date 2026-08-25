@@ -114,7 +114,7 @@ export default function OpportunitiesClient({
 
       <div className="opportunity-workspace">
         <section className="opportunity-results">
-          <header><div><p>MATCHES</p><h2>{filtered.length} opportunity lanes</h2></div><div className="opportunity-sort-help"><span>Sorted by TREVV fit</span><HintButton topic="market-fit-score" /></div></header>
+          <header><div><p>MATCHES</p><h2>{filtered.length} opportunity lanes</h2></div><div className="opportunity-sort-help"><span>Sorted by ExportPanel fit</span><HintButton topic="market-fit-score" /></div></header>
           <div className="opportunity-list">
             {filtered.map((item) => {
               const isSelected = selected?.id === item.id;
@@ -137,10 +137,10 @@ export default function OpportunitiesClient({
         <aside className="opportunity-detail" aria-live="polite">
           {selected ? <>
             <header><div><span>{selected.target.flag}</span><p>{selected.target.name.toUpperCase()} · {selected.product.category.toUpperCase()}</p><h2>{selected.product.name}</h2><small>HS {selected.product.hsCodes.join(", ")} · {selected.trend} demand · {selected.confidence} confidence</small></div><button type="button" onClick={() => toggleShortlist(selected.id)}>{shortlist.has(selected.id) ? <BookmarkCheck size={17} /> : <Bookmark size={17} />}</button></header>
-            {selected.opportunityScore !== undefined && <div className="opportunity-detail__scores"><div className="opportunity-score-total"><CircleGauge size={24} /><span><small>TREVV FIT</small><strong>{selected.opportunityScore}</strong></span></div><ScoreBar label="Destination demand" value={selected.demandScore ?? 0} /><ScoreBar label="Bangladesh fit" value={selected.originFitScore ?? 0} /></div>}
+            {selected.opportunityScore !== undefined && <div className="opportunity-detail__scores"><div className="opportunity-score-total"><CircleGauge size={24} /><span><small>ExportPanel FIT</small><strong>{selected.opportunityScore}</strong></span></div><ScoreBar label="Destination demand" value={selected.demandScore ?? 0} /><ScoreBar label="Bangladesh fit" value={selected.originFitScore ?? 0} /></div>}
             <div className="opportunity-detail__summary"><div className="opportunity-detail__label"><p>WHY THIS MAY FIT</p><HintButton topic="market-evidence" /></div><span>{selected.memberInsight ?? selected.publicSummary}</span></div>
             {selected.fullAnalysis ? <div className="opportunity-full">
-              <section><h3><Sparkles size={15} /> Why TREVV ranks it</h3><ul>{selected.fullAnalysis.whyItRanks.map((item) => <li key={item}><Check size={13} /> {item}</li>)}</ul></section>
+              <section><h3><Sparkles size={15} /> Why ExportPanel ranks it</h3><ul>{selected.fullAnalysis.whyItRanks.map((item) => <li key={item}><Check size={13} /> {item}</li>)}</ul></section>
               <div className="opportunity-detail__columns">
                 <section><h3><UsersRound size={15} /> Likely buyers</h3><ul>{selected.fullAnalysis.buyerProfiles.map((item) => <li key={item}>{item}</li>)}</ul></section>
                 <section><h3><ArrowRight size={15} /> Entry routes</h3><ul>{selected.fullAnalysis.entryRoutes.map((item) => <li key={item}>{item}</li>)}</ul></section>

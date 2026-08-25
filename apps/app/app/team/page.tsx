@@ -6,7 +6,7 @@ import { requireWorkspaceFeature } from "../_lib/session";
 
 export const metadata: Metadata = {
   title: "Team — Export HQ",
-  description: "Ownership, capacity, specialists, and partners in TREVV."
+  description: "Ownership, capacity, specialists, and partners in ExportPanel."
 };
 
 export const dynamic = "force-dynamic";

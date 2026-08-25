@@ -1,6 +1,6 @@
 # Market intelligence system
 
-TREVV's market intelligence turns country-product trade signals into a ranked,
+ExportPanel's market intelligence turns country-product trade signals into a ranked,
 actionable starting point for exporters. It is a decision-support layer, not a
 promise of buyer demand or a replacement for product-specific due diligence.
 

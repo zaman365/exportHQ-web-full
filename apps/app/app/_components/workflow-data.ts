@@ -28,9 +28,9 @@ export interface BlueprintRun {
   completedSteps: number;
 }
 
-export const blueprintRunsStorageKey = "trevv.blueprint-runs.v1";
-export const customBlueprintsStorageKey = "trevv.custom-blueprints.v1";
-export const favoriteBlueprintsStorageKey = "trevv.favorite-blueprints.v1";
+export const blueprintRunsStorageKey = "exportpanel.blueprint-runs.v1";
+export const customBlueprintsStorageKey = "exportpanel.custom-blueprints.v1";
+export const favoriteBlueprintsStorageKey = "exportpanel.favorite-blueprints.v1";
 
 export const blueprintCatalog: readonly BlueprintDefinition[] = [
   {

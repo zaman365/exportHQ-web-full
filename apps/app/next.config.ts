@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  basePath: "/ExportPanel",
   transpilePackages: ["@exporthq/auth", "@exporthq/authorization", "@exporthq/domain", "@exporthq/ui", "@exporthq/validation"],
   poweredByHeader: false,
   typedRoutes: false,

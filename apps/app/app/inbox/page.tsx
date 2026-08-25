@@ -6,7 +6,7 @@ import { requireWorkspaceFeature } from "../_lib/session";
 
 export const metadata: Metadata = {
   title: "Inbox — Export HQ",
-  description: "Capture thoughts and triage actionable TREVV requests."
+  description: "Capture thoughts and triage actionable ExportPanel requests."
 };
 
 export const dynamic = "force-dynamic";

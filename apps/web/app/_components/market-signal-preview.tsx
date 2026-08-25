@@ -11,7 +11,7 @@ export function MarketSignalPreview({ appUrl }: { appUrl: string }) {
     <section className="section market-preview" id="market-signals">
       <div className="container">
         <div className="market-preview__head" data-reveal>
-          <div><p className="eyebrow"><i aria-hidden="true" />TREVV market signals</p><h2 className="h-section">Where could your products win?</h2></div>
+          <div><p className="eyebrow"><i aria-hidden="true" />ExportPanel market signals</p><h2 className="h-section">Where could your products win?</h2></div>
           <div><p className="section-note">Explore country × product lanes built from observed demand and Bangladesh supply signals—not a generic list of “good markets.”</p><span><ShieldCheck size={15} /> Source-linked · reviewed 25 Aug 2026</span></div>
         </div>
 
@@ -29,7 +29,7 @@ export function MarketSignalPreview({ appUrl }: { appUrl: string }) {
           </aside>
 
           <div className="market-preview__panel">
-            <header><div><span>{previewCountries[0]?.flag}</span><p>JAPAN · PRODUCT POTENTIAL</p><h3>Signals worth validating</h3></div><span><BarChart3 size={15} /> Ranked by TREVV fit</span></header>
+            <header><div><span>{previewCountries[0]?.flag}</span><p>JAPAN · PRODUCT POTENTIAL</p><h3>Signals worth validating</h3></div><span><BarChart3 size={15} /> Ranked by ExportPanel fit</span></header>
             <div className="market-preview__rows">
               {publicViews.filter((item) => item.target.code === previewCountries[0]?.code).map((item, index) => <article key={item.id}>
                 <span className="market-preview__rank">0{index + 1}</span>
@@ -52,10 +52,10 @@ export function MarketSignalPreview({ appUrl }: { appUrl: string }) {
               <li><span>03</span><div><strong>Verified or subscribed</strong><small>Evidence, routes, barriers and actions</small></div><i /></li>
             </ol>
             <div><Sparkles size={17} /><p><strong>Verification is free</strong><small>A legitimate business can unlock the full intelligence layer without buying a plan.</small></p></div>
-            <a href={`${appUrl}/preview`}>Preview TREVV intelligence <ArrowRight size={15} /></a>
+            <a href={`${appUrl}/preview`}>Preview ExportPanel intelligence <ArrowRight size={15} /></a>
           </aside>
         </div>
-        <p className="market-preview__method">TREVV signals support prioritization; they do not guarantee sales. Full views retain the source period, confidence and review date.</p>
+        <p className="market-preview__method">ExportPanel signals support prioritization; they do not guarantee sales. Full views retain the source period, confidence and review date.</p>
       </div>
     </section>
   );

@@ -55,6 +55,7 @@ describe("subscription entitlements", () => {
     expect(tierHasFeature("explore", "onboarding")).toBe(true);
     expect(tierHasFeature("explore", "opportunities")).toBe(true);
     expect(tierHasFeature("explore", "readiness")).toBe(true);
+    expect(tierHasFeature("explore", "export-studio")).toBe(true);
     expect(tierHasFeature("explore", "inbox")).toBe(false);
     expect(tierHasFeature("launch", "decisions")).toBe(true);
     expect(tierHasFeature("launch", "attention")).toBe(false);

@@ -51,7 +51,7 @@ function WorkspaceSidebar({ active, session }: { active: WorkspaceDestination; s
         <div className="avatar-stack">{demoSnapshot.team.map((person, index) => <Avatar key={person.name} initials={person.initials} tone={index} />)}</div>
         <strong>3 specialists assigned</strong>
         <span>Average response · 3h 24m</span>
-        <a href="/#team">Message your team <ArrowRight size={14} /></a>
+        <Link href="/#team">Message your team <ArrowRight size={14} /></Link>
       </div>
     </aside>
   );
@@ -63,11 +63,11 @@ function WorkspaceTopbar({ active, session }: { active: WorkspaceDestination; se
     <header className="topbar">
       <MobileNavigation active={active} features={session.features} />
       <a className="mobile-home" href={workspaceWebsiteUrl} target="_blank" rel="noreferrer" aria-label="Open the Export HQ homepage in a new tab"><House size={18} /></a>
-      <Link href="/learn" className="search"><Search size={17} /><span>Search TREVV help…</span><kbd>⌘ K</kbd></Link>
+      <Link href="/learn" className="search"><Search size={17} /><span>Search ExportPanel help…</span><kbd>⌘ K</kbd></Link>
       <div className="topbar__actions">
         <Link href="/learn" aria-label="Help"><CircleHelp size={19} /></Link>
         <Link href="/inbox" aria-label="Inbox notifications" className="notification"><Bell size={19} /><span /></Link>
-        <WorkspaceAccountControl enabled={!session.isDemo} userName={session.userName ?? "TREVV member"} organizationName={session.organizationName ?? "Your business"} tierName={tierName} />
+        <WorkspaceAccountControl enabled={!session.isDemo} userName={session.userName ?? "ExportPanel member"} organizationName={session.organizationName ?? "Your business"} tierName={tierName} />
       </div>
     </header>
   );

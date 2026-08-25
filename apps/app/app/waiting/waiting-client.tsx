@@ -22,8 +22,8 @@ import { blueprintRunsStorageKey, readStoredArray, type BlueprintRun } from "../
 type QueueId = "customer" | "export_hq" | "third_party" | "all";
 type WaitingItem = ExportTask & { source?: "blueprint" | "manual"; totalSteps?: number; completedSteps?: number };
 
-const resolvedStorageKey = "trevv.waiting.resolved.v1";
-const snoozedStorageKey = "trevv.waiting.snoozed.v1";
+const resolvedStorageKey = "exportpanel.waiting.resolved.v1";
+const snoozedStorageKey = "exportpanel.waiting.snoozed.v1";
 
 const queueMeta: Record<Exclude<QueueId, "all">, { label: string; hint: string }> = {
   customer: { label: "Waiting for you", hint: "waiting-you" },
@@ -147,7 +147,7 @@ export default function WaitingClient({ initialTasks, canManage }: { initialTask
   }
 
   return <>
-    <section className="workspace-page-head waiting-head"><div><p>TREVV / WAITING</p><h1>Make every handoff visible. <HintButton topic="waiting-overview" /></h1><span>See who can move work now, what is expected next, and which handoffs need a follow-up.</span></div><button type="button" className={`button button--secondary${showResolved ? " active" : ""}`} onClick={() => setShowResolved((current) => !current)}>{showResolved ? <Hourglass size={16} /> : <CheckCircle2 size={16} />}{showResolved ? "Show open items" : `Resolved (${resolved.length})`}</button></section>
+    <section className="workspace-page-head waiting-head"><div><p>ExportPanel / WAITING</p><h1>Make every handoff visible. <HintButton topic="waiting-overview" /></h1><span>See who can move work now, what is expected next, and which handoffs need a follow-up.</span></div><button type="button" className={`button button--secondary${showResolved ? " active" : ""}`} onClick={() => setShowResolved((current) => !current)}>{showResolved ? <Hourglass size={16} /> : <CheckCircle2 size={16} />}{showResolved ? "Show open items" : `Resolved (${resolved.length})`}</button></section>
 
     <section className="waiting-summary" aria-label="Waiting summary"><div className="urgent"><Clock3 size={18} /><span><strong>{overdue}</strong><small>overdue follow-ups</small></span></div><div><UserRound size={18} /><span><strong>{counts.customer}</strong><small>waiting for you</small></span></div><div><Users size={18} /><span><strong>{counts.export_hq}</strong><small>owned by Export HQ</small></span></div><div><CalendarClock size={18} /><span><strong>{counts.third_party}</strong><small>external dependencies</small></span></div></section>
 

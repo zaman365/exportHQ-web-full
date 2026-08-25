@@ -5,8 +5,8 @@ import LearningCenterClient from "./learning-center-client";
 import { requireWorkspaceFeature } from "../_lib/session";
 
 export const metadata: Metadata = {
-  title: "TREVV Learning Center — Export HQ",
-  description: "Hints, tutorials, references, and practical tips for the TREVV workspace."
+  title: "ExportPanel Learning Center — Export HQ",
+  description: "Hints, tutorials, references, and practical tips for the ExportPanel workspace."
 };
 
 export const dynamic = "force-dynamic";

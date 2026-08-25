@@ -601,7 +601,7 @@ export default function SettingsClient({
               return <div key={item.id}>{item.group && <p>{item.group}</p>}<button type="button" className={section === item.id ? "active" : ""} onClick={() => chooseSection(item.id)} aria-current={section === item.id ? "page" : undefined}><Icon size={17} />{item.label}<ChevronRight size={14} /></button></div>;
             })}
           </nav>
-          <Link href="/learn" className="settings-sidebar__help"><CircleAlert size={16} /><span><strong>Need a hand?</strong><small>Open the TREVV Learning Center for hints and tutorials.</small></span></Link>
+          <Link href="/learn" className="settings-sidebar__help"><CircleAlert size={16} /><span><strong>Need a hand?</strong><small>Open the ExportPanel Learning Center for hints and tutorials.</small></span></Link>
         </aside>
 
         <main className="settings-main">

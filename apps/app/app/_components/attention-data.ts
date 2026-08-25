@@ -59,7 +59,7 @@ export interface AttentionSignal {
   resolutionNote?: string;
 }
 
-export const attentionStorageKey = "trevv.attention.signals.v1";
+export const attentionStorageKey = "exportpanel.attention.signals.v1";
 
 export const attentionProjects: readonly AttentionProject[] = [
   {

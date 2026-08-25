@@ -33,12 +33,13 @@ import { Console } from "./_components/console";
 import { SiteHeader } from "./_components/site-header";
 import { Wordmark } from "./_components/brand";
 import { MarketSignalPreview } from "./_components/market-signal-preview";
+import { ExportSystemPreview } from "./_components/export-system-preview";
 
 const appUrl =
   process.env.NEXT_PUBLIC_APP_URL ??
   (process.env.NODE_ENV === "production"
-    ? "https://trevv.export-hq.com"
-    : "http://localhost:3001");
+    ? "https://export-hq.com/ExportPanel"
+    : "http://localhost:3001/ExportPanel");
 
 const serviceRibbon = [
   "Export readiness",
@@ -315,7 +316,7 @@ export default function HomePage() {
                   Prepare for export <ArrowRight size={17} strokeWidth={2.2} />
                 </a>
                 <a className="btn btn-outline btn-lg" href={`${appUrl}/preview`}>
-                  Preview TREVV <ArrowUpRight size={17} strokeWidth={2.2} />
+                  Preview ExportPanel <ArrowUpRight size={17} strokeWidth={2.2} />
                 </a>
               </div>
               <ul className="hero-proof">
@@ -352,6 +353,8 @@ export default function HomePage() {
 
         <MarketSignalPreview appUrl={appUrl} />
 
+        <ExportSystemPreview appUrl={appUrl} />
+
         <section className="section workspace-showcase" id="workspace">
           <div className="container">
             <div className="workspace-head" data-reveal>
@@ -368,7 +371,7 @@ export default function HomePage() {
                   what moves next.
                 </p>
                 <a className="text-link" href={`${appUrl}/preview`}>
-                  Preview TREVV <ArrowUpRight size={16} strokeWidth={2.2} />
+                  Preview ExportPanel <ArrowUpRight size={16} strokeWidth={2.2} />
                 </a>
               </div>
             </div>
@@ -959,7 +962,7 @@ export default function HomePage() {
             <strong>Start</strong>
             <a href="#brief">Export brief</a>
             <a href={`${appUrl}/sign-in`}>Customer sign in</a>
-            <a href={`${appUrl}/plans`}>TREVV plans</a>
+            <a href={`${appUrl}/plans`}>ExportPanel plans</a>
             <a href="mailto:hello@exporthq.com">Talk to our team</a>
           </nav>
           <div className="footer-contact">

@@ -77,9 +77,9 @@ export interface RecentCreatedRecord {
   href: string;
 }
 
-export const decisionsStorageKey = "trevv.decisions.v1";
-export const ideasStorageKey = "trevv.ideas.v1";
-export const recentCreatedStorageKey = "trevv.create.recent.v1";
+export const decisionsStorageKey = "exportpanel.decisions.v1";
+export const ideasStorageKey = "exportpanel.ideas.v1";
+export const recentCreatedStorageKey = "exportpanel.create.recent.v1";
 
 export const decisionSeeds: readonly DecisionRecord[] = [
   {

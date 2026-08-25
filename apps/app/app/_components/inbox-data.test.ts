@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { inboxRequestSeeds, resolveCaptureDue, suggestCaptureDate, suggestCaptureType } from "./inbox-data";
 
-describe("TREVV Inbox", () => {
+describe("ExportPanel Inbox", () => {
   it("keeps seeded requests uniquely addressable and actionable", () => {
     expect(new Set(inboxRequestSeeds.map((item) => item.id)).size).toBe(inboxRequestSeeds.length);
     expect(inboxRequestSeeds.every((item) => item.href.startsWith("/") && item.summary.length > 0)).toBe(true);

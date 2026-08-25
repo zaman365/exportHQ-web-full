@@ -6,7 +6,7 @@ import {
   rankAttentionSignals,
 } from "./attention-data";
 
-describe("TREVV attention signals", () => {
+describe("ExportPanel attention signals", () => {
   it("keeps identifiers unique and every signal attached to a real project", () => {
     expect(new Set(attentionSeeds.map((signal) => signal.id)).size).toBe(
       attentionSeeds.length,

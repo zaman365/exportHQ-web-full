@@ -9,7 +9,7 @@ import { requireWorkspaceFeature } from "../_lib/session";
 
 export const metadata: Metadata = {
   title: "Attention Center — Export HQ",
-  description: "TREVV's project-aware operational signal and action center.",
+  description: "ExportPanel's project-aware operational signal and action center.",
 };
 
 export const dynamic = "force-dynamic";

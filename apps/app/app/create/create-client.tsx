@@ -152,7 +152,7 @@ export default function CreateClient({ canManage }: { canManage: boolean }) {
   }
 
   return <>
-    <section className="workspace-page-head"><div><p>TREVV / WORKFLOWS / CREATE</p><h1>Create the right kind of record. <HintButton topic="create-overview" /></h1><span>Start work in one place without flattening everything into a task. Choose the record that matches the clarity, ownership, and repeatability you have now.</span></div><Link className="button button--secondary" href="/learn?topic=create-right-record">Which type should I use? <ArrowRight size={14} /></Link></section>
+    <section className="workspace-page-head"><div><p>ExportPanel / WORKFLOWS / CREATE</p><h1>Create the right kind of record. <HintButton topic="create-overview" /></h1><span>Start work in one place without flattening everything into a task. Choose the record that matches the clarity, ownership, and repeatability you have now.</span></div><Link className="button button--secondary" href="/learn?topic=create-right-record">Which type should I use? <ArrowRight size={14} /></Link></section>
 
     <section className="create-type-grid" aria-label="Creation types">{creationTypes.map(({ id, label, description, icon: Icon, color }) => <button type="button" className={`${type === id ? "active " : ""}create-type-card create-type-card--${color}`} key={id} onClick={() => setType(id)}><span><Icon size={19} /></span><strong>{label}</strong><p>{description}</p><small>{counts[id]} in workspace <ArrowRight size={12} /></small></button>)}</section>
 

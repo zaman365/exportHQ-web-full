@@ -3,7 +3,7 @@ import { exportReadinessRequirements } from "@exporthq/domain";
 import { learningCatalog, learningCategories } from "./learning-catalog";
 import { blueprintCatalog } from "./workflow-data";
 
-describe("TREVV learning catalog", () => {
+describe("ExportPanel learning catalog", () => {
   it("uses unique resource identifiers", () => {
     const ids = learningCatalog.map((resource) => resource.id);
     expect(new Set(ids).size).toBe(ids.length);

@@ -9,7 +9,7 @@ import { requireWorkspaceFeature } from "../_lib/session";
 
 export const metadata: Metadata = {
   title: "My Work — Export HQ",
-  description: "A risk-aware personal work plan for TREVV.",
+  description: "A risk-aware personal work plan for ExportPanel.",
 };
 
 export const dynamic = "force-dynamic";

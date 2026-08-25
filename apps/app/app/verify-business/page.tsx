@@ -7,7 +7,7 @@ import { requireWorkspaceFeature } from "../_lib/session";
 import { VerificationForm } from "./verification-form";
 
 export const metadata: Metadata = {
-  title: "Verify your business — TREVV",
+  title: "Verify your business — ExportPanel",
   description: "Request an evidence-based Export HQ business verification review."
 };
 
@@ -23,7 +23,7 @@ export default async function VerifyBusinessPage({ searchParams }: { searchParam
     <WorkspaceShell active="opportunities" session={session}>
       <section className="verification-page">
         <Link className="verification-back" href="/opportunities"><ArrowLeft size={15} /> Market opportunities</Link>
-        <header className="verification-head"><p>BUSINESS TRUST</p><h1>{isVerified ? "Your business is verified" : isPending ? "Verification is in review" : "Verify once. Unlock useful intelligence."}</h1><span>Verification gives a Basic account full market-intelligence access without requiring a subscription. It also establishes a reusable trust signal for future high-value TREVV features.</span></header>
+        <header className="verification-head"><p>BUSINESS TRUST</p><h1>{isVerified ? "Your business is verified" : isPending ? "Verification is in review" : "Verify once. Unlock useful intelligence."}</h1><span>Verification gives a Basic account full market-intelligence access without requiring a subscription. It also establishes a reusable trust signal for future high-value ExportPanel features.</span></header>
         {isVerified ? (
           <div className="verification-state verification-state--verified"><span><CheckCircle2 size={25} /></span><div><p>VERIFIED BUSINESS</p><h2>Full market intelligence is active</h2><span>Your organization can open evidence, entry routes, buyer profiles, barriers and recommended next actions.</span><Link href="/opportunities">Explore opportunities <ArrowRight size={15} /></Link></div></div>
         ) : isPending ? (

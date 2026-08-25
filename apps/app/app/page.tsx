@@ -1,6 +1,7 @@
 import { authorizeOrganization, featuresForTier, permissionsForTier } from "@exporthq/authorization";
 import { demoSnapshot, type TaskStatus } from "@exporthq/domain";
 import { ArrowRight, Check, Clock3, FileText, MessageSquareText, Package, Plus, ShieldCheck, Sparkles, Target } from "lucide-react";
+import Link from "next/link";
 import { Avatar, Badge, ButtonLink, Card, Progress } from "@exporthq/ui";
 import { HintButton } from "./_components/hint-button";
 import { ExploreHome } from "./_components/explore-home";
@@ -56,10 +57,10 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
               <div className="card-kicker"><span>EXPORT HEALTH <HintButton topic="export-health" /></span><Badge tone="success">+4 this month</Badge></div>
               <div className="score-row"><strong>{demoSnapshot.health.overall}</strong><span>/ 100</span><div className="score-ring" style={{ "--score": `${demoSnapshot.health.overall * 3.6}deg` } as React.CSSProperties}><span /></div></div>
               <p>Your foundation is strong. Compliance and market readiness are the fastest paths to 88.</p>
-              <a href="/readiness">Run full readiness assessment <ArrowRight size={15} /></a>
+              <Link href="/readiness">Run full readiness assessment <ArrowRight size={15} /></Link>
             </Card>
             <Card className="readiness-card" id="readiness">
-              <div className="card-kicker"><span>READINESS BY AREA <HintButton topic="readiness-areas" /></span><a href="/readiness">View action plan</a></div>
+              <div className="card-kicker"><span>READINESS BY AREA <HintButton topic="readiness-areas" /></span><Link href="/readiness">View action plan</Link></div>
               <div className="readiness-list">
                 {demoSnapshot.health.dimensions.slice(0, 4).map((item) => <div key={item.area}><span>{item.label}</span><Progress value={item.score} label={item.label} /><strong>{item.score}%</strong></div>)}
               </div>
@@ -82,7 +83,7 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
 
           <div className="main-grid">
             <section id="actions">
-              <div className="section-head"><div><p>ACTION CENTER</p><h2>What happens next <HintButton topic="waiting-overview" /></h2></div><a href="/waiting">View all 7 actions <ArrowRight size={15} /></a></div>
+              <div className="section-head"><div><p>ACTION CENTER</p><h2>What happens next <HintButton topic="waiting-overview" /></h2></div><Link href="/waiting">View all 7 actions <ArrowRight size={15} /></Link></div>
               <div className="ownership-tabs" aria-label="Action ownership">
                 <span className="active">Waiting for you <b>{customerTasks.length}</b></span>
                 <span>Export HQ <b>{exportHqTasks.length}</b></span>

@@ -142,7 +142,7 @@ export default function IdeasClient({ canManage }: { canManage: boolean }) {
   }
 
   return <>
-    <section className="workspace-page-head"><div><p>TREVV / WORKFLOWS / IDEAS</p><h1>Capture possibility. Promote clarity. <HintButton topic="ideas-overview" /></h1><span>Keep raw opportunities lightweight, compare impact and effort, then turn proven ideas into a Decision or reusable Blueprint.</span></div><button type="button" className="button button--primary" onClick={() => setCreateOpen(true)} disabled={!canManage}><Plus size={16} /> Add idea</button></section>
+    <section className="workspace-page-head"><div><p>ExportPanel / WORKFLOWS / IDEAS</p><h1>Capture possibility. Promote clarity. <HintButton topic="ideas-overview" /></h1><span>Keep raw opportunities lightweight, compare impact and effort, then turn proven ideas into a Decision or reusable Blueprint.</span></div><button type="button" className="button button--primary" onClick={() => setCreateOpen(true)} disabled={!canManage}><Plus size={16} /> Add idea</button></section>
 
     <section className="workflow-summary" aria-label="Idea summary"><div><Lightbulb size={18} /><span><strong>{ideas.filter((idea) => idea.stage !== "archived").length}</strong><small>active ideas</small></span></div><div><TrendingUp size={18} /><span><strong>{ideas.filter((idea) => idea.stage === "shortlisted").length}</strong><small>shortlisted</small></span></div><div><ThumbsUp size={18} /><span><strong>{totalVotes}</strong><small>team votes</small></span></div><div><CheckCircle2 size={18} /><span><strong>{ideas.filter((idea) => idea.promotedTo).length}</strong><small>promoted records</small></span></div></section>
 

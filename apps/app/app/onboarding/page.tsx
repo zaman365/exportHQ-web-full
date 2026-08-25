@@ -3,8 +3,8 @@ import { requireOnboardingSession } from "../_lib/session";
 import OnboardingClient from "./onboarding-client";
 
 export const metadata: Metadata = {
-  title: "Set up TREVV — Export HQ",
-  description: "Create your organization and complete the secure TREVV export brief."
+  title: "Set up ExportPanel — Export HQ",
+  description: "Create your organization and complete the secure ExportPanel export brief."
 };
 
 export const dynamic = "force-dynamic";

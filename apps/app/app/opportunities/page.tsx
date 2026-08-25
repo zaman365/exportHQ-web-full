@@ -11,7 +11,7 @@ import { requireWorkspaceFeature } from "../_lib/session";
 import OpportunitiesClient from "./opportunities-client";
 
 export const metadata: Metadata = {
-  title: "Market opportunities — TREVV",
+  title: "Market opportunities — ExportPanel",
   description: "Country-by-product export opportunity intelligence with evidence, routes, barriers, and next actions."
 };
 

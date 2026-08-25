@@ -23,7 +23,7 @@ import {
 } from "../_components/learning-catalog";
 import { HintButton } from "../_components/hint-button";
 
-const completedStorageKey = "trevv.learning.completed.v1";
+const completedStorageKey = "exportpanel.learning.completed.v1";
 
 const kindMeta: Record<LearningKind, { label: string; icon: typeof Lightbulb }> = {
   hint: { label: "Hint", icon: Lightbulb },
@@ -97,7 +97,7 @@ export default function LearningCenterClient({ initialTopic }: { initialTopic?: 
   return (
     <>
       <section className="workspace-page-head learning-hero">
-        <div><p>TREVV LEARNING CENTER</p><h1>Know what to do—and why. <HintButton topic="hint-icons" /></h1><span>A managed collection of every contextual hint, tutorial, reference, and practical shortcut in your Export HQ workspace.</span></div>
+        <div><p>ExportPanel LEARNING CENTER</p><h1>Know what to do—and why. <HintButton topic="hint-icons" /></h1><span>A managed collection of every contextual hint, tutorial, reference, and practical shortcut in your Export HQ workspace.</span></div>
         <div className="learning-progress"><span><strong>{completed.length}</strong><small>resources completed</small></span><span><strong>{learningCatalog.length}</strong><small>total resources</small></span><span><strong>{learningCategories.length}</strong><small>categories</small></span></div>
       </section>
 
@@ -111,7 +111,7 @@ export default function LearningCenterClient({ initialTopic }: { initialTopic?: 
           <div><BookOpenCheck size={17} /><span><strong>Browse by topic</strong><small>Managed and categorized</small></span></div>
           <button type="button" className={category === "all" ? "active" : ""} onClick={() => setCategory("all")}><span>All resources</span><b>{learningCatalog.length}</b></button>
           {learningCategories.map((item) => <button type="button" key={item.id} className={category === item.id ? "active" : ""} onClick={() => setCategory(item.id)} title={item.description}><span>{item.label}</span><b>{learningCatalog.filter((resource) => resource.category === item.id).length}</b></button>)}
-          <div className="learning-categories__tip"><Lightbulb size={15} /><span>Look for the diamond lightbulb beside components throughout TREVV.</span></div>
+          <div className="learning-categories__tip"><Lightbulb size={15} /><span>Look for the diamond lightbulb beside components throughout ExportPanel.</span></div>
         </aside>
 
         <section className="learning-collection" aria-live="polite">

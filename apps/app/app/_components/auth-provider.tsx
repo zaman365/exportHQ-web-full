@@ -2,6 +2,7 @@
 
 import { ClerkProvider } from "@clerk/nextjs";
 import type { ReactNode } from "react";
+import { exportPanelPath } from "../_lib/export-panel-paths";
 
 export function AuthProvider({
   publishableKey,
@@ -15,11 +16,11 @@ export function AuthProvider({
   return (
     <ClerkProvider
       publishableKey={publishableKey}
-      signInUrl="/sign-in"
-      signUpUrl="/sign-up"
-      signInFallbackRedirectUrl="/"
-      signUpFallbackRedirectUrl="/onboarding"
-      afterSignOutUrl="/preview"
+      signInUrl={exportPanelPath("/sign-in")}
+      signUpUrl={exportPanelPath("/sign-up")}
+      signInFallbackRedirectUrl={exportPanelPath()}
+      signUpFallbackRedirectUrl={exportPanelPath("/onboarding")}
+      afterSignOutUrl={exportPanelPath("/preview")}
       appearance={{
         variables: {
           colorPrimary: "#ff6a1a",

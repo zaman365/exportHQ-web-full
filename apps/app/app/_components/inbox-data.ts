@@ -33,8 +33,8 @@ export interface InboxRequest {
   snoozedUntil?: string;
 }
 
-export const capturedItemsStorageKey = "trevv.inbox.captured.v1";
-export const inboxRequestsStorageKey = "trevv.inbox.requests.v1";
+export const capturedItemsStorageKey = "exportpanel.inbox.captured.v1";
+export const inboxRequestsStorageKey = "exportpanel.inbox.requests.v1";
 
 export const captureTypeLabels: Record<CaptureType, string> = {
   task: "Task",
@@ -107,7 +107,7 @@ export const inboxRequestSeeds: readonly InboxRequest[] = [
     kind: "follow_up",
     title: "Supplier evidence follow-up is due",
     summary: "The requested fibre composition declaration has not arrived. Confirm the next follow-up checkpoint.",
-    actor: "TREVV",
+    actor: "ExportPanel",
     source: "Product readiness",
     createdAt: "2026-08-24T09:00:00.000Z",
     dueAt: "2026-08-25T13:00:00.000Z",

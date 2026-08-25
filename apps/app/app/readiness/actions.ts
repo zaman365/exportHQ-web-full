@@ -14,7 +14,7 @@ export type ReadinessActionResult = {
   savedAt?: string;
 };
 
-type TrevvMetadata = { trevv?: Record<string, unknown> };
+type ExportPanelMetadata = { exportPanel?: Record<string, unknown> };
 
 export async function saveReadinessProgress(payload: string): Promise<ReadinessActionResult> {
   const session = await getWorkspaceSession();
@@ -26,7 +26,7 @@ export async function saveReadinessProgress(payload: string): Promise<ReadinessA
   try {
     input = JSON.parse(payload);
   } catch {
-    return { ok: false, message: "TREVV could not read this assessment draft." };
+    return { ok: false, message: "ExportPanel could not read this assessment draft." };
   }
   const parsed = readinessProgressSchema.safeParse(input);
   if (!parsed.success) {
@@ -40,12 +40,12 @@ export async function saveReadinessProgress(payload: string): Promise<ReadinessA
 
   const client = getClerkClient();
   const organization = await client.organizations.getOrganization({ organizationId: session.organizationId });
-  const privateMetadata = organization.privateMetadata as TrevvMetadata;
+  const privateMetadata = organization.privateMetadata as ExportPanelMetadata;
   await client.organizations.updateOrganizationMetadata(session.organizationId, {
     privateMetadata: {
       ...privateMetadata,
-      trevv: {
-        ...(privateMetadata.trevv ?? {}),
+      exportPanel: {
+        ...(privateMetadata.exportPanel ?? {}),
         readinessAssessment: {
           ...parsed.data,
           savedAt,
@@ -75,7 +75,7 @@ export async function requestReadinessProviderMatch(payload: string): Promise<Re
   try {
     input = JSON.parse(payload);
   } catch {
-    return { ok: false, message: "TREVV could not read this match request." };
+    return { ok: false, message: "ExportPanel could not read this match request." };
   }
   const parsed = readinessReferralRequestSchema.safeParse(input);
   if (!parsed.success) {
@@ -89,14 +89,14 @@ export async function requestReadinessProviderMatch(payload: string): Promise<Re
 
   const client = getClerkClient();
   const organization = await client.organizations.getOrganization({ organizationId: session.organizationId });
-  const privateMetadata = organization.privateMetadata as TrevvMetadata;
-  const trevv = privateMetadata.trevv ?? {};
-  const existing = Array.isArray(trevv.readinessReferrals) ? trevv.readinessReferrals.slice(-19) : [];
+  const privateMetadata = organization.privateMetadata as ExportPanelMetadata;
+  const exportPanel = privateMetadata.exportPanel ?? {};
+  const existing = Array.isArray(exportPanel.readinessReferrals) ? exportPanel.readinessReferrals.slice(-19) : [];
   await client.organizations.updateOrganizationMetadata(session.organizationId, {
     privateMetadata: {
       ...privateMetadata,
-      trevv: {
-        ...trevv,
+      exportPanel: {
+        ...exportPanel,
         readinessReferrals: [
           ...existing,
           {
@@ -111,5 +111,5 @@ export async function requestReadinessProviderMatch(payload: string): Promise<Re
     }
   });
 
-  return { ok: true, message: "Request received. TREVV will shortlist qualified matches.", savedAt };
+  return { ok: true, message: "Request received. ExportPanel will shortlist qualified matches.", savedAt };
 }

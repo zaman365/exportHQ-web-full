@@ -6,7 +6,7 @@ import { requireWorkspaceFeature } from "../_lib/session";
 
 export const metadata: Metadata = {
   title: "Decisions — Export HQ",
-  description: "An explainable decision register for TREVV work."
+  description: "An explainable decision register for ExportPanel work."
 };
 
 export const dynamic = "force-dynamic";

@@ -4,8 +4,8 @@
   "main": "vinext/server/fetch-handler",
   "routes": [
     {
-      "pattern": "trevv.export-hq.com",
-      "custom_domain": true
+      "pattern": "export-hq.com/ExportPanel*",
+      "zone_name": "export-hq.com"
     }
   ],
   "assets": {
@@ -23,6 +23,6 @@
   "vars": {
     "EXPORTHQ_DEMO_MODE": "false",
     "EXPORTHQ_WEB_URL": "https://export-hq.com",
-    "EXPORTHQ_AUTHORIZED_PARTIES": "https://trevv.export-hq.com"
+    "EXPORTHQ_AUTHORIZED_PARTIES": "https://export-hq.com"
   }
 }

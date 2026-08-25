@@ -33,7 +33,7 @@ export default async function SettingsPage() {
       canManageTeam={canManageTeam}
       features={session.features}
       authEnabled={!session.isDemo}
-      userName={session.userName ?? "TREVV member"}
+      userName={session.userName ?? "ExportPanel member"}
       organizationName={session.organizationName ?? "Your business"}
       tierName={subscriptionCatalog[session.tier].name}
     />

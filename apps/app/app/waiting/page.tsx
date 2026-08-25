@@ -7,7 +7,7 @@ import { requireWorkspaceFeature } from "../_lib/session";
 
 export const metadata: Metadata = {
   title: "Waiting — Export HQ",
-  description: "An ownership-first queue for TREVV handoffs, blockers, and follow-ups."
+  description: "An ownership-first queue for ExportPanel handoffs, blockers, and follow-ups."
 };
 
 export const dynamic = "force-dynamic";

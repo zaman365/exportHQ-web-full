@@ -40,6 +40,7 @@ export type WorkspaceFeature =
   | "team"
   | "markets"
   | "opportunities"
+  | "export-studio"
   | "buyers"
   | "integrations"
   | "audit"
@@ -60,7 +61,8 @@ const exploreFeatures = [
   "plans",
   "readiness",
   "markets",
-  "opportunities"
+  "opportunities",
+  "export-studio"
 ] as const satisfies readonly WorkspaceFeature[];
 const launchFeatures = [
   ...exploreFeatures,
@@ -91,13 +93,13 @@ export const subscriptionCatalog: Readonly<Record<SubscriptionTier, Subscription
   preview: {
     id: "preview",
     name: "Preview",
-    summary: "A safe, read-only tour of TREVV's operating model.",
+    summary: "A safe, read-only tour of ExportPanel's operating model.",
     features: previewFeatures
   },
   explore: {
     id: "explore",
     name: "Basic",
-    summary: "A signed-in starting point for completing the export brief and onboarding.",
+    summary: "A signed-in starting point for one Export Lane, readiness, economics, and onboarding.",
     features: exploreFeatures
   },
   launch: {

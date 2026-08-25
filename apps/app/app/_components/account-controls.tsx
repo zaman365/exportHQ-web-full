@@ -6,10 +6,11 @@ import { useRouter } from "next/navigation";
 import { Building2, Check, ChevronDown, LockKeyhole, LogOut, Plus, Settings } from "lucide-react";
 import { OrganizationSwitcher, UserButton } from "@clerk/nextjs";
 import { Avatar } from "@exporthq/ui";
+import { exportPanelPath } from "../_lib/export-panel-paths";
 
 type DemoBusiness = { id: string; name: string };
 
-const demoBusinessesKey = "trevv.demo-businesses";
+const demoBusinessesKey = "exportpanel.demo-businesses";
 
 function initials(name: string) {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join("") || "B";
@@ -131,7 +132,7 @@ function AuthenticatedAccountControl({ organizationName, tierName, userName }: {
         <section className="workspace-account__businesses">
           <header><span><Building2 size={14} /><strong>Business workspaces</strong></span><Link href="/plans">Compare plans</Link></header>
           <div className="workspace-account__organization-switcher">
-            <OrganizationSwitcher hidePersonal afterCreateOrganizationUrl="/onboarding" afterSelectOrganizationUrl="/" />
+            <OrganizationSwitcher hidePersonal afterCreateOrganizationUrl={exportPanelPath("/onboarding")} afterSelectOrganizationUrl={exportPanelPath()} />
             <small>{tierName} access · New businesses start on Basic</small>
           </div>
         </section>
