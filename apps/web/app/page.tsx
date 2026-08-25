@@ -36,7 +36,7 @@ import { Wordmark } from "./_components/brand";
 const appUrl =
   process.env.NEXT_PUBLIC_APP_URL ??
   (process.env.NODE_ENV === "production"
-    ? "https://exporthq-app.zaman-ase365.workers.dev"
+    ? "https://trevv.export-hq.com"
     : "http://localhost:3001");
 
 const serviceRibbon = [
