@@ -32,6 +32,11 @@ export const documentStatus = pgEnum("document_status", ["quarantine", "under_re
 export const businessVerificationStatus = pgEnum("business_verification_status", ["unverified", "pending", "verified", "rejected"]);
 export const marketOpportunityStatus = pgEnum("market_opportunity_status", ["draft", "published", "retired"]);
 export const marketOpportunityTrend = pgEnum("market_opportunity_trend", ["accelerating", "established", "emerging"]);
+export const readinessAssessmentStatus = pgEnum("readiness_assessment_status", ["draft", "submitted", "under_review", "complete", "archived"]);
+export const readinessResponseStatus = pgEnum("readiness_response_status", ["not_started", "in_progress", "evidence_added", "verified", "blocked", "not_applicable"]);
+export const readinessEvidenceReviewStatus = pgEnum("readiness_evidence_review_status", ["staged", "under_review", "needs_action", "accepted", "rejected"]);
+export const providerVerificationStatus = pgEnum("provider_verification_status", ["applicant", "screening", "verified", "suspended", "retired"]);
+export const providerReferralStatus = pgEnum("provider_referral_status", ["requested", "matching", "introduced", "engaged", "closed", "declined"]);
 
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -293,6 +298,104 @@ export const documentVersions = pgTable("document_versions", {
   scanStatus: text("scan_status").notNull().default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [uniqueIndex("document_version_unique").on(table.documentId, table.version)]);
+
+export const readinessAssessments = pgTable("readiness_assessments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  createdBy: text("created_by").notNull(),
+  methodVersion: text("method_version").notNull(),
+  status: readinessAssessmentStatus("status").notNull().default("draft"),
+  originCountryCode: text("origin_country_code").notNull().default("BD"),
+  businessModel: text("business_model").notNull(),
+  productCategory: text("product_category").notNull(),
+  productName: text("product_name").notNull(),
+  hsCode: text("hs_code"),
+  targetMarketCode: text("target_market_code").notNull(),
+  salesChannel: text("sales_channel").notNull(),
+  currentSection: text("current_section").notNull().default("business"),
+  score: integer("score").notNull().default(0),
+  lastSavedAt: timestamp("last_saved_at", { withTimezone: true }).notNull().defaultNow(),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  index("readiness_assessments_org_updated_idx").on(table.organizationId, table.updatedAt),
+  check("readiness_assessments_score_check", sql`${table.score} between 0 and 100`)
+]);
+
+export const readinessResponses = pgTable("readiness_responses", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  assessmentId: uuid("assessment_id").notNull().references(() => readinessAssessments.id, { onDelete: "cascade" }),
+  requirementKey: text("requirement_key").notNull(),
+  status: readinessResponseStatus("status").notNull().default("not_started"),
+  note: text("note"),
+  ownerId: text("owner_id"),
+  targetDate: timestamp("target_date", { withTimezone: true }),
+  verifiedBy: text("verified_by"),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("readiness_responses_assessment_requirement_unique").on(table.assessmentId, table.requirementKey),
+  index("readiness_responses_org_status_idx").on(table.organizationId, table.status)
+]);
+
+export const readinessEvidenceReviews = pgTable("readiness_evidence_reviews", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  assessmentId: uuid("assessment_id").notNull().references(() => readinessAssessments.id, { onDelete: "cascade" }),
+  readinessResponseId: uuid("readiness_response_id").notNull().references(() => readinessResponses.id, { onDelete: "cascade" }),
+  documentId: uuid("document_id").notNull().references(() => documents.id, { onDelete: "cascade" }),
+  documentVersionId: uuid("document_version_id").notNull().references(() => documentVersions.id, { onDelete: "cascade" }),
+  status: readinessEvidenceReviewStatus("status").notNull().default("staged"),
+  extraction: jsonb("extraction").$type<Record<string, string | number | boolean | null>>().notNull().default({}),
+  feedback: text("feedback"),
+  reviewedBy: text("reviewed_by"),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  index("readiness_evidence_reviews_org_status_idx").on(table.organizationId, table.status),
+  index("readiness_evidence_reviews_response_idx").on(table.readinessResponseId)
+]);
+
+export const serviceProviderProfiles = pgTable("service_provider_profiles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  legalName: text("legal_name").notNull(),
+  tradingName: text("trading_name").notNull(),
+  categories: text("categories").array().notNull().default([]),
+  countries: text("countries").array().notNull().default([]),
+  productCategories: text("product_categories").array().notNull().default([]),
+  languages: text("languages").array().notNull().default([]),
+  verificationStatus: providerVerificationStatus("verification_status").notNull().default("applicant"),
+  verificationEvidence: jsonb("verification_evidence").$type<Record<string, string | number | boolean | null>>().notNull().default({}),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  verifiedBy: text("verified_by"),
+  commissionDisclosure: text("commission_disclosure").notNull(),
+  active: boolean("active").notNull().default(false),
+  ...timestamps
+}, (table) => [
+  index("service_provider_profiles_status_idx").on(table.verificationStatus, table.active)
+]);
+
+export const readinessProviderReferrals = pgTable("readiness_provider_referrals", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  assessmentId: uuid("assessment_id").notNull().references(() => readinessAssessments.id, { onDelete: "cascade" }),
+  requirementKey: text("requirement_key").notNull(),
+  providerCategory: text("provider_category").notNull(),
+  matchedProviderId: uuid("matched_provider_id").references(() => serviceProviderProfiles.id, { onDelete: "set null" }),
+  status: providerReferralStatus("status").notNull().default("requested"),
+  requestedBy: text("requested_by").notNull(),
+  requestNote: text("request_note"),
+  commissionDisclosure: text("commission_disclosure").notNull(),
+  disclosureAcceptedAt: timestamp("disclosure_accepted_at", { withTimezone: true }).notNull(),
+  introducedAt: timestamp("introduced_at", { withTimezone: true }),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  index("readiness_provider_referrals_org_status_idx").on(table.organizationId, table.status),
+  index("readiness_provider_referrals_provider_idx").on(table.matchedProviderId)
+]);
 
 export const tasks = pgTable("tasks", {
   id: uuid("id").primaryKey().defaultRandom(),

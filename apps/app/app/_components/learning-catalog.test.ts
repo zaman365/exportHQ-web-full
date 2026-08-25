@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { exportReadinessRequirements } from "@exporthq/domain";
 import { learningCatalog, learningCategories } from "./learning-catalog";
 import { blueprintCatalog } from "./workflow-data";
 
@@ -47,6 +48,11 @@ describe("TREVV learning catalog", () => {
       "attention-evidence"
     ];
     expect(requiredTopics.every((topic) => learningCatalog.some((resource) => resource.id === topic))).toBe(true);
+  });
+
+  it("covers every export-readiness knowledge path", () => {
+    const topics = new Set(learningCatalog.map((resource) => resource.id));
+    expect(exportReadinessRequirements.every((requirement) => topics.has(requirement.learnTopic))).toBe(true);
   });
 });
 

@@ -742,6 +742,230 @@ export const learningCatalog: readonly LearningResource[] = [
     kind: "tip",
     minutes: 2,
     keywords: ["portability", "retention", "backup", "export"]
+  },
+  {
+    id: "readiness-command-center",
+    title: "Run the export readiness command center",
+    summary: "Build a conditional path from Bangladesh business foundations to one product, destination and shipment route.",
+    content: "The assessment is not the onboarding brief and it is not a universal certificate. TREVV selects checkpoints from your business model, product family, target market and sales route. Record the current position, attach evidence, resolve blockers and rebuild the path whenever the commercial context changes.",
+    category: "compliance",
+    kind: "tutorial",
+    minutes: 7,
+    keywords: ["readiness", "Bangladesh", "assessment", "blocker", "score"],
+    steps: ["Confirm the business and product context.", "Review each applicable checkpoint.", "Mark the current position honestly.", "Use the book icon for knowledge and the handshake for professional help.", "Add evidence and respond to review feedback.", "Save the assessment and revisit it when a fact changes."],
+    featured: true
+  },
+  {
+    id: "readiness-legal-identity",
+    title: "Prove the exporter and signing authority",
+    summary: "Keep the entity name, registration record, owners and authorized signatory consistent.",
+    content: "Use the relevant RJSC or other legal-entity record as the identity anchor. Compare the legal name, number, address and signatory across corporate, tax, bank and commercial records; correct mismatches before relying on them in an export filing.",
+    category: "compliance",
+    kind: "reference",
+    minutes: 4,
+    keywords: ["RJSC", "company", "signatory", "board resolution", "identity"]
+  },
+  {
+    id: "readiness-trade-license",
+    title: "Check the Bangladesh trade licence",
+    summary: "Confirm current validity, activity and premises before using the licence in export applications.",
+    content: "Trade licences are issued locally and renewed. Check that the business activity and address match the exporter; manufacturing premises can need additional site, fire and environmental documents.",
+    category: "compliance",
+    kind: "tutorial",
+    minutes: 4,
+    keywords: ["trade licence", "city corporation", "municipality", "renewal"],
+    steps: ["Confirm the licensed entity, activity and premises.", "Check the current renewal and payment evidence.", "Add the extra site documents required for manufacturing premises."]
+  },
+  {
+    id: "readiness-tax-vat",
+    title: "Align e-TIN, BIN and tax compliance",
+    summary: "Make tax and VAT identities agree with the exporting entity and current activity.",
+    content: "Check the entity e-TIN, return acknowledgement and VAT/BIN position together. Resolve legal-name, address, branch or activity mismatches before the records are used by a bank, authority or buyer.",
+    category: "compliance",
+    kind: "reference",
+    minutes: 4,
+    keywords: ["TIN", "BIN", "VAT", "NBR", "tax"]
+  },
+  {
+    id: "readiness-erc",
+    title: "Prepare or renew the Export Registration Certificate",
+    summary: "Choose the correct CCI&E route and keep the ERC renewal position current.",
+    content: "Determine the applicable commercial, industrial or other exporter-registration route. Prepare consistent trade licence, chamber, bank, tax and entity evidence, and resolve CCI&E queries before planning the shipment.",
+    category: "compliance",
+    kind: "tutorial",
+    minutes: 5,
+    keywords: ["ERC", "CCI&E", "export registration", "renewal"],
+    steps: ["Choose the correct ERC route.", "Reconcile the supporting entity, tax, bank and chamber records.", "Submit or renew and retain the current CCI&E evidence."]
+  },
+  {
+    id: "readiness-export-banking",
+    title: "Set up the AD bank, EXP and proceeds route",
+    summary: "Agree the declaration, document and export-proceeds process before accepting an order.",
+    content: "Confirm the Authorized Dealer branch and trade desk, align bank KYC with the exporter records, and document who prepares the EXP declaration, shipment pack and proceeds reconciliation. Ask the bank for the current process for your transaction.",
+    category: "compliance",
+    kind: "tutorial",
+    minutes: 6,
+    keywords: ["AD bank", "EXP form", "Bangladesh Bank", "proceeds", "trade finance"],
+    steps: ["Confirm the Authorized Dealer branch and trade desk.", "Complete exporter KYC with consistent records.", "Agree the EXP, shipment-document and proceeds-reconciliation workflow."]
+  },
+  {
+    id: "readiness-factory-permits",
+    title: "Map factory, fire and environmental permissions",
+    summary: "Check the actual site and operation against the current licensed scope.",
+    content: "Manufacturers should reconcile the facility, layout, machinery, workforce and processes with applicable DIFE, Fire Service, Department of Environment and local-authority permissions. Keep corrective actions and renewals visible rather than treating a certificate as permanent.",
+    category: "compliance",
+    kind: "tutorial",
+    minutes: 6,
+    keywords: ["factory", "DIFE", "fire", "environment", "BIDA OSS"],
+    steps: ["Map the actual site, machinery, workforce and processes.", "Identify each applicable authority permission and renewal.", "Record open findings, corrective actions, owners and due dates."]
+  },
+  {
+    id: "readiness-product-standards",
+    title: "Screen product standards and conformity",
+    summary: "Classify the exact product before deciding which test, licence, mark or label applies.",
+    content: "Start with the controlled product description and HS classification. Screen current mandatory lists and destination rules, select a competent laboratory or conformity body where required, and never claim approval before the correct evidence exists.",
+    category: "compliance",
+    kind: "reference",
+    minutes: 5,
+    keywords: ["BSTI", "standard", "testing", "conformity", "label"]
+  },
+  {
+    id: "readiness-sector-rules",
+    title: "Check sector-specific export controls",
+    summary: "Add the regulator, association, health, origin or quota route that applies to the product family.",
+    content: "Food, agro, textiles, leather and other controlled sectors can have additional registrations, inspections, certificates or association processes. Document applicability from the responsible authority instead of copying another exporter’s checklist.",
+    category: "compliance",
+    kind: "reference",
+    minutes: 4,
+    keywords: ["sector", "EPB", "food", "textile", "association"]
+  },
+  {
+    id: "readiness-hs-classification",
+    title: "Build a defensible HS classification",
+    summary: "Use composition, function and form—not a product nickname—to classify the offer.",
+    content: "Record the reasoning, candidate headings and supporting technical facts. Validate the code with a qualified customs specialist or authority when the decision changes duties, origin, restrictions or documentation.",
+    category: "compliance",
+    kind: "tutorial",
+    minutes: 5,
+    keywords: ["HS code", "classification", "customs", "tariff"],
+    steps: ["Describe composition, form, function and use.", "Compare the most plausible headings and explanatory rules.", "Record and validate the classification decision where risk is material."]
+  },
+  {
+    id: "readiness-product-file",
+    title: "Create the controlled product evidence file",
+    summary: "Keep specifications, composition, test reports, labels, images and versions together.",
+    content: "A buyer claim should trace to controlled evidence. Name the product version, record materials and tolerances, keep reports within scope and validity, and link approved labels and images to the same version.",
+    category: "compliance",
+    kind: "tutorial",
+    minutes: 5,
+    keywords: ["product file", "specification", "test report", "evidence", "version"],
+    steps: ["Create one controlled product version.", "Attach specifications, tests, labels and approved images.", "Review scope, issue date, expiry and claims before sharing."]
+  },
+  {
+    id: "readiness-eu-market",
+    title: "Research an EU destination with Access2Markets",
+    summary: "Check duties, origin, product requirements and importer responsibilities for the exact lane.",
+    content: "Use the HS code, origin and EU destination in the European Commission’s Access2Markets tools. Record tariff and preference assumptions, origin proof, product controls, labels and who the EU importer is responsible for completing.",
+    category: "markets",
+    kind: "tutorial",
+    minutes: 6,
+    keywords: ["EU", "Germany", "Netherlands", "Access2Markets", "origin"],
+    steps: ["Enter the HS code, Bangladesh origin and EU destination.", "Record tariff, preference and origin-proof assumptions.", "Assign the product-rule, label and EU-importer obligations."]
+  },
+  {
+    id: "readiness-uk-market",
+    title: "Check the UK tariff and product route",
+    summary: "Treat Great Britain and Northern Ireland rules, importer roles and product controls explicitly.",
+    content: "Use the UK Trade Tariff for classification, duty and measures, then confirm product standards, marks, labels, documentation and the importer of record for the intended destination and route.",
+    category: "markets",
+    kind: "tutorial",
+    minutes: 5,
+    keywords: ["UK", "Trade Tariff", "standards", "importer"],
+    steps: ["Check classification, duty and measures in the UK Trade Tariff.", "Confirm the relevant destination and importer role.", "Map standards, marks, labels and supporting documents."]
+  },
+  {
+    id: "readiness-japan-market",
+    title: "Prepare the Japan importer and clearance file",
+    summary: "Coordinate the importer, broker, invoice data and any non-customs permits before dispatch.",
+    content: "Japan Customs lists the declaration and supporting records for import clearance. Confirm who will import and broker the shipment, reconcile the commercial documents, and screen the product for approvals under laws beyond the Customs Law.",
+    category: "markets",
+    kind: "reference",
+    minutes: 5,
+    keywords: ["Japan", "customs", "importer", "broker", "permit"]
+  },
+  {
+    id: "readiness-saudi-market",
+    title: "Map the Saudi Saber conformity route",
+    summary: "Classify the product, identify the technical regulation and coordinate certificates before dispatch.",
+    content: "Work with the Saudi importer to confirm the product’s Saber status, product-conformity evidence and shipment-certificate process. Keep invoice, quantity, value, origin and label data consistent.",
+    category: "markets",
+    kind: "tutorial",
+    minutes: 5,
+    keywords: ["Saudi Arabia", "Saber", "SASO", "conformity", "shipment certificate"],
+    steps: ["Confirm the product classification and technical regulation.", "Coordinate the product-conformity route with the importer.", "Complete the shipment certificate before dispatch."]
+  },
+  {
+    id: "readiness-uae-market",
+    title: "Screen UAE regulated-product conformity",
+    summary: "Confirm the MoIAT route, UAE applicant and accredited evidence for regulated goods.",
+    content: "Check the exact product against current UAE technical requirements. Record the licensed local applicant, test-report scope and validity, conformity route and approved label before shipment.",
+    category: "markets",
+    kind: "reference",
+    minutes: 5,
+    keywords: ["UAE", "MoIAT", "conformity", "regulated product", "test report"]
+  },
+  {
+    id: "readiness-commercial-offer",
+    title: "Build a defendable export offer",
+    summary: "Join capacity, lead time, cost, Incoterm and margin into one approved commercial position.",
+    content: "Base the offer on available capacity and controlled product evidence. Include packaging, inland, customs, bank, inspection, freight, insurance, commission and risk assumptions, then quote a named Incoterm and place.",
+    category: "workflows",
+    kind: "tutorial",
+    minutes: 6,
+    keywords: ["costing", "capacity", "Incoterm", "margin", "quotation"],
+    steps: ["Calculate sellable capacity and lead time.", "Build the full export cost and risk assumptions.", "Approve a price, margin, named Incoterm and place."]
+  },
+  {
+    id: "readiness-buyer-contract",
+    title: "Protect the order and payment route",
+    summary: "Verify the buyer and make quality, acceptance, delivery, payment and dispute terms explicit.",
+    content: "Confirm the buyer entity and signatory. Use a reviewed contract or purchase order with controlled specifications, inspection, acceptance, risk transfer, claims, payment and governing-law terms proportionate to the transaction.",
+    category: "workflows",
+    kind: "reference",
+    minutes: 5,
+    keywords: ["buyer", "contract", "payment", "credit risk", "purchase order"]
+  },
+  {
+    id: "readiness-shipping-documents",
+    title: "Control the shipment document pack",
+    summary: "Make invoice, packing, transport, origin, insurance and regulatory records agree.",
+    content: "Create a matrix that names every document, preparer, approver, recipient and deadline. Reconcile parties, HS codes, descriptions, quantity, weights, values and delivery terms before release.",
+    category: "compliance",
+    kind: "tutorial",
+    minutes: 6,
+    keywords: ["invoice", "packing list", "bill of lading", "certificate of origin", "documents"],
+    steps: ["List every required shipment document and recipient.", "Assign preparer, approver and deadline.", "Run one reconciliation before documents leave your control."]
+  },
+  {
+    id: "readiness-logistics",
+    title: "Validate freight, packaging and cargo risk",
+    summary: "Choose a route and pack that protect the product, timetable and evidence chain.",
+    content: "Confirm cut-offs, handoffs, export packaging, marks, dimensions, handling assumptions, cargo cover and delay or damage procedures with the responsible logistics specialists.",
+    category: "workflows",
+    kind: "tip",
+    minutes: 4,
+    keywords: ["freight", "packaging", "cargo insurance", "forwarder", "route"]
+  },
+  {
+    id: "readiness-digital-trust",
+    title: "Make the exporter credible online",
+    summary: "Give buyers a verifiable company identity, controlled product story and dependable response route.",
+    content: "Use a company domain and email, publish factual capabilities and real contact details, link product claims to controlled evidence, localize key assets where useful and clarify ownership of brands, images, designs and software.",
+    category: "markets",
+    kind: "tutorial",
+    minutes: 5,
+    keywords: ["website", "domain", "catalogue", "localization", "trademark", "IT agency"],
+    steps: ["Publish a verifiable business identity and company-domain contact route.", "Build controlled capability and product pages.", "Localize priority assets and clarify brand, image, design and software rights."]
   }
 ];
 

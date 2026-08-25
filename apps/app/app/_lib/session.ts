@@ -19,11 +19,14 @@ export async function getWorkspaceSession(): Promise<CustomerSession> {
 
 export async function requireWorkspaceFeature(
   feature: WorkspaceFeature,
-  options: { allowIncompleteOnboarding?: boolean } = {}
+  options: { allowIncompleteOnboarding?: boolean; signedOutRedirectTo?: string } = {}
 ): Promise<CustomerSession & { principal: NonNullable<CustomerSession["principal"]> }> {
   const session = await getWorkspaceSession();
   if (session.status === "misconfigured") redirect("/sign-in?reason=configuration");
-  if (session.status === "signed-out") redirect("/sign-in");
+  if (session.status === "signed-out") {
+    const returnTo = options.signedOutRedirectTo?.startsWith("/") ? options.signedOutRedirectTo : undefined;
+    redirect(returnTo ? `/sign-in?redirect_url=${encodeURIComponent(returnTo)}` : "/sign-in");
+  }
   if (session.status === "needs-organization") redirect("/onboarding");
   if (session.status === "needs-onboarding" && !options.allowIncompleteOnboarding) redirect("/onboarding");
   if (!session.features.includes(feature)) redirect(`/plans?feature=${encodeURIComponent(feature)}`);

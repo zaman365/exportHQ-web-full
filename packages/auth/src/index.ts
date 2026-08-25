@@ -13,6 +13,7 @@ import {
 const ownerPermissions: Permission[] = [
   "company:view", "company:manage", "products:view", "products:manage",
   "compliance:view", "compliance:manage", "documents:view", "documents:manage",
+  "readiness:view", "readiness:manage",
   "tasks:view", "tasks:manage", "team:manage", "billing:manage"
 ];
 

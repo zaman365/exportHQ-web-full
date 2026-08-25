@@ -7,6 +7,7 @@ import {
   isPaidTier,
   permissionsForTier,
   resolveMarketIntelligenceAccess,
+  resolveReadinessAccess,
   scopeRows,
   tierHasFeature,
   type CustomerPrincipal,
@@ -53,6 +54,7 @@ describe("subscription entitlements", () => {
     expect(featuresForTier("preview")).toEqual(["home", "learning"]);
     expect(tierHasFeature("explore", "onboarding")).toBe(true);
     expect(tierHasFeature("explore", "opportunities")).toBe(true);
+    expect(tierHasFeature("explore", "readiness")).toBe(true);
     expect(tierHasFeature("explore", "inbox")).toBe(false);
     expect(tierHasFeature("launch", "decisions")).toBe(true);
     expect(tierHasFeature("launch", "attention")).toBe(false);
@@ -70,9 +72,16 @@ describe("subscription entitlements", () => {
     expect(isPaidTier("scale")).toBe(true);
   });
 
-  it("never grants mutation permissions to preview or explore access", () => {
+  it("uses the same verified-business or paid-plan gate for full readiness solutions", () => {
+    expect(resolveReadinessAccess({ authenticated: true, businessVerification: "unverified", tier: "explore" })).toBe("member");
+    expect(resolveReadinessAccess({ authenticated: true, businessVerification: "verified", tier: "explore" })).toBe("full");
+    expect(resolveReadinessAccess({ authenticated: true, businessVerification: "pending", tier: "launch" })).toBe("full");
+  });
+
+  it("keeps Basic mutation access limited to its own readiness assessment", () => {
     expect(permissionsForTier("preview").size).toBe(0);
-    expect(permissionsForTier("explore")).toEqual(new Set(["company:view"]));
+    expect(permissionsForTier("explore")).toEqual(new Set(["company:view", "readiness:view", "readiness:manage"]));
+    expect(permissionsForTier("explore").has("documents:manage")).toBe(false);
     expect(permissionsForTier("launch").has("tasks:manage")).toBe(true);
     expect(permissionsForTier("scale").has("team:manage")).toBe(true);
   });

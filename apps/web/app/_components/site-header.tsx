@@ -36,7 +36,7 @@ export function SiteHeader({ appUrl }: { appUrl: string }) {
           <a className="header-signin" href={`${appUrl}/sign-in`}>
             Sign in
           </a>
-          <a className="btn btn-signal btn-sm" href="#brief">
+          <a className="btn btn-signal btn-sm" href={`${appUrl}/readiness`}>
             Export readiness check <ArrowRight size={15} strokeWidth={2.2} />
           </a>
         </div>
@@ -63,7 +63,7 @@ export function SiteHeader({ appUrl }: { appUrl: string }) {
               </a>
             ))}
             <a href={`${appUrl}/sign-in`} onClick={closeMenu}>Sign in</a>
-            <a className="btn btn-signal btn-block" href="#brief" onClick={closeMenu}>
+            <a className="btn btn-signal btn-block" href={`${appUrl}/readiness`} onClick={closeMenu}>
               Export readiness check <ArrowRight size={15} strokeWidth={2.2} />
             </a>
           </div>

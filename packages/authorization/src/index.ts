@@ -7,6 +7,8 @@ export type Permission =
   | "compliance:manage"
   | "documents:view"
   | "documents:manage"
+  | "readiness:view"
+  | "readiness:manage"
   | "tasks:view"
   | "tasks:manage"
   | "team:manage"
@@ -14,7 +16,9 @@ export type Permission =
 
 export type SubscriptionTier = "preview" | "explore" | "launch" | "scale" | "managed";
 export type BusinessVerificationStatus = "unverified" | "pending" | "verified";
-export type MarketIntelligenceAccess = "public" | "member" | "full";
+export type TrustGatedAccess = "public" | "member" | "full";
+export type MarketIntelligenceAccess = TrustGatedAccess;
+export type ReadinessAccess = Exclude<TrustGatedAccess, "public">;
 
 export type WorkspaceFeature =
   | "home"
@@ -54,6 +58,7 @@ const exploreFeatures = [
   ...previewFeatures,
   "onboarding",
   "plans",
+  "readiness",
   "markets",
   "opportunities"
 ] as const satisfies readonly WorkspaceFeature[];
@@ -67,7 +72,6 @@ const launchFeatures = [
   "create",
   "products",
   "documents",
-  "readiness",
   "requirements"
 ] as const satisfies readonly WorkspaceFeature[];
 const scaleFeatures = [
@@ -118,20 +122,20 @@ export const subscriptionCatalog: Readonly<Record<SubscriptionTier, Subscription
 
 const permissionCatalog: Readonly<Record<SubscriptionTier, readonly Permission[]>> = {
   preview: [],
-  explore: ["company:view"],
+  explore: ["company:view", "readiness:view", "readiness:manage"],
   launch: [
     "company:view", "company:manage", "products:view", "products:manage",
-    "compliance:view", "documents:view", "documents:manage", "tasks:view", "tasks:manage"
+    "compliance:view", "documents:view", "documents:manage", "readiness:view", "readiness:manage", "tasks:view", "tasks:manage"
   ],
   scale: [
     "company:view", "company:manage", "products:view", "products:manage",
     "compliance:view", "compliance:manage", "documents:view", "documents:manage",
-    "tasks:view", "tasks:manage", "team:manage", "billing:manage"
+    "readiness:view", "readiness:manage", "tasks:view", "tasks:manage", "team:manage", "billing:manage"
   ],
   managed: [
     "company:view", "company:manage", "products:view", "products:manage",
     "compliance:view", "compliance:manage", "documents:view", "documents:manage",
-    "tasks:view", "tasks:manage", "team:manage", "billing:manage"
+    "readiness:view", "readiness:manage", "tasks:view", "tasks:manage", "team:manage", "billing:manage"
   ]
 };
 
@@ -156,14 +160,30 @@ export function isPaidTier(tier: SubscriptionTier): boolean {
  * workspace tier. Signing in reveals ranked detail; either a verified business
  * or any paid organization plan unlocks the evidence and action layer.
  */
+export function resolveTrustGatedAccess(input: {
+  authenticated: boolean;
+  businessVerification: BusinessVerificationStatus;
+  tier: SubscriptionTier;
+}): TrustGatedAccess {
+  if (!input.authenticated) return "public";
+  if (input.businessVerification === "verified" || isPaidTier(input.tier)) return "full";
+  return "member";
+}
+
 export function resolveMarketIntelligenceAccess(input: {
   authenticated: boolean;
   businessVerification: BusinessVerificationStatus;
   tier: SubscriptionTier;
 }): MarketIntelligenceAccess {
-  if (!input.authenticated) return "public";
-  if (input.businessVerification === "verified" || isPaidTier(input.tier)) return "full";
-  return "member";
+  return resolveTrustGatedAccess(input);
+}
+
+export function resolveReadinessAccess(input: {
+  authenticated: true;
+  businessVerification: BusinessVerificationStatus;
+  tier: SubscriptionTier;
+}): ReadinessAccess {
+  return resolveTrustGatedAccess(input) === "full" ? "full" : "member";
 }
 
 export interface CustomerPrincipal {

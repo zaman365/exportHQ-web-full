@@ -31,7 +31,7 @@ export async function completeOnboarding(
 
   if (session.isDemo) {
     const businessName = String(formData.get("demoBusinessName") ?? company.data.tradingName).slice(0, 100);
-    redirect(`/?onboarding=complete&access=basic&business=${encodeURIComponent(businessName)}`);
+    redirect(`/readiness?access=basic&business=${encodeURIComponent(businessName)}&productName=${encodeURIComponent(product.data.name)}&market=${encodeURIComponent(product.data.targetMarketCode)}`);
   }
 
   const client = getClerkClient();
@@ -43,5 +43,5 @@ export async function completeOnboarding(
     publicMetadata: { ...currentPublic, trevv: { ...(currentPublic.trevv ?? {}), onboardingComplete: true, onboardingVersion: 1, originCountry: company.data.originCountry, industry: company.data.industry, targetMarketCode: product.data.targetMarketCode } },
     privateMetadata: { ...currentPrivate, trevv: { ...(currentPrivate.trevv ?? {}), company: company.data, firstProduct: product.data, stage, salesChannel, completedBy: session.userId, completedAt: new Date().toISOString() } }
   });
-  redirect("/plans?onboarding=complete");
+  redirect("/readiness?onboarding=complete");
 }

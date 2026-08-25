@@ -311,7 +311,7 @@ export default function HomePage() {
                 any business ready to grow abroad.
               </p>
               <div className="hero-actions">
-                <a className="btn btn-signal btn-lg" href="#brief">
+                <a className="btn btn-signal btn-lg" href={`${appUrl}/readiness`}>
                   Prepare for export <ArrowRight size={17} strokeWidth={2.2} />
                 </a>
                 <a className="btn btn-outline btn-lg" href={`${appUrl}/preview`}>
@@ -438,7 +438,7 @@ export default function HomePage() {
 
             <form
               className="brief-form"
-              action={`${appUrl}/sign-up`}
+              action={`${appUrl}/readiness`}
               method="get"
               data-reveal
             >
@@ -446,7 +446,7 @@ export default function HomePage() {
               <label className="field">
                 <span>What does your business provide?</span>
                 <input
-                  name="offering"
+                  name="productName"
                   placeholder="Products, services or specialist expertise"
                   required
                 />
@@ -466,10 +466,14 @@ export default function HomePage() {
                 </label>
                 <label className="field">
                   <span>Where do you want to grow?</span>
-                  <input
-                    name="market"
-                    placeholder="Country, region or help me choose"
-                  />
+                  <select name="market" defaultValue="DE">
+                    <option value="DE">Germany / EU</option>
+                    <option value="NL">Netherlands / EU</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="JP">Japan</option>
+                    <option value="SA">Saudi Arabia</option>
+                    <option value="AE">United Arab Emirates</option>
+                  </select>
                 </label>
               </div>
               <button className="btn btn-ink btn-lg btn-block" type="submit">
@@ -921,8 +925,8 @@ export default function HomePage() {
               </p>
             </div>
             <div className="cta-actions" data-reveal>
-              <a className="btn btn-signal btn-lg" href="#brief">
-                Start your export brief{" "}
+              <a className="btn btn-signal btn-lg" href={`${appUrl}/readiness`}>
+                Start readiness check{" "}
                 <ArrowRight size={17} strokeWidth={2.2} />
               </a>
               <a

@@ -110,7 +110,7 @@ export const attentionProjects: readonly AttentionProject[] = [
     owner: "Nadia Rahman",
     health: "on_track",
     progress: 86,
-    href: "/#readiness",
+    href: "/readiness",
   },
 ];
 
