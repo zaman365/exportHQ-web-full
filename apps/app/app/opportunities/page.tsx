@@ -1,0 +1,48 @@
+import type { Metadata } from "next";
+import {
+  featuresForTier,
+  permissionsForTier,
+  resolveMarketIntelligenceAccess,
+  subscriptionCatalog
+} from "@exporthq/authorization";
+import { marketOpportunityViews } from "@exporthq/domain";
+import { WorkspaceShell } from "../_components/workspace-shell";
+import { requireWorkspaceFeature } from "../_lib/session";
+import OpportunitiesClient from "./opportunities-client";
+
+export const metadata: Metadata = {
+  title: "Market opportunities — TREVV",
+  description: "Country-by-product export opportunity intelligence with evidence, routes, barriers, and next actions."
+};
+
+export const dynamic = "force-dynamic";
+
+export default async function OpportunitiesPage({ searchParams }: { searchParams: Promise<{ view?: string; business?: string; access?: string }> }) {
+  const baseSession = await requireWorkspaceFeature("opportunities");
+  const params = await searchParams;
+  const demoBasicBusiness = baseSession.isDemo && params.access === "basic" ? params.business?.slice(0, 100) || "New business" : undefined;
+  const session = demoBasicBusiness ? {
+    ...baseSession,
+    organizationName: demoBasicBusiness,
+    tier: "explore" as const,
+    businessVerification: "unverified" as const,
+    features: featuresForTier("explore"),
+    principal: { ...baseSession.principal, permissions: permissionsForTier("explore") }
+  } : baseSession;
+  const intelligenceAccess = resolveMarketIntelligenceAccess({
+    authenticated: Boolean(session.userId),
+    businessVerification: session.businessVerification,
+    tier: session.tier
+  });
+
+  return (
+    <WorkspaceShell active={params.view === "countries" ? "markets" : "opportunities"} session={session}>
+      <OpportunitiesClient
+        access={intelligenceAccess}
+        opportunities={marketOpportunityViews(intelligenceAccess)}
+        tierName={subscriptionCatalog[session.tier].name}
+        verification={session.businessVerification}
+      />
+    </WorkspaceShell>
+  );
+}

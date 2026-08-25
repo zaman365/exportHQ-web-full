@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Geist_Mono, Manrope } from "next/font/google";
 import { demoSnapshot } from "@exporthq/domain";
 import { tenantTheme } from "@exporthq/ui";
+import { AuthProvider } from "./_components/auth-provider";
 import "./globals.css";
 
 /* The product loads the same three families as the public website so the two
@@ -45,7 +46,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
 
   return (
     <html lang="en" className={`${sans.variable} ${mono.variable} ${display.variable}`}>
-      <body style={tenant}>{children}</body>
+      <body style={tenant}>
+        <AuthProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
+          {children}
+        </AuthProvider>
+      </body>
     </html>
   );
 }

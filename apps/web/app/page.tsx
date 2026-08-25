@@ -32,6 +32,7 @@ import {
 import { Console } from "./_components/console";
 import { SiteHeader } from "./_components/site-header";
 import { Wordmark } from "./_components/brand";
+import { MarketSignalPreview } from "./_components/market-signal-preview";
 
 const appUrl =
   process.env.NEXT_PUBLIC_APP_URL ??
@@ -313,8 +314,8 @@ export default function HomePage() {
                 <a className="btn btn-signal btn-lg" href="#brief">
                   Prepare for export <ArrowRight size={17} strokeWidth={2.2} />
                 </a>
-                <a className="btn btn-outline btn-lg" href={appUrl}>
-                  Open ExportPanel <ArrowUpRight size={17} strokeWidth={2.2} />
+                <a className="btn btn-outline btn-lg" href={`${appUrl}/preview`}>
+                  Preview TREVV <ArrowUpRight size={17} strokeWidth={2.2} />
                 </a>
               </div>
               <ul className="hero-proof">
@@ -349,6 +350,8 @@ export default function HomePage() {
           </div>
         </section>
 
+        <MarketSignalPreview appUrl={appUrl} />
+
         <section className="section workspace-showcase" id="workspace">
           <div className="container">
             <div className="workspace-head" data-reveal>
@@ -364,8 +367,8 @@ export default function HomePage() {
                   support together—so your team always knows what matters and
                   what moves next.
                 </p>
-                <a className="text-link" href={appUrl}>
-                  Open ExportPanel <ArrowUpRight size={16} strokeWidth={2.2} />
+                <a className="text-link" href={`${appUrl}/preview`}>
+                  Preview TREVV <ArrowUpRight size={16} strokeWidth={2.2} />
                 </a>
               </div>
             </div>
@@ -435,7 +438,7 @@ export default function HomePage() {
 
             <form
               className="brief-form"
-              action={`${appUrl}/onboarding`}
+              action={`${appUrl}/sign-up`}
               method="get"
               data-reveal
             >
@@ -656,7 +659,7 @@ export default function HomePage() {
                 <span>
                   <i aria-hidden="true" /> Export HQ team online
                 </span>
-                <a href={appUrl}>
+                <a href={`${appUrl}/sign-in`}>
                   Open workspace <ArrowUpRight size={15} strokeWidth={2.2} />
                 </a>
               </footer>
@@ -951,7 +954,8 @@ export default function HomePage() {
           <nav aria-label="Start">
             <strong>Start</strong>
             <a href="#brief">Export brief</a>
-            <a href={appUrl}>Customer sign in</a>
+            <a href={`${appUrl}/sign-in`}>Customer sign in</a>
+            <a href={`${appUrl}/plans`}>TREVV plans</a>
             <a href="mailto:hello@exporthq.com">Talk to our team</a>
           </nav>
           <div className="footer-contact">

@@ -19,6 +19,17 @@ export const productSchema = z.object({
   fobPriceMinor: z.coerce.number().int().nonnegative()
 });
 
+export const businessVerificationSchema = z.object({
+  legalName: z.string().trim().min(2).max(180),
+  registrationNumber: z.string().trim().min(3).max(100),
+  registrationAuthority: z.string().trim().min(2).max(180),
+  originCountry: z.string().trim().length(2),
+  website: z.url(),
+  businessEmail: z.email(),
+  evidenceUrl: z.url(),
+  declaration: z.literal("accepted")
+});
+
 export const taskUpdateSchema = z.object({
   id: z.string().min(1),
   organizationId: z.string().min(1),
@@ -44,3 +55,4 @@ export const documentIntentSchema = z.object({
 
 export type CompanyOnboardingInput = z.infer<typeof companyOnboardingSchema>;
 export type ProductInput = z.infer<typeof productSchema>;
+export type BusinessVerificationInput = z.infer<typeof businessVerificationSchema>;

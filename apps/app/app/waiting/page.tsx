@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { getCustomerPrincipal } from "@exporthq/auth";
 import { authorizeOrganization, canAccessOrganization } from "@exporthq/authorization";
 import { demoSnapshot } from "@exporthq/domain";
 import { WorkspaceShell } from "../_components/workspace-shell";
 import WaitingClient from "./waiting-client";
+import { requireWorkspaceFeature } from "../_lib/session";
 
 export const metadata: Metadata = {
   title: "Waiting — Export HQ",
@@ -13,8 +13,9 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function WaitingPage() {
-  const principal = await getCustomerPrincipal();
+  const session = await requireWorkspaceFeature("waiting");
+  const principal = session.principal;
   authorizeOrganization(principal, principal.organizationId, "tasks:view");
   const canManage = canAccessOrganization(principal, principal.organizationId, "tasks:manage");
-  return <WorkspaceShell active="waiting"><WaitingClient initialTasks={[...demoSnapshot.tasks]} canManage={canManage} /></WorkspaceShell>;
+  return <WorkspaceShell active="waiting" session={session}><WaitingClient initialTasks={[...demoSnapshot.tasks]} canManage={canManage} /></WorkspaceShell>;
 }

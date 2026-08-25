@@ -163,6 +163,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@exporthq/domain':
+        specifier: workspace:*
+        version: link:../../packages/domain
       '@exporthq/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -200,9 +203,9 @@ importers:
 
   packages/auth:
     dependencies:
-      '@clerk/nextjs':
-        specifier: 7.7.4
-        version: 7.7.4(next@16.3.0(@babel/core@7.29.7(supports-color@10.2.2))(@types/node@26.2.0)(react-dom@19.2.8(react@19.2.8))(react@19.2.8))(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
+      '@clerk/backend':
+        specifier: 3.16.4
+        version: 3.16.4(react-dom@19.2.8(react@19.2.8))(react@19.2.8)
       '@exporthq/authorization':
         specifier: workspace:*
         version: link:../authorization

@@ -3,7 +3,12 @@ import {
   AuthorizationError,
   authorizeOrganization,
   canAccessOrganization,
+  featuresForTier,
+  isPaidTier,
+  permissionsForTier,
+  resolveMarketIntelligenceAccess,
   scopeRows,
+  tierHasFeature,
   type CustomerPrincipal,
   type StaffPrincipal
 } from "./index";
@@ -40,5 +45,35 @@ describe("tenant isolation", () => {
     expect(canAccessOrganization(staff, "org_a", "compliance:view", now)).toBe(true);
     expect(canAccessOrganization(staff, "org_b", "compliance:view", now)).toBe(false);
     expect(canAccessOrganization(staff, "org_a", "compliance:manage", now)).toBe(false);
+  });
+});
+
+describe("subscription entitlements", () => {
+  it("keeps the public preview read-only and progressively expands paid access", () => {
+    expect(featuresForTier("preview")).toEqual(["home", "learning"]);
+    expect(tierHasFeature("explore", "onboarding")).toBe(true);
+    expect(tierHasFeature("explore", "opportunities")).toBe(true);
+    expect(tierHasFeature("explore", "inbox")).toBe(false);
+    expect(tierHasFeature("launch", "decisions")).toBe(true);
+    expect(tierHasFeature("launch", "attention")).toBe(false);
+    expect(tierHasFeature("scale", "attention")).toBe(true);
+    expect(tierHasFeature("scale", "managed-services")).toBe(false);
+    expect(tierHasFeature("managed", "managed-services")).toBe(true);
+  });
+
+  it("unlocks full market intelligence through verification or a paid plan", () => {
+    expect(resolveMarketIntelligenceAccess({ authenticated: false, businessVerification: "unverified", tier: "preview" })).toBe("public");
+    expect(resolveMarketIntelligenceAccess({ authenticated: true, businessVerification: "unverified", tier: "explore" })).toBe("member");
+    expect(resolveMarketIntelligenceAccess({ authenticated: true, businessVerification: "verified", tier: "explore" })).toBe("full");
+    expect(resolveMarketIntelligenceAccess({ authenticated: true, businessVerification: "pending", tier: "launch" })).toBe("full");
+    expect(isPaidTier("explore")).toBe(false);
+    expect(isPaidTier("scale")).toBe(true);
+  });
+
+  it("never grants mutation permissions to preview or explore access", () => {
+    expect(permissionsForTier("preview").size).toBe(0);
+    expect(permissionsForTier("explore")).toEqual(new Set(["company:view"]));
+    expect(permissionsForTier("launch").has("tasks:manage")).toBe(true);
+    expect(permissionsForTier("scale").has("team:manage")).toBe(true);
   });
 });

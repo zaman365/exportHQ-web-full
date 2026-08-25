@@ -6,6 +6,7 @@ export type LearningCategoryId =
   | "blueprints"
   | "workflows"
   | "actions"
+  | "markets"
   | "compliance"
   | "collaboration"
   | "settings";
@@ -35,6 +36,7 @@ export const learningCategories: readonly LearningCategory[] = [
   { id: "blueprints", label: "Blueprints", description: "Reusable workflows and repeatable operating playbooks." },
   { id: "workflows", label: "Decisions & ideas", description: "Structured choices, opportunity triage, and record creation." },
   { id: "actions", label: "Attention & actions", description: "Signals, capture, requests, personal priorities, ownership, blockers, due dates, and next steps." },
+  { id: "markets", label: "Markets & opportunities", description: "Country-product fit, evidence, entry routes, buyer signals, and validation plans." },
   { id: "compliance", label: "Compliance & evidence", description: "Requirements, sources, files, reviews, and expiry." },
   { id: "collaboration", label: "Teams & collaboration", description: "Members, specialists, handoffs, and accountability." },
   { id: "settings", label: "Settings & security", description: "Integrations, access, audit history, and data portability." }
@@ -143,6 +145,48 @@ export const learningCatalog: readonly LearningResource[] = [
     kind: "reference",
     minutes: 3,
     keywords: ["product", "market", "readiness", "HS code"]
+  },
+  {
+    id: "market-opportunity-index",
+    title: "Use the country × product opportunity index",
+    summary: "Compare specific export lanes instead of treating an entire country as one opportunity.",
+    content: "TREVV ranks a product in a destination—not a country by itself. The index combines observed destination demand, Bangladesh supply fit, route practicality and evidence confidence. Use it to create a shortlist for validation, not as a promise of sales.",
+    category: "markets",
+    kind: "tutorial",
+    minutes: 5,
+    keywords: ["country", "product", "market", "opportunity", "export potential"],
+    steps: ["Filter by country, region or product family.", "Open the highest-fit product lane.", "Read the demand and Bangladesh-fit scores together.", "Review the evidence and barriers.", "Create a short validation plan before buyer outreach."],
+    featured: true
+  },
+  {
+    id: "market-fit-score",
+    title: "Understand the TREVV Fit score",
+    summary: "A transparent prioritization signal that combines demand, origin fit, route practicality and confidence.",
+    content: "A high fit score means the available evidence supports spending validation time on that lane. It does not predict revenue. Compare the underlying demand, origin fit, evidence date, barriers and your own product readiness before committing resources.",
+    category: "markets",
+    kind: "hint",
+    minutes: 2,
+    keywords: ["score", "fit", "ranking", "methodology"]
+  },
+  {
+    id: "market-evidence",
+    title: "Follow the market evidence trail",
+    summary: "See the source, data period, metric and review date behind an opportunity.",
+    content: "TREVV keeps trade signals attached to their source and period. Open the evidence trail to distinguish observed imports from TREVV's interpretation. Older or medium-confidence evidence should trigger fresh validation before commercial action.",
+    category: "markets",
+    kind: "reference",
+    minutes: 3,
+    keywords: ["evidence", "source", "trade data", "confidence", "WITS", "Comtrade"]
+  },
+  {
+    id: "market-access-ladder",
+    title: "How market-intelligence access works",
+    summary: "Public visitors see a sample, Basic members see rankings, and verified or paid businesses see the full action layer.",
+    content: "The public homepage shows a deliberately limited country-product preview. A Basic account unlocks the ranked shortlist. Full evidence, buyer routes, barriers and recommended actions unlock when the organization is verified or subscribes to Launch, Scale or Managed.",
+    category: "markets",
+    kind: "reference",
+    minutes: 2,
+    keywords: ["verification", "subscription", "access", "basic", "unlock"]
   },
   {
     id: "shared-activity",

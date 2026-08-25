@@ -8,6 +8,7 @@ import {
   TrendingUp,
   UsersRound,
 } from "lucide-react";
+import { Monogram } from "./brand";
 
 const RAIL = [
   LayoutDashboard,
@@ -71,7 +72,9 @@ export function Console() {
 
       <div className="console-body">
         <div className="console-rail" aria-hidden="true">
-          <span className="rail-mark">EH</span>
+          <span className="rail-mark">
+            <Monogram size={22} />
+          </span>
           {RAIL.map((Icon, index) => (
             <span
               key={Icon.displayName ?? index}

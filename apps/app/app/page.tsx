@@ -1,10 +1,11 @@
-import { getCustomerPrincipal } from "@exporthq/auth";
-import { authorizeOrganization } from "@exporthq/authorization";
+import { authorizeOrganization, featuresForTier, permissionsForTier } from "@exporthq/authorization";
 import { demoSnapshot, type TaskStatus } from "@exporthq/domain";
 import { ArrowRight, Check, Clock3, FileText, MessageSquareText, Package, Plus, ShieldCheck, Sparkles, Target } from "lucide-react";
 import { Avatar, Badge, ButtonLink, Card, Progress } from "@exporthq/ui";
 import { HintButton } from "./_components/hint-button";
+import { ExploreHome } from "./_components/explore-home";
 import { WorkspaceShell } from "./_components/workspace-shell";
+import { requireWorkspaceFeature } from "./_lib/session";
 
 export const dynamic = "force-dynamic";
 
@@ -22,17 +23,31 @@ const statusTone: Record<TaskStatus, "neutral" | "success" | "warning" | "danger
   blocked: "danger"
 };
 
-export default async function CommandCenterPage() {
-  const principal = await getCustomerPrincipal();
-  authorizeOrganization(principal, demoSnapshot.organization.id, "company:view");
+export default async function CommandCenterPage({ searchParams }: { searchParams: Promise<{ business?: string; access?: string }> }) {
+  const baseSession = await requireWorkspaceFeature("home");
+  const params = await searchParams;
+  const demoBasicBusiness = baseSession.isDemo && params.access === "basic" ? params.business?.slice(0, 100) : undefined;
+  const session = demoBasicBusiness ? {
+    ...baseSession,
+    organizationName: demoBasicBusiness,
+    tier: "explore" as const,
+    businessVerification: "unverified" as const,
+    features: featuresForTier("explore"),
+    principal: { ...baseSession.principal, permissions: permissionsForTier("explore") }
+  } : baseSession;
+  const principal = session.principal;
+  authorizeOrganization(principal, principal.organizationId, "company:view");
+  if (session.tier === "explore") {
+    return <WorkspaceShell active="dashboard" session={session}><ExploreHome session={session} /></WorkspaceShell>;
+  }
   const customerTasks = demoSnapshot.tasks.filter((task) => task.responsibility === "customer");
   const exportHqTasks = demoSnapshot.tasks.filter((task) => task.responsibility === "export_hq");
   const thirdPartyTasks = demoSnapshot.tasks.filter((task) => task.responsibility === "third_party");
 
   return (
-    <WorkspaceShell active="dashboard" contentId="overview">
+    <WorkspaceShell active="dashboard" contentId="overview" session={session}>
           <section className="welcome">
-            <div><p>THURSDAY, 13 AUGUST</p><h1>Good morning, Nadia. <HintButton topic="dashboard-overview" /></h1><span>Here&apos;s what needs attention across your export business.</span></div>
+            <div><p>HOME / DASHBOARD</p><h1>Good morning, {session.userName?.split(" ")[0] ?? "there"}. <HintButton topic="dashboard-overview" /></h1><span>Here&apos;s what needs attention across your export business.</span></div>
             <div className="welcome__actions"><ButtonLink href="/onboarding" variant="secondary"><Plus size={16} /> Add product</ButtonLink><ButtonLink href="#team"><MessageSquareText size={16} /> Ask Export HQ</ButtonLink></div>
           </section>
 

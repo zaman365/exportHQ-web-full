@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { getCustomerPrincipal } from "@exporthq/auth";
 import { authorizeOrganization, canAccessOrganization } from "@exporthq/authorization";
 import { WorkspaceShell } from "../_components/workspace-shell";
 import DecisionsClient from "./decisions-client";
+import { requireWorkspaceFeature } from "../_lib/session";
 
 export const metadata: Metadata = {
   title: "Decisions — Export HQ",
@@ -12,8 +12,9 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function DecisionsPage() {
-  const principal = await getCustomerPrincipal();
+  const session = await requireWorkspaceFeature("decisions");
+  const principal = session.principal;
   authorizeOrganization(principal, principal.organizationId, "tasks:view");
   const canManage = canAccessOrganization(principal, principal.organizationId, "tasks:manage");
-  return <WorkspaceShell active="decisions"><DecisionsClient canManage={canManage} /></WorkspaceShell>;
+  return <WorkspaceShell active="decisions" session={session}><DecisionsClient canManage={canManage} /></WorkspaceShell>;
 }

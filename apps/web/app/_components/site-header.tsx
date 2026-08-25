@@ -1,7 +1,11 @@
+"use client";
+
+import type { MouseEvent } from "react";
 import { ArrowRight, Menu, X } from "lucide-react";
 import { Wordmark } from "./brand";
 
 const NAV = [
+  { href: "#market-signals", label: "Market signals" },
   { href: "#platform", label: "Platform" },
   { href: "#managed", label: "Services" },
   { href: "#process", label: "Process" },
@@ -9,6 +13,10 @@ const NAV = [
 ];
 
 export function SiteHeader({ appUrl }: { appUrl: string }) {
+  const closeMenu = (event: MouseEvent<HTMLAnchorElement>) => {
+    const menu = event.currentTarget.closest("details");
+    if (menu instanceof HTMLDetailsElement) menu.open = false;
+  };
   return (
     <header className="site-header">
       <div className="container header-inner">
@@ -25,7 +33,7 @@ export function SiteHeader({ appUrl }: { appUrl: string }) {
         </nav>
 
         <div className="header-actions">
-          <a className="header-signin" href={appUrl}>
+          <a className="header-signin" href={`${appUrl}/sign-in`}>
             Sign in
           </a>
           <a className="btn btn-signal btn-sm" href="#brief">
@@ -50,12 +58,12 @@ export function SiteHeader({ appUrl }: { appUrl: string }) {
           </summary>
           <div className="menu-panel">
             {NAV.map((item) => (
-              <a key={item.href} href={item.href}>
+              <a key={item.href} href={item.href} onClick={closeMenu}>
                 {item.label}
               </a>
             ))}
-            <a href={appUrl}>Sign in</a>
-            <a className="btn btn-signal btn-block" href="#brief">
+            <a href={`${appUrl}/sign-in`} onClick={closeMenu}>Sign in</a>
+            <a className="btn btn-signal btn-block" href="#brief" onClick={closeMenu}>
               Export readiness check <ArrowRight size={15} strokeWidth={2.2} />
             </a>
           </div>

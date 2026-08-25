@@ -41,6 +41,7 @@ import {
   useState
 } from "react";
 import { Avatar, Logo } from "@exporthq/ui";
+import type { WorkspaceFeature } from "@exporthq/authorization";
 import {
   createAuditCsv,
   createWorkspaceExport,
@@ -54,6 +55,7 @@ import {
   type WorkspaceSettingsState
 } from "./settings-data";
 import { HintButton } from "../_components/hint-button";
+import { WorkspaceAccountControl } from "../_components/account-controls";
 
 const storageKey = "exporthq.workspace-settings.v1";
 
@@ -62,13 +64,14 @@ const navigation: ReadonlyArray<{
   label: string;
   icon: typeof Link2;
   group?: string;
+  feature?: WorkspaceFeature;
 }> = [
-  { id: "integrations", label: "Integrations", icon: Link2 },
+  { id: "integrations", label: "Integrations", icon: Link2, feature: "integrations" },
   { id: "security", label: "Security", icon: ShieldCheck },
   { id: "organization", label: "Organization", icon: Building2, group: "Workspace" },
-  { id: "members", label: "Members", icon: Users },
-  { id: "audit", label: "Audit log", icon: History },
-  { id: "export", label: "Export", icon: Download }
+  { id: "members", label: "Members", icon: Users, feature: "team" },
+  { id: "audit", label: "Audit log", icon: History, feature: "audit" },
+  { id: "export", label: "Export", icon: Download, feature: "export" }
 ];
 
 const sectionCopy: Record<SettingsSection, { title: string; description: string }> = {
@@ -325,12 +328,26 @@ function InviteDialog({
 
 export default function SettingsClient({
   canManageOrganization,
-  canManageTeam
+  canManageTeam,
+  features,
+  authEnabled,
+  userName,
+  organizationName,
+  tierName
 }: {
   canManageOrganization: boolean;
   canManageTeam: boolean;
+  features: readonly WorkspaceFeature[];
+  authEnabled: boolean;
+  userName: string;
+  organizationName: string;
+  tierName: string;
 }) {
-  const [section, setSection] = useState<SettingsSection>("integrations");
+  const availableNavigation = useMemo(
+    () => navigation.filter((item) => !item.feature || features.includes(item.feature)),
+    [features]
+  );
+  const [section, setSection] = useState<SettingsSection>(() => availableNavigation[0]?.id ?? "security");
   const [workspace, setWorkspace] = useState<WorkspaceSettingsState>(initialWorkspaceSettings);
   const [hydrated, setHydrated] = useState(false);
   const [toast, setToast] = useState("");
@@ -354,9 +371,9 @@ export default function SettingsClient({
       localStorage.removeItem(storageKey);
     }
     const initialSection = window.location.hash.slice(1);
-    if (isSettingsSection(initialSection)) setSection(initialSection);
+    if (isSettingsSection(initialSection) && availableNavigation.some((item) => item.id === initialSection)) setSection(initialSection);
     setHydrated(true);
-  }, []);
+  }, [availableNavigation]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -366,11 +383,11 @@ export default function SettingsClient({
   useEffect(() => {
     const syncSection = () => {
       const next = window.location.hash.slice(1);
-      if (isSettingsSection(next)) setSection(next);
+      if (isSettingsSection(next) && availableNavigation.some((item) => item.id === next)) setSection(next);
     };
     window.addEventListener("hashchange", syncSection);
     return () => window.removeEventListener("hashchange", syncSection);
-  }, []);
+  }, [availableNavigation]);
 
   useEffect(() => () => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
@@ -572,14 +589,14 @@ export default function SettingsClient({
       <header className="settings-topbar">
         <Link href="/" className="settings-brand"><Logo /></Link>
         <Link href="/" className="settings-back"><ArrowLeft size={15} /> Back to command center</Link>
-        <span className="settings-user"><Avatar initials="NR" tone={2} /><span><strong>Nadia Rahman</strong><small>Workspace owner</small></span></span>
+        <WorkspaceAccountControl enabled={authEnabled} userName={userName} organizationName={organizationName} tierName={tierName} />
       </header>
 
       <div className="settings-layout">
         <aside className="settings-sidebar">
           <div className="settings-sidebar__title"><Settings2 size={17} /><strong>Settings</strong></div>
           <nav aria-label="Settings navigation">
-            {navigation.map((item) => {
+            {availableNavigation.map((item) => {
               const Icon = item.icon;
               return <div key={item.id}>{item.group && <p>{item.group}</p>}<button type="button" className={section === item.id ? "active" : ""} onClick={() => chooseSection(item.id)} aria-current={section === item.id ? "page" : undefined}><Icon size={17} />{item.label}<ChevronRight size={14} /></button></div>;
             })}

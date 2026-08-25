@@ -10,8 +10,15 @@ Export HQ is a managed export operating system: one shared workspace where expor
 - `packages/domain` — export domain types, health scoring, and application services
 - `packages/authorization` — tenant and staff-access policy boundary
 - `packages/db` — PostgreSQL/Drizzle schema and migrations
-- `packages/ui` — shared visual system
+- `packages/ui` — shared visual system: brand tokens, base styles and components
 - `packages/validation` — shared Zod contracts
+
+## Brand and design system
+
+The brand guidelines live in [`docs/brand/`](docs/brand/README.md), with the
+ExportPanel product and tenant white-label rules in
+[`docs/brand/exportpanel/`](docs/brand/exportpanel/README.md). Every visual
+decision resolves to a token in `packages/ui/src/styles/tokens.css`.
 
 ## Local development
 

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { getCustomerPrincipal } from "@exporthq/auth";
 import { authorizeOrganization, canAccessOrganization } from "@exporthq/authorization";
 import { WorkspaceShell } from "../_components/workspace-shell";
 import InboxClient from "./inbox-client";
+import { requireWorkspaceFeature } from "../_lib/session";
 
 export const metadata: Metadata = {
   title: "Inbox — Export HQ",
@@ -12,8 +12,9 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function InboxPage() {
-  const principal = await getCustomerPrincipal();
+  const session = await requireWorkspaceFeature("inbox");
+  const principal = session.principal;
   authorizeOrganization(principal, principal.organizationId, "tasks:view");
   const canManage = canAccessOrganization(principal, principal.organizationId, "tasks:manage");
-  return <WorkspaceShell active="inbox"><InboxClient canManage={canManage} /></WorkspaceShell>;
+  return <WorkspaceShell active="inbox" session={session}><InboxClient canManage={canManage} /></WorkspaceShell>;
 }

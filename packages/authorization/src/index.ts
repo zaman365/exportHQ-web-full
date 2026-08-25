@@ -12,6 +12,160 @@ export type Permission =
   | "team:manage"
   | "billing:manage";
 
+export type SubscriptionTier = "preview" | "explore" | "launch" | "scale" | "managed";
+export type BusinessVerificationStatus = "unverified" | "pending" | "verified";
+export type MarketIntelligenceAccess = "public" | "member" | "full";
+
+export type WorkspaceFeature =
+  | "home"
+  | "learning"
+  | "onboarding"
+  | "plans"
+  | "inbox"
+  | "my-work"
+  | "waiting"
+  | "decisions"
+  | "ideas"
+  | "create"
+  | "products"
+  | "documents"
+  | "readiness"
+  | "requirements"
+  | "attention"
+  | "blueprints"
+  | "team"
+  | "markets"
+  | "opportunities"
+  | "buyers"
+  | "integrations"
+  | "audit"
+  | "export"
+  | "managed-services";
+
+export interface SubscriptionDefinition {
+  id: SubscriptionTier;
+  name: string;
+  summary: string;
+  features: readonly WorkspaceFeature[];
+}
+
+const previewFeatures = ["home", "learning"] as const satisfies readonly WorkspaceFeature[];
+const exploreFeatures = [
+  ...previewFeatures,
+  "onboarding",
+  "plans",
+  "markets",
+  "opportunities"
+] as const satisfies readonly WorkspaceFeature[];
+const launchFeatures = [
+  ...exploreFeatures,
+  "inbox",
+  "my-work",
+  "waiting",
+  "decisions",
+  "ideas",
+  "create",
+  "products",
+  "documents",
+  "readiness",
+  "requirements"
+] as const satisfies readonly WorkspaceFeature[];
+const scaleFeatures = [
+  ...launchFeatures,
+  "attention",
+  "blueprints",
+  "team",
+  "markets",
+  "opportunities",
+  "buyers",
+  "integrations",
+  "audit",
+  "export"
+] as const satisfies readonly WorkspaceFeature[];
+
+export const subscriptionCatalog: Readonly<Record<SubscriptionTier, SubscriptionDefinition>> = {
+  preview: {
+    id: "preview",
+    name: "Preview",
+    summary: "A safe, read-only tour of TREVV's operating model.",
+    features: previewFeatures
+  },
+  explore: {
+    id: "explore",
+    name: "Basic",
+    summary: "A signed-in starting point for completing the export brief and onboarding.",
+    features: exploreFeatures
+  },
+  launch: {
+    id: "launch",
+    name: "Launch",
+    summary: "Core readiness, evidence, decisions, and personal execution for a first market.",
+    features: launchFeatures
+  },
+  scale: {
+    id: "scale",
+    name: "Scale",
+    summary: "Cross-project attention, reusable workflows, team coordination, and portfolio controls.",
+    features: scaleFeatures
+  },
+  managed: {
+    id: "managed",
+    name: "Managed",
+    summary: "The complete workspace plus accountable Export HQ specialist execution.",
+    features: [...scaleFeatures, "managed-services"]
+  }
+};
+
+const permissionCatalog: Readonly<Record<SubscriptionTier, readonly Permission[]>> = {
+  preview: [],
+  explore: ["company:view"],
+  launch: [
+    "company:view", "company:manage", "products:view", "products:manage",
+    "compliance:view", "documents:view", "documents:manage", "tasks:view", "tasks:manage"
+  ],
+  scale: [
+    "company:view", "company:manage", "products:view", "products:manage",
+    "compliance:view", "compliance:manage", "documents:view", "documents:manage",
+    "tasks:view", "tasks:manage", "team:manage", "billing:manage"
+  ],
+  managed: [
+    "company:view", "company:manage", "products:view", "products:manage",
+    "compliance:view", "compliance:manage", "documents:view", "documents:manage",
+    "tasks:view", "tasks:manage", "team:manage", "billing:manage"
+  ]
+};
+
+export function featuresForTier(tier: SubscriptionTier): readonly WorkspaceFeature[] {
+  return subscriptionCatalog[tier].features;
+}
+
+export function permissionsForTier(tier: SubscriptionTier): ReadonlySet<Permission> {
+  return new Set(permissionCatalog[tier]);
+}
+
+export function tierHasFeature(tier: SubscriptionTier, feature: WorkspaceFeature): boolean {
+  return subscriptionCatalog[tier].features.includes(feature);
+}
+
+export function isPaidTier(tier: SubscriptionTier): boolean {
+  return tier === "launch" || tier === "scale" || tier === "managed";
+}
+
+/**
+ * Market intelligence uses a value-led access ladder independent of the wider
+ * workspace tier. Signing in reveals ranked detail; either a verified business
+ * or any paid organization plan unlocks the evidence and action layer.
+ */
+export function resolveMarketIntelligenceAccess(input: {
+  authenticated: boolean;
+  businessVerification: BusinessVerificationStatus;
+  tier: SubscriptionTier;
+}): MarketIntelligenceAccess {
+  if (!input.authenticated) return "public";
+  if (input.businessVerification === "verified" || isPaidTier(input.tier)) return "full";
+  return "member";
+}
+
 export interface CustomerPrincipal {
   kind: "customer";
   userId: string;

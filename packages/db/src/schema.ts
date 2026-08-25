@@ -1,5 +1,6 @@
 import {
   boolean,
+  check,
   index,
   integer,
   jsonb,
@@ -10,6 +11,7 @@ import {
   uniqueIndex,
   uuid
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -27,6 +29,9 @@ export const requirementStatus = pgEnum("requirement_status", [
   "under_review", "compliant", "expired", "action_required"
 ]);
 export const documentStatus = pgEnum("document_status", ["quarantine", "under_review", "approved", "rejected", "expired"]);
+export const businessVerificationStatus = pgEnum("business_verification_status", ["unverified", "pending", "verified", "rejected"]);
+export const marketOpportunityStatus = pgEnum("market_opportunity_status", ["draft", "published", "retired"]);
+export const marketOpportunityTrend = pgEnum("market_opportunity_trend", ["accelerating", "established", "emerging"]);
 
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -84,8 +89,33 @@ export const companyProfiles = pgTable("company_profiles", {
   employeeCount: integer("employee_count"),
   exportMarkets: text("export_markets").array().notNull().default([]),
   onboardingPercent: integer("onboarding_percent").notNull().default(0),
+  verificationStatus: businessVerificationStatus("verification_status").notNull().default("unverified"),
+  verificationSubmittedAt: timestamp("verification_submitted_at", { withTimezone: true }),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  verifiedBy: text("verified_by"),
   ...timestamps
 });
+
+export const businessVerificationRequests = pgTable("business_verification_requests", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  status: businessVerificationStatus("status").notNull().default("pending"),
+  legalName: text("legal_name").notNull(),
+  registrationNumber: text("registration_number").notNull(),
+  registrationAuthority: text("registration_authority").notNull(),
+  originCountryCode: text("origin_country_code").notNull(),
+  website: text("website").notNull(),
+  businessEmail: text("business_email").notNull(),
+  evidenceUrl: text("evidence_url").notNull(),
+  submittedBy: text("submitted_by").notNull(),
+  reviewedBy: text("reviewed_by"),
+  reviewNote: text("review_note"),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  index("business_verification_requests_org_status_idx").on(table.organizationId, table.status),
+  index("business_verification_requests_status_created_idx").on(table.status, table.createdAt)
+]);
 
 export const facilities = pgTable("facilities", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -120,9 +150,82 @@ export const products = pgTable("products", {
 export const markets = pgTable("markets", {
   id: uuid("id").primaryKey().defaultRandom(),
   countryCode: text("country_code").notNull().unique(),
+  iso3Code: text("iso3_code").unique(),
   name: text("name").notNull(),
-  jurisdiction: text("jurisdiction").notNull()
+  jurisdiction: text("jurisdiction").notNull(),
+  region: text("region").notNull().default("Global"),
+  active: boolean("active").notNull().default(true)
 });
+
+export const marketCatalogProducts = pgTable("market_catalog_products", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  hsCodes: text("hs_codes").array().notNull().default([]),
+  originCountryCode: text("origin_country_code").notNull(),
+  active: boolean("active").notNull().default(true),
+  ...timestamps
+}, (table) => [index("market_catalog_products_origin_category_idx").on(table.originCountryCode, table.category)]);
+
+export const marketOpportunities = pgTable("market_opportunities", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  marketId: uuid("market_id").notNull().references(() => markets.id, { onDelete: "cascade" }),
+  productId: uuid("product_id").notNull().references(() => marketCatalogProducts.id, { onDelete: "cascade" }),
+  originCountryCode: text("origin_country_code").notNull(),
+  status: marketOpportunityStatus("status").notNull().default("draft"),
+  trend: marketOpportunityTrend("trend").notNull(),
+  confidence: text("confidence").notNull(),
+  opportunityScore: integer("opportunity_score").notNull(),
+  demandScore: integer("demand_score").notNull(),
+  originFitScore: integer("origin_fit_score").notNull(),
+  publicSummary: text("public_summary").notNull(),
+  memberInsight: text("member_insight").notNull(),
+  whyItRanks: text("why_it_ranks").array().notNull().default([]),
+  buyerProfiles: text("buyer_profiles").array().notNull().default([]),
+  entryRoutes: text("entry_routes").array().notNull().default([]),
+  barriers: text("barriers").array().notNull().default([]),
+  proofToPrepare: text("proof_to_prepare").array().notNull().default([]),
+  nextActions: text("next_actions").array().notNull().default([]),
+  methodVersion: text("method_version").notNull(),
+  lastCalculatedAt: timestamp("last_calculated_at", { withTimezone: true }).notNull(),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("market_opportunities_origin_market_product_unique").on(table.originCountryCode, table.marketId, table.productId),
+  index("market_opportunities_market_status_idx").on(table.marketId, table.status),
+  index("market_opportunities_product_status_idx").on(table.productId, table.status),
+  check("market_opportunities_confidence_check", sql`${table.confidence} in ('high', 'medium')`),
+  check("market_opportunities_score_check", sql`${table.opportunityScore} between 0 and 100`),
+  check("market_opportunities_demand_score_check", sql`${table.demandScore} between 0 and 100`),
+  check("market_opportunities_origin_fit_score_check", sql`${table.originFitScore} between 0 and 100`)
+]);
+
+export const marketOpportunityEvidence = pgTable("market_opportunity_evidence", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  opportunityId: uuid("opportunity_id").notNull().references(() => marketOpportunities.id, { onDelete: "cascade" }),
+  sourceLabel: text("source_label").notNull(),
+  sourcePublisher: text("source_publisher").notNull(),
+  sourceUrl: text("source_url").notNull(),
+  sourceType: text("source_type").notNull().default("trade_data"),
+  dataPeriod: text("data_period").notNull(),
+  metric: text("metric").notNull(),
+  rawMetrics: jsonb("raw_metrics").$type<Record<string, string | number | null>>().notNull().default({}),
+  checkedAt: timestamp("checked_at", { withTimezone: true }).notNull(),
+  ...timestamps
+}, (table) => [index("market_opportunity_evidence_opportunity_idx").on(table.opportunityId)]);
+
+export const organizationMarketShortlists = pgTable("organization_market_shortlists", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  opportunityId: uuid("opportunity_id").notNull().references(() => marketOpportunities.id, { onDelete: "cascade" }),
+  savedBy: text("saved_by").notNull(),
+  notes: text("notes"),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("organization_market_shortlists_unique").on(table.organizationId, table.opportunityId),
+  index("organization_market_shortlists_org_idx").on(table.organizationId)
+]);
 
 export const productMarkets = pgTable("product_markets", {
   id: uuid("id").primaryKey().defaultRandom(),

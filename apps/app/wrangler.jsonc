@@ -15,7 +15,8 @@
   },
   "cache": { "enabled": true },
   "vars": {
-    "EXPORTHQ_DEMO_MODE": "true",
-    "EXPORTHQ_WEB_URL": "https://exporthq-web.zaman-ase365.workers.dev"
+    "EXPORTHQ_DEMO_MODE": "false",
+    "EXPORTHQ_WEB_URL": "https://export-hq.com",
+    "EXPORTHQ_AUTHORIZED_PARTIES": "https://trevv.export-hq.com"
   }
 }
