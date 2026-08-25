@@ -1,5 +1,26 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import { Geist, Geist_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
+
+const sans = Geist({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-sans"
+});
+
+const mono = Geist_Mono({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-mono"
+});
+
+const display = Instrument_Serif({
+  subsets: ["latin"],
+  weight: "400",
+  style: ["normal", "italic"],
+  display: "swap",
+  variable: "--font-display"
+});
 
 const siteUrl = new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "https://exporthq.com");
 
@@ -25,6 +46,15 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true }
 };
 
+export const viewport: Viewport = {
+  themeColor: "#04100b",
+  colorScheme: "light"
+};
+
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body>{children}</body></html>;
+  return (
+    <html lang="en" className={`${sans.variable} ${mono.variable} ${display.variable}`}>
+      <body>{children}</body>
+    </html>
+  );
 }
