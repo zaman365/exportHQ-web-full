@@ -1,0 +1,203 @@
+/* ==========================================================================
+   EXPORT HQ — BRAND TOKENS
+   The single source of truth for every Export HQ surface: the public website,
+   ExportPanel and the operator console.
+
+   Three tiers (docs/brand/08-tokens.md):
+     Tier 1  --<family>-<step>    raw values, no meaning
+     Tier 2  --<role>             what components reference
+     Tier 3  --<component>-<prop> declared next to the component that owns it
+
+   Components reference Tier 2 or Tier 3 only. A raw colour value or a Tier 1
+   token inside a component rule is a review failure.
+   ========================================================================== */
+
+:root {
+  color-scheme: light;
+
+  /* --- Tier 1 · Signal (safety orange) ---------------------------------- */
+  --signal-50: #fff4ec;
+  --signal-100: #fff0e6;
+  --signal-200: #ffd5bf;
+  --signal-300: #ffb086;
+  --signal-400: #ff8b4d;
+  --signal-500: #ff6a1a;
+  --signal-600: #ff7d32;
+  --signal-700: #c83d00;
+  --signal-800: #9e3000;
+  --signal-muted: #d98b67;
+
+  /* --- Tier 1 · Ink (warm neutrals) ------------------------------------- */
+  --ink-0: #211813;
+  --ink-1: #2b1c15;
+  --ink-2: #3a2419;
+  --ink-3: #4a2f21;
+  --ink-500: #5b463b;
+  --ink-400: #80695d;
+  --ink-300: #a08d82;
+
+  /* --- Tier 1 · Paper (surfaces) ---------------------------------------- */
+  --paper-0: #ffffff;
+  --paper-1: #fafbfc;
+  --paper-2: #f4f6f8;
+  --paper-3: #e8edf2;
+  --paper-line: #e7e9ed;
+  --paper-line-strong: #cfd4da;
+
+  /* --- Tier 1 · Support hues -------------------------------------------- */
+  --tide-500: #2563eb;
+  --tide-100: #eaf1ff;
+  --tide-700: #2f6379;
+
+  --ember-500: #ffb020;
+  --ember-100: #fff4d6;
+  --ember-700: #9a5c00;
+
+  --plum-500: #a855f7;
+  --plum-100: #f4eaff;
+  --plum-700: #7540ad;
+
+  --mint-500: #138a6b;
+  --mint-100: #e8f7f2;
+  --mint-700: #0f6d54;
+  --mint-300: #5da97e;
+
+  --flare-500: #b3261e;
+  --flare-100: #fdecea;
+
+  --slate-500: #94a3b8;
+  --slate-700: #536273;
+
+  /* Sovereign colours — factual cartography only, exempt from the palette. */
+  --flag-bd-green: #2f7464;
+  --flag-bd-green-deep: #245a4e;
+  --flag-bd-red: #f42a41;
+
+  /* --- Tier 2 · Colour roles -------------------------------------------- */
+  --signal: var(--signal-500);
+  --signal-deep: var(--signal-700);
+  --signal-wash: var(--signal-100);
+
+  --fg: #241913;
+  --fg-2: var(--ink-500);
+  --fg-3: var(--ink-400);
+  --fg-4: var(--ink-300);
+  --fg-inv: var(--paper-0);
+  --fg-inv-2: #fff0e7;
+  --fg-inv-3: var(--signal-200);
+
+  --surface: var(--paper-0);
+  --surface-2: var(--paper-1);
+  --surface-3: var(--paper-2);
+  --line: var(--paper-line);
+  --line-strong: var(--paper-line-strong);
+
+  /* Information */
+  --tide: var(--tide-500);
+  --tide-wash: var(--tide-100);
+  --tide-ink: var(--tide-700);
+  /* Attention */
+  --ember: var(--ember-500);
+  --ember-wash: var(--ember-100);
+  --ember-ink: var(--ember-700);
+  /* Intelligence (AI-assisted, unverified) */
+  --plum: var(--plum-500);
+  --plum-wash: var(--plum-100);
+  --plum-ink: var(--plum-700);
+  /* Verified */
+  --mint: var(--mint-500);
+  --mint-wash: var(--mint-100);
+  --mint-ink: var(--mint-700);
+  /* Risk */
+  --flare: var(--flare-500);
+  --flare-wash: var(--flare-100);
+  --flare-ink: var(--flare-500);
+  /* Neutral / inert */
+  --slate: var(--slate-500);
+  --slate-wash: var(--paper-2);
+  --slate-ink: var(--slate-700);
+
+  --focus-ring: var(--signal-deep);
+
+  /* --- Tier 2 · Identity tones ------------------------------------------ */
+  --avatar-0-bg: #ffe6d6;
+  --avatar-0-fg: #8f3d05;
+  --avatar-1-bg: #e3e9f3;
+  --avatar-1-fg: #334962;
+  --avatar-2-bg: #f0dfd0;
+  --avatar-2-fg: #6f4c36;
+  --wordmark-fg: var(--fg);
+  --wordmark-accent: var(--signal-deep);
+
+  /* --- Tier 2 · Type ----------------------------------------------------- */
+  --ui:
+    var(--font-sans), ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    sans-serif;
+  --data: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  --serif:
+    var(--font-display), var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+
+  /* --- Tier 1 · Space ---------------------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* --- Tier 1 · Shape ---------------------------------------------------- */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 18px;
+  --r-lg: 26px;
+  --r-xl: 34px;
+
+  /* --- Tier 2 · Website rhythm ------------------------------------------- */
+  --max: 1240px;
+  --gutter: clamp(20px, 4.2vw, 44px);
+  --section: clamp(4.75rem, 8.5vw, 8.5rem);
+  --header-h: 72px;
+
+  /* --- Tier 2 · Elevation ------------------------------------------------ */
+  --shadow-xs: 0 1px 2px rgb(25 34 50 / 0.05);
+  --shadow-sm:
+    0 1px 2px rgb(25 34 50 / 0.04), 0 8px 22px -12px rgb(25 34 50 / 0.16);
+  --shadow-md:
+    0 2px 4px rgb(25 34 50 / 0.04), 0 24px 56px -28px rgb(25 34 50 / 0.24);
+  --shadow-lg:
+    0 42px 110px -42px rgb(25 34 50 / 0.34),
+    0 14px 36px -22px rgb(25 34 50 / 0.2);
+
+  /* --- Tier 1 · Motion ---------------------------------------------------- */
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
+  --dur-4: 600ms;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* --- Tenant slots ------------------------------------------------------
+     Overridden per organization by tenantTheme() and consumed only by the four
+     slots in docs/brand/exportpanel/05-tenant-branding.md. */
+  --tenant-accent: var(--ink-1);
+  --tenant-accent-on: var(--fg-inv);
+  --tenant-accent-wash: var(--paper-2);
+  --tenant-mark: none;
+}
+
+/* Dark surfaces are a component treatment, never a theme. Anything inside a
+   .on-ink region flips the three text roles and the accent. */
+.on-ink {
+  --fg: var(--fg-inv);
+  --fg-2: var(--fg-inv-2);
+  --fg-3: var(--fg-inv-3);
+  --line: rgb(255 255 255 / 0.1);
+  --line-strong: rgb(255 255 255 / 0.18);
+  --focus-ring: var(--signal);
+  --wordmark-fg: var(--fg-inv);
+  --wordmark-accent: var(--signal);
+}

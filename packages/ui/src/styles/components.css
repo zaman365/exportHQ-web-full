@@ -1,0 +1,230 @@
+/* ==========================================================================
+   EXPORT HQ — SHARED COMPONENTS
+   Styles for the components exported by @exporthq/ui. These must render
+   identically on every surface that uses them (docs/brand/exportpanel/
+   02-inheritance.md — "cross-surface consistency contract").
+   ========================================================================== */
+
+/* --- 1. Brand lockup ------------------------------------------------------
+   <Monogram />, <Wordmark />, <Logo /> — packages/ui/src/brand.tsx */
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.monogram .monogram-plate {
+  fill: var(--signal);
+}
+
+.monogram .monogram-globe {
+  fill: none;
+  stroke: var(--ink-0);
+  stroke-width: 1.35;
+  opacity: 0.55;
+}
+
+.monogram .monogram-arrow {
+  fill: none;
+  stroke: var(--ink-0);
+  stroke-width: 2.1;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.wordmark-text {
+  font-family: var(--ui);
+  font-size: 1.0625rem;
+  font-weight: 620;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: var(--wordmark-fg);
+  white-space: nowrap;
+}
+
+.wordmark-text span {
+  color: var(--wordmark-accent);
+}
+
+/* --- 2. Card --------------------------------------------------------------
+   The resting surface of the product. Structure is a hairline, not a shadow. */
+
+.card {
+  --card-pad: var(--panel-card-pad, var(--space-5));
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--panel-radius, var(--r-sm));
+  box-shadow: var(--shadow-xs);
+}
+
+/* --- 3. Badge -------------------------------------------------------------
+   Six tones, mapped to the role table in docs/brand/04-color.md. Always
+   accompanied by the state written out — colour never carries meaning alone. */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: var(--slate-wash);
+  color: var(--slate-ink);
+  font-size: var(--panel-font-label, 11px);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
+  white-space: nowrap;
+  /* Sentence case, never Title Case — docs/brand/02-verbal.md. Status values
+     arrive lowercase from the domain model, so only the first letter lifts. */
+  text-transform: none;
+}
+
+.badge::first-letter {
+  text-transform: uppercase;
+}
+
+.badge--neutral {
+  background: var(--slate-wash);
+  color: var(--slate-ink);
+}
+
+.badge--info {
+  background: var(--tide-wash);
+  color: var(--tide-ink);
+}
+
+.badge--warning {
+  background: var(--ember-wash);
+  color: var(--ember-ink);
+}
+
+.badge--danger {
+  background: var(--flare-wash);
+  color: var(--flare-ink);
+}
+
+.badge--success {
+  background: var(--mint-wash);
+  color: var(--mint-ink);
+}
+
+/* --- 4. Avatar ------------------------------------------------------------
+   Identity, never status. Three tones cycled by index. */
+
+.avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--avatar-0-bg);
+  color: var(--avatar-0-fg);
+  font-family: var(--data);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.avatar--1 {
+  background: var(--avatar-1-bg);
+  color: var(--avatar-1-fg);
+}
+
+.avatar--2 {
+  background: var(--avatar-2-bg);
+  color: var(--avatar-2-fg);
+}
+
+.avatar-stack {
+  display: flex;
+  align-items: center;
+}
+
+.avatar-stack .avatar + .avatar {
+  margin-left: -8px;
+}
+
+/* --- 5. Progress ----------------------------------------------------------
+   Signal fill on paper. The accessible name carries the percentage. */
+
+.progress {
+  height: 5px;
+  overflow: hidden;
+  background: var(--paper-3);
+  border-radius: 999px;
+}
+
+.progress > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--signal);
+  transition: width var(--dur-3) var(--ease);
+}
+
+/* --- 6. Product button ----------------------------------------------------
+   Ink on orange. Never white on orange (2.9:1 — fails AA). */
+
+.button {
+  --btn-h: var(--panel-control-h, 36px);
+  min-height: var(--btn-h);
+  padding: 0 14px;
+  border: 1px solid transparent;
+  border-radius: var(--panel-radius-sm, var(--r-xs));
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: var(--panel-font-sm, 12px);
+  font-weight: 620;
+  white-space: nowrap;
+  transition:
+    background-color var(--dur-2) var(--ease),
+    border-color var(--dur-2) var(--ease),
+    color var(--dur-2) var(--ease);
+}
+
+.button--primary {
+  background: var(--signal);
+  color: var(--ink-0);
+  box-shadow: 0 1px 2px rgb(200 61 0 / 0.22);
+}
+
+.button--primary:hover {
+  background: var(--signal-600);
+}
+
+.button--secondary {
+  background: var(--surface);
+  border-color: var(--line-strong);
+  color: var(--fg);
+}
+
+.button--secondary:hover {
+  background: var(--surface-2);
+}
+
+.button--ghost {
+  background: transparent;
+  color: var(--signal-deep);
+}
+
+.button--ghost:hover {
+  background: var(--signal-wash);
+}
+
+.button:disabled,
+.button[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .progress > span,
+  .button {
+    transition: none;
+  }
+}

@@ -1,21 +1,19 @@
 import type { HTMLAttributes, ReactNode } from "react";
 import { clsx } from "clsx";
 
-export function Logo({ compact = false }: { compact?: boolean }) {
-  return (
-    <div className="brand-lockup" aria-label="Export HQ">
-      <span className="brand-mark" aria-hidden="true">EH</span>
-      {!compact && <span className="brand-name">EXPORT HQ</span>}
-    </div>
-  );
-}
+export { Logo, Monogram, Wordmark } from "./brand";
+export { tenantInitials, tenantTheme } from "./tenant";
+export type { TenantBrand, TenantThemeStyle } from "./tenant";
+
+/** Status tones, mapped to the roles in docs/brand/04-color.md. */
+export type BadgeTone = "neutral" | "success" | "warning" | "danger" | "info";
 
 export function Badge({
   children,
   tone = "neutral"
 }: {
   children: ReactNode;
-  tone?: "neutral" | "success" | "warning" | "danger" | "info";
+  tone?: BadgeTone;
 }) {
   return <span className={clsx("badge", `badge--${tone}`)}>{children}</span>;
 }

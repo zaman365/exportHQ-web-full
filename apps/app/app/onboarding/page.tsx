@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ArrowLeft, ArrowRight, Check, FileUp, Package, ShieldCheck } from "lucide-react";
 import { Card, Logo } from "@exporthq/ui";
+import { HintButton } from "../_components/hint-button";
 
 const steps = ["Company", "Product", "Market", "Evidence", "Review"];
 
@@ -15,7 +16,7 @@ export default function OnboardingPage() {
       <div className="onboarding-layout">
         <aside className="onboarding-intro">
           <p>EXPORT READINESS SETUP</p>
-          <h1>Build your export foundation.</h1>
+          <h1>Build your export foundation. <HintButton topic="setup-progress" /></h1>
           <span>Tell us what you manufacture and where you want to sell. We&apos;ll turn gaps into owned, trackable actions.</span>
           <div className="step-list">{steps.map((label, index) => <button type="button" key={label} className={index === step ? "active" : ""} onClick={() => setStep(index)}><span>{index < step ? <Check size={11} /> : index + 1}</span><strong>{label}</strong></button>)}</div>
         </aside>

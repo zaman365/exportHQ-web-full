@@ -72,6 +72,9 @@ export interface DashboardSnapshot {
     originCountry: string;
     industry: string;
     onboardingPercent: number;
+    /** Optional tenant branding. Constrained to the four slots in
+     *  docs/brand/exportpanel/05-tenant-branding.md. */
+    brand?: { name: string; initials?: string; accent?: string; markUrl?: string };
   };
   health: { overall: number; dimensions: ReadinessDimension[] };
   metrics: {
@@ -151,7 +154,8 @@ export const demoSnapshot: DashboardSnapshot = {
     tradingName: "ABC Textiles",
     originCountry: "Bangladesh",
     industry: "Apparel manufacturing",
-    onboardingPercent: 78
+    onboardingPercent: 78,
+    brand: { name: "ABC Textiles", initials: "AT", accent: "#1e5aa8" }
   },
   health: {
     overall: 82,
