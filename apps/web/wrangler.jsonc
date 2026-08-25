@@ -1,6 +1,12 @@
 {
   "name": "exporthq-web",
   "compatibility_date": "2026-08-25",
+  "routes": [
+    {
+      "pattern": "export-hq.com",
+      "custom_domain": true
+    }
+  ],
   "assets": {
     "directory": "./out",
     "not_found_handling": "404-page"
