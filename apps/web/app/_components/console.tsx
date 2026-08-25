@@ -6,10 +6,16 @@ import {
   PackageCheck,
   ShieldCheck,
   TrendingUp,
-  UsersRound
+  UsersRound,
 } from "lucide-react";
 
-const RAIL = [LayoutDashboard, ShieldCheck, UsersRound, PackageCheck, TrendingUp];
+const RAIL = [
+  LayoutDashboard,
+  ShieldCheck,
+  UsersRound,
+  PackageCheck,
+  TrendingUp,
+];
 
 function HealthGauge({ value }: { value: number }) {
   const radius = 32;
@@ -17,7 +23,12 @@ function HealthGauge({ value }: { value: number }) {
   const filled = (Math.max(0, Math.min(100, value)) / 100) * circumference;
 
   return (
-    <svg className="gauge" viewBox="0 0 80 80" role="img" aria-label={`Export health score ${value} out of 100`}>
+    <svg
+      className="gauge"
+      viewBox="0 0 80 80"
+      role="img"
+      aria-label={`Export health score ${value} out of 100`}
+    >
       <circle className="gauge-track" cx="40" cy="40" r={radius} />
       <circle
         className="gauge-fill"
@@ -27,14 +38,20 @@ function HealthGauge({ value }: { value: number }) {
         strokeDasharray={`${filled} ${circumference - filled}`}
         strokeDashoffset={circumference * 0.25}
       />
-      <text className="gauge-value" x="40" y="40" textAnchor="middle" dominantBaseline="central">
+      <text
+        className="gauge-value"
+        x="40"
+        y="40"
+        textAnchor="middle"
+        dominantBaseline="central"
+      >
         {value}
       </text>
     </svg>
   );
 }
 
-/** Illustrative product surface shown in the hero. Static by design — no live data. */
+/** Illustrative ExportPanel surface. Static by design — no live data. */
 export function Console() {
   return (
     <figure className="console">
@@ -45,7 +62,7 @@ export function Console() {
           <i />
         </span>
         <span className="chrome-path">
-          Export programme <em>/</em> <b>Germany entry</b>
+          ExportPanel <em>/</em> <b>Germany market entry</b>
         </span>
         <span className="chrome-live">
           <i aria-hidden="true" /> Live
@@ -56,7 +73,10 @@ export function Console() {
         <div className="console-rail" aria-hidden="true">
           <span className="rail-mark">EH</span>
           {RAIL.map((Icon, index) => (
-            <span key={Icon.displayName ?? index} className={index === 0 ? "rail-item is-active" : "rail-item"}>
+            <span
+              key={Icon.displayName ?? index}
+              className={index === 0 ? "rail-item is-active" : "rail-item"}
+            >
               <Icon size={16} strokeWidth={1.75} />
             </span>
           ))}
@@ -65,31 +85,54 @@ export function Console() {
         <div className="console-main">
           <header className="console-head">
             <div>
-              <p className="data-label">Export health</p>
-              <p className="console-score">
-                82<span>/100</span>
+              <p className="data-label">Active export programme</p>
+              <p className="console-title">Germany market entry</p>
+              <p className="console-subtitle">
+                Prepared with your Export HQ team
               </p>
             </div>
-            <HealthGauge value={82} />
+            <div className="console-health">
+              <HealthGauge value={82} />
+              <span>
+                <strong>On track</strong>
+                <small>Export readiness</small>
+              </span>
+            </div>
           </header>
 
           <div className="console-stats">
             <div className="stat is-primary">
-              <p className="data-label">Priority market</p>
+              <p className="data-label">Readiness</p>
               <p className="stat-value">
-                <Globe2 size={16} strokeWidth={1.9} /> Germany
+                <Globe2 size={16} strokeWidth={1.9} /> 82%
               </p>
+              <p className="stat-note">Ready to prepare</p>
             </div>
             <div className="stat">
-              <p className="data-label">Open actions</p>
-              <p className="stat-value">7</p>
-              <p className="stat-note">3 with Export HQ</p>
+              <p className="data-label">Requirements</p>
+              <p className="stat-value">18/21</p>
+              <p className="stat-note">Verified for entry</p>
             </div>
             <div className="stat">
               <p className="data-label">Buyer pipeline</p>
               <p className="stat-value">12</p>
               <p className="stat-note">4 qualified</p>
             </div>
+          </div>
+
+          <div className="console-stages" aria-label="Export programme stages">
+            <span className="is-complete">
+              <i aria-hidden="true" /> Discover
+            </span>
+            <span className="is-active">
+              <i aria-hidden="true" /> Prepare
+            </span>
+            <span>
+              <i aria-hidden="true" /> Enter
+            </span>
+            <span>
+              <i aria-hidden="true" /> Deliver
+            </span>
           </div>
 
           <div className="console-milestone">
@@ -121,7 +164,8 @@ export function Console() {
         </div>
       </div>
       <figcaption className="sr-only">
-        Illustration of the Export HQ workspace showing export health, priority market, open actions, buyer pipeline and the next
+        Illustration of ExportPanel showing a Germany market-entry programme,
+        readiness, requirements, buyer pipeline, programme stages and the next
         milestone.
       </figcaption>
     </figure>

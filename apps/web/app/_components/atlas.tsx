@@ -1,3 +1,12 @@
+import {
+  BANGLADESH_PATH,
+  EXPORT_DESTINATIONS,
+  EXPORT_ORIGIN,
+  WORLD_GRATICULE_PATH,
+  WORLD_LAND_PATH,
+  WORLD_SPHERE_PATH,
+} from "./globe-data";
+
 const ROUTES = [
   "M112 402 Q 208 262 302 248",
   "M302 248 Q 418 148 528 172",
@@ -6,7 +15,7 @@ const ROUTES = [
   "M302 248 Q 348 384 432 468",
   "M432 468 Q 546 542 646 516",
   "M646 516 Q 726 442 702 328",
-  "M112 402 Q 262 512 432 468"
+  "M112 402 Q 262 512 432 468",
 ];
 
 const PORTS: Array<{ x: number; y: number; r: number; hub?: boolean }> = [
@@ -16,18 +25,111 @@ const PORTS: Array<{ x: number; y: number; r: number; hub?: boolean }> = [
   { x: 702, y: 328, r: 5, hub: true },
   { x: 838, y: 196, r: 3.5 },
   { x: 432, y: 468, r: 4 },
-  { x: 646, y: 516, r: 3.5 }
+  { x: 646, y: 516, r: 3.5 },
 ];
+
+/** Flat world export network centred on Bangladesh for the homepage hero. */
+export function BangladeshExportGlobe() {
+  return (
+    <figure className="export-globe">
+      <svg
+        viewBox="0 0 620 620"
+        role="img"
+        aria-labelledby="export-globe-title export-globe-description"
+      >
+        <title id="export-globe-title">
+          Bangladesh connected to international export destinations
+        </title>
+        <desc id="export-globe-description">
+          A flat world map centred on Bangladesh, connected by animated routes
+          to the United States, Europe, the Arab region, East Africa, Japan,
+          Southeast Asia and Australia.
+        </desc>
+
+        <path className="export-globe-disc" d={WORLD_SPHERE_PATH} />
+        <path
+          className="export-globe-graticule"
+          d={WORLD_GRATICULE_PATH}
+          aria-hidden="true"
+        />
+        <path
+          className="export-globe-land"
+          d={WORLD_LAND_PATH}
+          aria-hidden="true"
+        />
+
+        <g className="export-route-shadows" aria-hidden="true">
+          {EXPORT_DESTINATIONS.filter((route) => route.d).map((route) => (
+            <path key={route.label} d={route.d} />
+          ))}
+        </g>
+
+        <g className="export-routes" aria-hidden="true">
+          {EXPORT_DESTINATIONS.filter((route) => route.d).map(
+            (route, index) => (
+              <path
+                key={route.label}
+                d={route.d}
+                style={{ animationDelay: `${index * -1.15}s` }}
+              />
+            ),
+          )}
+        </g>
+
+        <g className="export-destinations" aria-hidden="true">
+          {EXPORT_DESTINATIONS.map((destination, index) => (
+            <g
+              key={destination.label}
+              style={{ animationDelay: `${index * 0.45}s` }}
+            >
+              <circle
+                className="destination-pulse"
+                cx={destination.x}
+                cy={destination.y}
+                r="2.2"
+              />
+              <circle
+                className="destination-dot"
+                cx={destination.x}
+                cy={destination.y}
+                r="1.4"
+              />
+              <text x={destination.tx} y={destination.ty}>
+                {destination.label}
+              </text>
+            </g>
+          ))}
+        </g>
+
+        <g className="bangladesh-origin" aria-hidden="true">
+          <path className="bangladesh-map" d={BANGLADESH_PATH} />
+          <circle
+            className="origin-point"
+            cx={EXPORT_ORIGIN.x}
+            cy={EXPORT_ORIGIN.y}
+            r="1.1"
+          />
+        </g>
+      </svg>
+    </figure>
+  );
+}
 
 /** Decorative trade-route field used behind the hero and closing call to action. */
 export function Atlas({ id = "atlas" }: { id?: string }) {
   return (
-    <svg className="atlas" viewBox="0 0 900 620" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">
+    <svg
+      className="atlas"
+      viewBox="0 0 900 620"
+      preserveAspectRatio="xMidYMid meet"
+      aria-hidden="true"
+      focusable="false"
+    >
       <defs>
         <linearGradient id={`${id}-route`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#c8f24e" stopOpacity="0.05" />
-          <stop offset="45%" stopColor="#c8f24e" stopOpacity="0.55" />
-          <stop offset="100%" stopColor="#78c2d6" stopOpacity="0.28" />
+          <stop offset="0%" stopColor="#64748b" stopOpacity="0.04" />
+          <stop offset="45%" stopColor="#64748b" stopOpacity="0.3" />
+          <stop offset="100%" stopColor="#2563eb" stopOpacity="0.18" />
         </linearGradient>
         <radialGradient id={`${id}-fade`} cx="50%" cy="45%" r="62%">
           <stop offset="0%" stopColor="#fff" stopOpacity="1" />
@@ -51,15 +153,33 @@ export function Atlas({ id = "atlas" }: { id?: string }) {
 
         <g className="atlas-routes" stroke={`url(#${id}-route)`}>
           {ROUTES.map((d, index) => (
-            <path key={d} d={d} style={{ animationDelay: `${index * -1.9}s` }} />
+            <path
+              key={d}
+              d={d}
+              style={{ animationDelay: `${index * -1.9}s` }}
+            />
           ))}
         </g>
 
         <g className="atlas-ports">
           {PORTS.map((port, index) => (
-            <g key={`${port.x}-${port.y}`} className={port.hub ? "is-hub" : undefined}>
-              <circle className="atlas-pulse" cx={port.x} cy={port.y} r={port.r} style={{ animationDelay: `${index * 0.65}s` }} />
-              <circle className="atlas-port" cx={port.x} cy={port.y} r={port.r} />
+            <g
+              key={`${port.x}-${port.y}`}
+              className={port.hub ? "is-hub" : undefined}
+            >
+              <circle
+                className="atlas-pulse"
+                cx={port.x}
+                cy={port.y}
+                r={port.r}
+                style={{ animationDelay: `${index * 0.65}s` }}
+              />
+              <circle
+                className="atlas-port"
+                cx={port.x}
+                cy={port.y}
+                r={port.r}
+              />
             </g>
           ))}
         </g>

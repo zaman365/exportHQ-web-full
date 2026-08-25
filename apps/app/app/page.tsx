@@ -1,7 +1,7 @@
 import { getCustomerPrincipal } from "@exporthq/auth";
 import { authorizeOrganization } from "@exporthq/authorization";
 import { demoSnapshot, type TaskStatus } from "@exporthq/domain";
-import { AlertTriangle, ArrowRight, Bell, CalendarDays, Check, ChevronDown, CircleHelp, Clock3, FileText, FolderLock, Gauge, Globe2, LayoutDashboard, Menu, MessageSquareText, Package, Plus, Search, ShieldCheck, Sparkles, Target, Users, X } from "lucide-react";
+import { AlertTriangle, ArrowRight, ArrowUpRight, Bell, CalendarDays, Check, ChevronDown, CircleHelp, Clock3, FileText, FolderLock, Gauge, Globe2, House, LayoutDashboard, Menu, MessageSquareText, Package, Plus, Search, ShieldCheck, Sparkles, Target, Users, X } from "lucide-react";
 import { Avatar, Badge, ButtonLink, Card, Logo, Progress } from "@exporthq/ui";
 
 const groups = [
@@ -13,15 +13,25 @@ const groups = [
 
 export const dynamic = "force-dynamic";
 
-function Sidebar() {
+const websiteUrl =
+  process.env.EXPORTHQ_WEB_URL ??
+  process.env.NEXT_PUBLIC_WEB_URL ??
+  "http://localhost:3103";
+
+function Sidebar({ websiteUrl }: { websiteUrl: string }) {
   return (
     <aside className="sidebar">
-      <div className="sidebar__head"><Logo /><button aria-label="Collapse navigation"><Menu size={18} /></button></div>
+      <div className="sidebar__head"><a className="sidebar__brand-home" href={websiteUrl} aria-label="Go to the Export HQ homepage"><Logo /></a><button aria-label="Collapse navigation"><Menu size={18} /></button></div>
       <button className="org-switcher">
         <span className="org-switcher__mark">AT</span>
         <span><strong>ABC Textiles</strong><small>Managed Export</small></span>
         <ChevronDown size={16} />
       </button>
+      <a className="sidebar__website" href={websiteUrl}>
+        <House size={15} />
+        <span>Export HQ homepage</span>
+        <ArrowUpRight size={14} />
+      </a>
       <nav aria-label="Primary navigation">
         {groups.map((group, groupIndex) => (
           <div className="nav-group" key={group.label}>
@@ -68,10 +78,11 @@ export default async function CommandCenterPage() {
 
   return (
     <div className="app-shell">
-      <Sidebar />
+      <Sidebar websiteUrl={websiteUrl} />
       <main>
         <header className="topbar">
           <button className="mobile-menu" aria-label="Open navigation"><Menu size={19} /></button>
+          <a className="mobile-home" href={websiteUrl} aria-label="Go to the Export HQ homepage"><House size={18} /></a>
           <button className="search"><Search size={17} /><span>Search Export HQ…</span><kbd>⌘ K</kbd></button>
           <div className="topbar__actions">
             <button aria-label="Help"><CircleHelp size={19} /></button>

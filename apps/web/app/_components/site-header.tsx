@@ -5,7 +5,7 @@ const NAV = [
   { href: "#platform", label: "Platform" },
   { href: "#managed", label: "Services" },
   { href: "#process", label: "Process" },
-  { href: "#industries", label: "Who it's for" }
+  { href: "#industries", label: "Who it's for" },
 ];
 
 export function SiteHeader({ appUrl }: { appUrl: string }) {
@@ -29,14 +29,24 @@ export function SiteHeader({ appUrl }: { appUrl: string }) {
             Sign in
           </a>
           <a className="btn btn-signal btn-sm" href="#brief">
-            Start your export brief <ArrowRight size={15} strokeWidth={2.2} />
+            Export readiness check <ArrowRight size={15} strokeWidth={2.2} />
           </a>
         </div>
 
         <details className="header-menu">
           <summary aria-label="Open navigation menu">
-            <Menu className="icon-open" size={20} strokeWidth={1.9} aria-hidden="true" />
-            <X className="icon-close" size={20} strokeWidth={1.9} aria-hidden="true" />
+            <Menu
+              className="icon-open"
+              size={20}
+              strokeWidth={1.9}
+              aria-hidden="true"
+            />
+            <X
+              className="icon-close"
+              size={20}
+              strokeWidth={1.9}
+              aria-hidden="true"
+            />
           </summary>
           <div className="menu-panel">
             {NAV.map((item) => (
@@ -46,7 +56,7 @@ export function SiteHeader({ appUrl }: { appUrl: string }) {
             ))}
             <a href={appUrl}>Sign in</a>
             <a className="btn btn-signal btn-block" href="#brief">
-              Start your export brief <ArrowRight size={15} strokeWidth={2.2} />
+              Export readiness check <ArrowRight size={15} strokeWidth={2.2} />
             </a>
           </div>
         </details>
