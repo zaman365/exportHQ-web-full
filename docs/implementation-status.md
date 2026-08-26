@@ -17,6 +17,7 @@
 - Guided company → product → market → evidence → readiness experience.
 - A country-product market intelligence system with a limited public homepage preview, searchable member rankings, source-linked full research for verified or subscribed businesses, free business-verification requests, and tenant-scoped shortlists.
 - A connected Export Studio built around one `ExportLane`: lifecycle progress, commercial economics, deal milestones, buyer cohorts, provider disclosures, finance readiness, SME clusters, shipment-to-proceeds checkpoints, lane-specific policy alerts, and a controlled Trust Passport projection.
+- Dedicated Buyers and Requirements routes: a searchable, stage-aware illustrative buyer-development pipeline and a source-aware conditional control register linked back to opportunities, readiness, learning, evidence, and qualified-help paths.
 - A public opportunity-to-payment acquisition story, a limited ExportPanel Export Studio preview, and plan language aligned to the Basic → verified/paid → Scale/Managed trust ladder.
 - A dedicated Export operations Learning Center category with contextual hints for lanes, economics, deals, buyer trust, provider matching, finance, shipment, policy, and clusters.
 - A primary Email Inbox beside the retained Actionable Inbox, with export-aware categories, related-record context, private drafts, email-to-follow-up conversion, provider setup guidance, plan/role gates, and tenant-scoped mail persistence contracts.
@@ -39,7 +40,7 @@ Activation still requires an ExportHQ-owned Clerk production instance:
 3. enable Clerk Organizations and create Billing plan keys `launch`, `scale`, and `managed`;
 4. deploy only after the production keys and plans exist, then verify sign-in, organization creation, onboarding, plan access, organization switching, and sign-out on `export-hq.com/ExportPanel`.
 
-No Clerk secrets are currently present on the production Worker, so this new auth path has intentionally not replaced the existing live preview deployment yet.
+Clerk production credentials are provisioned separately as Cloudflare Worker secrets and must remain outside source control. Every deployment should verify their presence before testing organization selection, onboarding, plan access, switching, and sign-out.
 
 ## Remaining production data activation
 

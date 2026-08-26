@@ -672,6 +672,7 @@ Build the commercial spine before multiplying integrations.
 - Market opportunity catalog and access projections.
 - Conditional Bangladesh export-readiness model, saveable progress contract, evidence feedback model, Learning Center and provider-resolution paths.
 - Export Lane and Export Studio domain models, calculations, public/member/full projections, and interactive preview adapters.
+- Dedicated Buyers pipeline and Requirements register routes with subscription enforcement, lane context, source trails, evidence expectations, risk/state filtering, and Learning Center resolution paths.
 - Company/profile settings with optional product, market, channel, and verification detail.
 - Team directory, position hierarchy, department creation, dedicated channels, direct and Export HQ conversations, role-gated mutations, and organization-scoped persistence contracts.
 - Primary Email Inbox and selectable Actionable Inbox UX, provider catalog, email-to-action conversion, tier/role policy, Learning Center guidance, and tenant-scoped persistence/validation contracts.
@@ -682,6 +683,7 @@ Build the commercial spine before multiplying integrations.
 - Several customer workflow records use realistic fixtures or browser-local state.
 - Clerk organization metadata temporarily stores selected onboarding/readiness/profile state.
 - Export Studio draft interactions are local preview adapters.
+- Standalone Buyer records are a clearly labelled fictional operating dataset until a reviewed tenant repository and buyer-data source are activated.
 - Team conversations, department changes, and profile-role changes currently use a browser-local vertical-slice adapter while the organization-scoped message repository and realtime delivery service are activated.
 - Email threads, message bodies, provider connections, sending, and background synchronization currently use an explicitly labelled illustrative preview; no live mailbox or credential is connected.
 - Operations-console records are illustrative projections.

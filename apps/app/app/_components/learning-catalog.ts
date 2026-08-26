@@ -602,6 +602,18 @@ export const learningCatalog: readonly LearningResource[] = [
     keywords: ["due date", "snooze", "deadline"]
   },
   {
+    id: "buyer-pipeline-overview",
+    title: "Run a controlled buyer pipeline",
+    summary: "Qualify organizations, preserve the Export Lane context, and turn every signal into a safe next action.",
+    content: "A buyer record is not a guaranteed lead. Keep the legal organization, likely buying role, product, destination, source, confidence, trust signals, risks, owner, and next checkpoint together. Move a buyer forward only when the evidence for that stage exists; do not let an interesting contact bypass importer, payment, conformity, contract, or capacity checks.",
+    category: "trade-operations",
+    kind: "tutorial",
+    minutes: 5,
+    keywords: ["buyer", "pipeline", "qualification", "outreach", "commercial"],
+    steps: ["Open the buyer and confirm its source and lane.", "Review trust signals and open risks.", "Name the accountable owner and next checkpoint.", "Validate the importer, product and payment route before quoting.", "Move durable commitments into Tasks, Decisions, or Export Studio."],
+    featured: true
+  },
+  {
     id: "requirements-evidence",
     title: "Connect requirements to evidence",
     summary: "Every applicable requirement needs provenance, a status, and linked proof.",
@@ -611,6 +623,18 @@ export const learningCatalog: readonly LearningResource[] = [
     minutes: 5,
     keywords: ["requirement", "evidence", "source", "provenance"],
     steps: ["Open the requirement.", "Confirm source and jurisdiction.", "Check applicability to the product-market pair.", "Attach the supporting evidence.", "Record the reviewer and verification date."],
+    featured: true
+  },
+  {
+    id: "requirements-register",
+    title: "Use the Requirements register",
+    summary: "Review every applicable control by status, owner, evidence, source, and next review date.",
+    content: "Requirements are generated from the business model, product, destination, sales channel, and current evidence. The register is the consolidated control view; Export readiness is where you answer checkpoints and manage evidence. A score never overrides a blocker, an expired record, or a missing high-risk proof.",
+    category: "compliance",
+    kind: "tutorial",
+    minutes: 5,
+    keywords: ["requirements", "register", "compliance", "evidence", "blocker"],
+    steps: ["Confirm the active Export Lane context.", "Filter blockers and action-required controls first.", "Open a requirement and read the checkpoint.", "Follow the source trail and review date.", "Continue in Export readiness to add evidence or request qualified help."],
     featured: true
   },
   {
