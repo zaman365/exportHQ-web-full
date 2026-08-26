@@ -631,6 +631,27 @@ export const learningCatalog: readonly LearningResource[] = [
     keywords: ["team", "directory", "specialist", "partner"]
   },
   {
+    id: "team-messaging",
+    title: "Keep team messages attached to the work",
+    summary: "Use department channels, direct messages, and the Export HQ thread without losing export context.",
+    content: "Choose a department channel when the outcome belongs to a function, a direct message for a private participant-to-participant question, and the Export HQ Account Team thread for managed delivery. Link the conversation to the relevant lane, product, requirement, buyer, task, or decision whenever one exists. A useful message names the decision or next action, the accountable person, and the expected checkpoint.",
+    category: "collaboration",
+    kind: "tutorial",
+    minutes: 4,
+    keywords: ["message", "conversation", "channel", "direct message", "context"],
+    steps: ["Choose the narrowest useful conversation.", "Confirm the listed participants.", "Open the related work context.", "State the outcome, owner, and checkpoint.", "Move any durable decision or task into its proper ExportPanel record."]
+  },
+  {
+    id: "team-departments",
+    title: "Create accountable company teams",
+    summary: "Give every department a purpose, lead, members, and dedicated channel.",
+    content: "Company owners can create multiple functional teams such as Sales & Marketing, Operations & Compliance, Finance & Trade Documentation, or Product & Quality. A team is useful when it owns a stable business responsibility—not merely because the same people appear in one task. The team lead coordinates its work but does not automatically receive owner-level billing or security access.",
+    category: "collaboration",
+    kind: "reference",
+    minutes: 3,
+    keywords: ["department", "team", "lead", "owner", "channel"]
+  },
+  {
     id: "team-capacity",
     title: "Interpret workload and availability",
     summary: "Use capacity as a coordination signal, then inspect handoffs and response expectations before reassigning work.",
@@ -644,12 +665,12 @@ export const learningCatalog: readonly LearningResource[] = [
     id: "team-roles",
     title: "Separate team ownership from access roles",
     summary: "Team describes who contributes; Settings determines what a workspace member is allowed to do.",
-    content: "A specialist, company owner, or partner can appear in operational work without receiving broad workspace privileges. Manage invitations, permission roles, suspension, and removal in Settings, and keep operational ownership visible in Team and Waiting.",
+    content: "Position titles explain what a person does; access roles control what ExportPanel permits. The default hierarchy is Company owner, Executive, Department lead, Manager, Member, Viewer, and External partner. A specialist or partner can appear in operational work without receiving broad workspace privileges. Owners create teams and control protected access; everyone else receives the smallest useful scope, with explicit grants for exceptional responsibilities.",
     category: "collaboration",
     kind: "tutorial",
     minutes: 3,
     keywords: ["role", "permission", "access", "member", "partner"],
-    steps: ["Open Team to understand operational responsibility.", "Open Waiting to inspect current owned handoffs.", "Open Settings → Members to review workspace access.", "Grant the smallest permission role needed.", "Review access again when the work or relationship changes." ]
+    steps: ["Open Team to understand operational responsibility.", "Compare the position title with the access-role flag.", "Open Waiting to inspect current owned handoffs.", "Open Settings → Members to review workspace access.", "Grant the smallest permission role needed.", "Review access again when the work or relationship changes." ]
   },
   {
     id: "member-roles",

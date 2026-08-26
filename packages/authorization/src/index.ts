@@ -11,6 +11,8 @@ export type Permission =
   | "readiness:manage"
   | "tasks:view"
   | "tasks:manage"
+  | "team:view"
+  | "team:message"
   | "team:manage"
   | "billing:manage";
 
@@ -20,6 +22,15 @@ export type TrustGatedAccess = "public" | "member" | "full";
 export type MarketIntelligenceAccess = TrustGatedAccess;
 export type ReadinessAccess = TrustGatedAccess;
 export type WorkspaceFeatureAccess = "full" | "preview" | "locked";
+export type OrganizationAccessRole =
+  | "owner"
+  | "admin"
+  | "executive"
+  | "department_lead"
+  | "manager"
+  | "member"
+  | "viewer"
+  | "external";
 
 export type WorkspaceFeature =
   | "home"
@@ -162,12 +173,14 @@ const permissionCatalog: Readonly<Record<SubscriptionTier, readonly Permission[]
   scale: [
     "company:view", "company:manage", "products:view", "products:manage",
     "compliance:view", "compliance:manage", "documents:view", "documents:manage",
-    "readiness:view", "readiness:manage", "tasks:view", "tasks:manage", "team:manage", "billing:manage"
+    "readiness:view", "readiness:manage", "tasks:view", "tasks:manage",
+    "team:view", "team:message", "team:manage", "billing:manage"
   ],
   managed: [
     "company:view", "company:manage", "products:view", "products:manage",
     "compliance:view", "compliance:manage", "documents:view", "documents:manage",
-    "readiness:view", "readiness:manage", "tasks:view", "tasks:manage", "team:manage", "billing:manage"
+    "readiness:view", "readiness:manage", "tasks:view", "tasks:manage",
+    "team:view", "team:message", "team:manage", "billing:manage"
   ]
 };
 
@@ -192,6 +205,59 @@ export function resolveWorkspaceFeatureAccess(input: {
 
 export function permissionsForTier(tier: SubscriptionTier): ReadonlySet<Permission> {
   return new Set(permissionCatalog[tier]);
+}
+
+function normalizeOrganizationAccessRole(role: string | null | undefined): OrganizationAccessRole {
+  const normalized = role?.replace(/^org:/, "") ?? "member";
+  if (
+    normalized === "owner" ||
+    normalized === "admin" ||
+    normalized === "executive" ||
+    normalized === "department_lead" ||
+    normalized === "manager" ||
+    normalized === "viewer" ||
+    normalized === "external"
+  ) {
+    return normalized;
+  }
+  return "member";
+}
+
+/**
+ * Resolves a person's effective organization permissions without ever
+ * exceeding the subscription ceiling. Owners/admins receive the plan ceiling;
+ * every other role receives the smallest useful default set. Explicit Clerk
+ * grants replace those defaults and are still intersected with the plan.
+ */
+export function permissionsForOrganizationRole(input: {
+  tier: SubscriptionTier;
+  role: string | null | undefined;
+  explicitPermissions?: readonly string[] | null | undefined;
+}): ReadonlySet<Permission> {
+  const ceiling = permissionsForTier(input.tier);
+  const role = normalizeOrganizationAccessRole(input.role);
+  if (role === "owner" || role === "admin") return ceiling;
+
+  const explicit = new Set(
+    (input.explicitPermissions ?? [])
+      .map((permission) => permission.replace(/^org:/, ""))
+      .filter((permission): permission is Permission => ceiling.has(permission as Permission))
+  );
+  if (explicit.size) return explicit;
+  if (role === "external") return new Set();
+
+  const deniedByRole: Readonly<Record<Exclude<OrganizationAccessRole, "owner" | "admin" | "external">, ReadonlySet<Permission>>> = {
+    executive: new Set(["billing:manage", "team:manage"]),
+    department_lead: new Set(["billing:manage", "team:manage", "company:manage"]),
+    manager: new Set(["billing:manage", "team:manage", "company:manage", "compliance:manage", "products:manage"]),
+    member: new Set([
+      "billing:manage", "team:manage", "company:manage", "compliance:manage",
+      "products:manage", "documents:manage", "readiness:manage"
+    ]),
+    viewer: new Set([...ceiling].filter((permission) => !permission.endsWith(":view")))
+  };
+
+  return new Set([...ceiling].filter((permission) => !deniedByRole[role].has(permission)));
 }
 
 export function tierHasFeature(tier: SubscriptionTier, feature: WorkspaceFeature): boolean {

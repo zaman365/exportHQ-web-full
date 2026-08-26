@@ -97,12 +97,24 @@ function WorkspaceSidebar({ active, session }: { active: WorkspaceDestination; s
         <span>Create a free account to save assessments, shortlists and your business context.</span>
         <Link href="/sign-up">Create free account <ArrowRight size={14} /></Link>
         <Link className="sidebar__guest-signin" href="/sign-in">Already a member? Sign in</Link>
-      </div> : <div className="sidebar__team">
+      </div> : session.features.includes("managed-services") ? <div className="sidebar__team">
         <div><span className="status-dot" /><small>YOUR EXPORT HQ TEAM</small></div>
         <div className="avatar-stack">{demoSnapshot.team.map((person, index) => <Avatar key={person.name} initials={person.initials} tone={index} />)}</div>
         <strong>3 specialists assigned</strong>
         <span>Average response · 3h 24m</span>
-        <Link href="/#team">Message your team <ArrowRight size={14} /></Link>
+        <Link href="/team?view=messages">Message your team <ArrowRight size={14} /></Link>
+      </div> : session.features.includes("team") ? <div className="sidebar__team">
+        <div><span className="status-dot" /><small>COMPANY COLLABORATION</small></div>
+        <div className="avatar-stack"><Avatar initials="NR" /><Avatar initials="KH" tone={1} /><Avatar initials="SA" tone={2} /></div>
+        <strong>Teams, roles & messages</strong>
+        <span>Coordinate each department securely</span>
+        <Link href="/team?view=messages">Open team workspace <ArrowRight size={14} /></Link>
+      </div> : <div className="sidebar__team sidebar__team--preview">
+        <div><Eye size={12} /><small>TEAM WORKSPACE PREVIEW</small></div>
+        <div className="avatar-stack"><Avatar initials="NR" /><Avatar initials="KH" tone={1} /><Avatar initials="SA" tone={2} /></div>
+        <strong>See roles, teams & channels</strong>
+        <span>Scale unlocks private collaboration</span>
+        <Link href="/team?view=messages">Preview Team <ArrowRight size={14} /></Link>
       </div>}
     </aside>
   );

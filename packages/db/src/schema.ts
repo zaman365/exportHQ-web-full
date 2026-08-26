@@ -37,6 +37,9 @@ export const readinessResponseStatus = pgEnum("readiness_response_status", ["not
 export const readinessEvidenceReviewStatus = pgEnum("readiness_evidence_review_status", ["staged", "under_review", "needs_action", "accepted", "rejected"]);
 export const providerVerificationStatus = pgEnum("provider_verification_status", ["applicant", "screening", "verified", "suspended", "retired"]);
 export const providerReferralStatus = pgEnum("provider_referral_status", ["requested", "matching", "introduced", "engaged", "closed", "declined"]);
+export const teamAccessRole = pgEnum("team_access_role", ["owner", "executive", "department_lead", "manager", "member", "viewer", "external"]);
+export const conversationKind = pgEnum("conversation_kind", ["department", "direct", "export_hq"]);
+export const messageDeliveryStatus = pgEnum("message_delivery_status", ["sent", "read"]);
 
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -54,12 +57,16 @@ export const organizationMemberships = pgTable("organization_memberships", {
   organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
   clerkUserId: text("clerk_user_id").notNull(),
   role: text("role").notNull(),
+  positionTitle: text("position_title").notNull().default("Member"),
+  accessRole: teamAccessRole("access_role").notNull().default("member"),
+  hierarchyRank: integer("hierarchy_rank").notNull().default(30),
   permissions: text("permissions").array().notNull().default([]),
   active: boolean("active").notNull().default(true),
   ...timestamps
 }, (table) => [
   uniqueIndex("organization_membership_user_unique").on(table.organizationId, table.clerkUserId),
-  index("organization_membership_user_idx").on(table.clerkUserId)
+  index("organization_membership_user_idx").on(table.clerkUserId),
+  check("organization_membership_hierarchy_rank_check", sql`${table.hierarchyRank} between 0 and 100`)
 ]);
 
 export const staffProfiles = pgTable("staff_profiles", {
@@ -83,6 +90,87 @@ export const staffAccessGrants = pgTable("staff_access_grants", {
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
   ...timestamps
 }, (table) => [index("staff_access_org_idx").on(table.organizationId)]);
+
+export const organizationTeams = pgTable("organization_teams", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  slug: text("slug").notNull(),
+  purpose: text("purpose").notNull(),
+  leadMembershipId: uuid("lead_membership_id").references(() => organizationMemberships.id, { onDelete: "set null" }),
+  createdBy: text("created_by").notNull(),
+  active: boolean("active").notNull().default(true),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("organization_teams_org_slug_unique").on(table.organizationId, table.slug),
+  index("organization_teams_org_active_idx").on(table.organizationId, table.active)
+]);
+
+export const organizationTeamMembers = pgTable("organization_team_members", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  teamId: uuid("team_id").notNull().references(() => organizationTeams.id, { onDelete: "cascade" }),
+  membershipId: uuid("membership_id").notNull().references(() => organizationMemberships.id, { onDelete: "cascade" }),
+  teamPositionTitle: text("team_position_title"),
+  isTeamLead: boolean("is_team_lead").notNull().default(false),
+  addedBy: text("added_by").notNull(),
+  active: boolean("active").notNull().default(true),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("organization_team_members_unique").on(table.teamId, table.membershipId),
+  index("organization_team_members_org_idx").on(table.organizationId),
+  index("organization_team_members_membership_idx").on(table.membershipId)
+]);
+
+export const organizationConversations = pgTable("organization_conversations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  teamId: uuid("team_id").references(() => organizationTeams.id, { onDelete: "set null" }),
+  kind: conversationKind("kind").notNull(),
+  title: text("title").notNull(),
+  relatedEntityType: text("related_entity_type"),
+  relatedEntityId: text("related_entity_id"),
+  createdBy: text("created_by").notNull(),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  index("organization_conversations_org_activity_idx").on(table.organizationId, table.updatedAt),
+  index("organization_conversations_team_idx").on(table.teamId)
+]);
+
+export const organizationConversationParticipants = pgTable("organization_conversation_participants", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  conversationId: uuid("conversation_id").notNull().references(() => organizationConversations.id, { onDelete: "cascade" }),
+  membershipId: uuid("membership_id").references(() => organizationMemberships.id, { onDelete: "cascade" }),
+  staffProfileId: uuid("staff_profile_id").references(() => staffProfiles.id, { onDelete: "cascade" }),
+  addedBy: text("added_by").notNull(),
+  lastReadAt: timestamp("last_read_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("conversation_participant_member_unique").on(table.conversationId, table.membershipId),
+  uniqueIndex("conversation_participant_staff_unique").on(table.conversationId, table.staffProfileId),
+  index("conversation_participants_org_idx").on(table.organizationId),
+  check("conversation_participant_identity_check", sql`num_nonnulls(${table.membershipId}, ${table.staffProfileId}) = 1`)
+]);
+
+export const organizationMessages = pgTable("organization_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  conversationId: uuid("conversation_id").notNull().references(() => organizationConversations.id, { onDelete: "cascade" }),
+  senderMembershipId: uuid("sender_membership_id").references(() => organizationMemberships.id, { onDelete: "set null" }),
+  senderStaffProfileId: uuid("sender_staff_profile_id").references(() => staffProfiles.id, { onDelete: "set null" }),
+  body: text("body").notNull(),
+  deliveryStatus: messageDeliveryStatus("delivery_status").notNull().default("sent"),
+  editedAt: timestamp("edited_at", { withTimezone: true }),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  index("organization_messages_conversation_created_idx").on(table.conversationId, table.createdAt),
+  index("organization_messages_org_created_idx").on(table.organizationId, table.createdAt),
+  check("organization_message_sender_check", sql`num_nonnulls(${table.senderMembershipId}, ${table.senderStaffProfileId}) = 1`),
+  check("organization_message_body_check", sql`char_length(${table.body}) between 1 and 4000`)
+]);
 
 export const companyProfiles = pgTable("company_profiles", {
   id: uuid("id").primaryKey().defaultRandom(),

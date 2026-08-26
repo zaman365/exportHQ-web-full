@@ -318,8 +318,12 @@ Blueprints are reusable, versioned operating playbooks. They turn repeated expor
 
 - **Decisions** records a choice, options, evidence, participants, deadline, outcome, and consequences.
 - **Ideas** captures and triages opportunities or improvements before they become decisions or work.
-- **Team** shows customer members, Export HQ specialists, responsibilities, access boundaries, response expectations, and contact routes.
+- **Team** is the organization-scoped collaboration workspace. It combines company member profiles, role flags, department channels, direct conversations, Export HQ specialists, scoped partners, responsibilities, access boundaries, response expectations, and related-work context.
 - **Create** is a contextual entry point for records supported by the current tier. It should not bypass validation, lane association, permissions, or evidence rules.
+
+Team access follows two independent ceilings: the organization subscription must unlock Team, and the person’s position role must permit the requested action. The default hierarchy is Company owner, Executive, Department lead, Manager, Member, Viewer, and External partner. Owners control protected organization access, billing, and creation of multiple company teams. Department leads, managers, and members work within progressively narrower operational scopes; viewers read explicitly shared records; external specialists and partners receive explicit, time-bounded grants and never become broad customer members by implication. Exceptional grants may narrow or extend a non-owner role within the subscription ceiling, but they must be deliberate and auditable.
+
+An owner can create multiple functional teams such as Leadership, Sales & Marketing, Operations & Compliance, Finance & Trade Documentation, Product & Quality, or other company-specific departments. Every team has a purpose, accountable lead, participant list, and dedicated conversation. Team profiles keep the person’s real position title separate from the access role. Conversations belong to one organization, list their participants, and may connect to a team, Export Lane, product, requirement, buyer, task, decision, or other explicit record. Message creation requires `team:message`; team and role administration requires `team:manage`; read-only access requires `team:view`. Export HQ specialists and qualified partners appear in the same accountable coordination view only when an explicit organization grant or managed-service relationship exists.
 
 ### 9.8 Markets and Opportunities
 
@@ -659,6 +663,7 @@ Build the commercial spine before multiplying integrations.
 - Conditional Bangladesh export-readiness model, saveable progress contract, evidence feedback model, Learning Center and provider-resolution paths.
 - Export Lane and Export Studio domain models, calculations, public/member/full projections, and interactive preview adapters.
 - Company/profile settings with optional product, market, channel, and verification detail.
+- Team directory, position hierarchy, department creation, dedicated channels, direct and Export HQ conversations, role-gated mutations, and organization-scoped persistence contracts.
 - Clerk session boundary, organization-aware authorization, admin allowlist design, database schema, RLS envelope, and tests.
 
 ### Preview adapters or incomplete production persistence
@@ -666,6 +671,7 @@ Build the commercial spine before multiplying integrations.
 - Several customer workflow records use realistic fixtures or browser-local state.
 - Clerk organization metadata temporarily stores selected onboarding/readiness/profile state.
 - Export Studio draft interactions are local preview adapters.
+- Team conversations, department changes, and profile-role changes currently use a browser-local vertical-slice adapter while the organization-scoped message repository and realtime delivery service are activated.
 - Operations-console records are illustrative projections.
 
 ### Production activation still required

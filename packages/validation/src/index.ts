@@ -128,9 +128,59 @@ export const readinessReferralRequestSchema = z.object({
   consentToReferralDisclosure: z.literal(true)
 });
 
+export const teamAccessRoleSchema = z.enum(["owner", "executive", "department_lead", "manager", "member", "viewer", "external"]);
+
+export const organizationTeamSchema = z.object({
+  organizationId: z.uuid(),
+  name: z.string().trim().min(2).max(80),
+  purpose: z.string().trim().min(10).max(240),
+  leadMembershipId: z.uuid(),
+  memberIds: z.array(z.uuid()).min(1).max(100)
+}).superRefine(({ leadMembershipId, memberIds }, context) => {
+  if (!memberIds.includes(leadMembershipId)) {
+    context.addIssue({ code: "custom", path: ["memberIds"], message: "The team lead must be included as a team member." });
+  }
+});
+
+export const organizationMemberAccessSchema = z.object({
+  organizationId: z.uuid(),
+  membershipId: z.uuid(),
+  positionTitle: z.string().trim().min(2).max(100),
+  accessRole: teamAccessRoleSchema,
+  hierarchyRank: z.number().int().min(0).max(100)
+});
+
+export const organizationConversationSchema = z.object({
+  organizationId: z.uuid(),
+  kind: z.enum(["department", "direct", "export_hq"]),
+  title: z.string().trim().min(2).max(120),
+  teamId: z.uuid().optional(),
+  participantMembershipIds: z.array(z.uuid()).max(100),
+  participantStaffProfileIds: z.array(z.uuid()).max(25),
+  relatedEntityType: z.string().trim().max(80).optional(),
+  relatedEntityId: z.string().trim().max(120).optional()
+}).superRefine((conversation, context) => {
+  if (conversation.participantMembershipIds.length + conversation.participantStaffProfileIds.length < 2) {
+    context.addIssue({ code: "custom", path: ["participantMembershipIds"], message: "A conversation needs at least two participants." });
+  }
+  if (conversation.kind === "department" && !conversation.teamId) {
+    context.addIssue({ code: "custom", path: ["teamId"], message: "Department conversations must belong to a team." });
+  }
+});
+
+export const organizationMessageSchema = z.object({
+  organizationId: z.uuid(),
+  conversationId: z.uuid(),
+  body: z.string().trim().min(1).max(4000)
+});
+
 export type CompanyOnboardingInput = z.infer<typeof companyOnboardingSchema>;
 export type ProductInput = z.infer<typeof productSchema>;
 export type OrganizationProfileInput = z.infer<typeof organizationProfileSchema>;
 export type BusinessVerificationInput = z.infer<typeof businessVerificationSchema>;
 export type ReadinessProgressInput = z.infer<typeof readinessProgressSchema>;
 export type ReadinessReferralRequestInput = z.infer<typeof readinessReferralRequestSchema>;
+export type OrganizationTeamInput = z.infer<typeof organizationTeamSchema>;
+export type OrganizationMemberAccessInput = z.infer<typeof organizationMemberAccessSchema>;
+export type OrganizationConversationInput = z.infer<typeof organizationConversationSchema>;
+export type OrganizationMessageInput = z.infer<typeof organizationMessageSchema>;

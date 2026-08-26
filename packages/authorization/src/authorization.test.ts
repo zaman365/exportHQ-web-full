@@ -6,6 +6,7 @@ import {
   featuresForTier,
   isPaidTier,
   minimumTierForFeature,
+  permissionsForOrganizationRole,
   permissionsForTier,
   resolveMarketIntelligenceAccess,
   resolveReadinessAccess,
@@ -75,6 +76,42 @@ describe("subscription entitlements", () => {
     expect(tierHasFeature("managed", "managed-services")).toBe(true);
   });
 
+  it("enforces the organization position hierarchy inside the plan ceiling", () => {
+    const ownerPermissions = permissionsForOrganizationRole({ tier: "scale", role: "org:owner" });
+    const leadPermissions = permissionsForOrganizationRole({ tier: "scale", role: "org:department_lead" });
+    const managerPermissions = permissionsForOrganizationRole({ tier: "scale", role: "org:manager" });
+    const viewerPermissions = permissionsForOrganizationRole({ tier: "scale", role: "org:viewer" });
+    const externalPermissions = permissionsForOrganizationRole({ tier: "managed", role: "org:external" });
+
+    expect(ownerPermissions.has("team:manage")).toBe(true);
+    expect(ownerPermissions.has("team:message")).toBe(true);
+    expect(ownerPermissions.has("billing:manage")).toBe(true);
+    expect(leadPermissions.has("tasks:manage")).toBe(true);
+    expect(leadPermissions.has("company:manage")).toBe(false);
+    expect(leadPermissions.has("team:manage")).toBe(false);
+    expect(managerPermissions.has("documents:manage")).toBe(true);
+    expect(managerPermissions.has("team:message")).toBe(true);
+    expect(managerPermissions.has("products:manage")).toBe(false);
+    expect([...viewerPermissions].every((permission) => permission.endsWith(":view"))).toBe(true);
+    expect(externalPermissions.size).toBe(0);
+  });
+
+  it("allows explicit exceptional grants but never above the subscription ceiling", () => {
+    const granted = permissionsForOrganizationRole({
+      tier: "scale",
+      role: "org:external",
+      explicitPermissions: ["org:company:view", "org:team:manage", "org:not-real"]
+    });
+    const basic = permissionsForOrganizationRole({
+      tier: "explore",
+      role: "org:executive",
+      explicitPermissions: ["org:company:view", "org:team:manage"]
+    });
+
+    expect(granted).toEqual(new Set(["company:view", "team:manage"]));
+    expect(basic).toEqual(new Set(["company:view"]));
+  });
+
   it("unlocks full market intelligence through verification or a paid plan", () => {
     expect(resolveMarketIntelligenceAccess({ authenticated: false, businessVerification: "unverified", tier: "preview" })).toBe("public");
     expect(resolveMarketIntelligenceAccess({ authenticated: true, businessVerification: "unverified", tier: "explore" })).toBe("member");
@@ -97,6 +134,8 @@ describe("subscription entitlements", () => {
     expect(permissionsForTier("explore").has("documents:manage")).toBe(false);
     expect(permissionsForTier("launch").has("tasks:manage")).toBe(true);
     expect(permissionsForTier("scale").has("team:manage")).toBe(true);
+    expect(permissionsForTier("scale").has("team:view")).toBe(true);
+    expect(permissionsForTier("scale").has("team:message")).toBe(true);
   });
 
   it("keeps premium features discoverable through safe progressive previews", () => {

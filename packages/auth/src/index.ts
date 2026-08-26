@@ -1,6 +1,7 @@
 import { createClerkClient } from "@clerk/backend";
 import {
   featuresForTier,
+  permissionsForOrganizationRole,
   permissionsForTier,
   type CustomerPrincipal,
   type BusinessVerificationStatus,
@@ -14,7 +15,7 @@ const ownerPermissions: Permission[] = [
   "company:view", "company:manage", "products:view", "products:manage",
   "compliance:view", "compliance:manage", "documents:view", "documents:manage",
   "readiness:view", "readiness:manage",
-  "tasks:view", "tasks:manage", "team:manage", "billing:manage"
+  "tasks:view", "tasks:manage", "team:view", "team:message", "team:manage", "billing:manage"
 ];
 
 function isDemoMode() {
@@ -107,30 +108,6 @@ function resolveTier(has: (params: { plan: string }) => boolean): SubscriptionTi
   if (has({ plan: "scale" })) return "scale";
   if (has({ plan: "launch" })) return "launch";
   return "explore";
-}
-
-function roleScopedPermissions(
-  tier: SubscriptionTier,
-  role: string | null | undefined,
-  clerkPermissions: readonly string[] | null | undefined
-): ReadonlySet<Permission> {
-  const ceiling = permissionsForTier(tier);
-  const normalizedRole = role?.replace(/^org:/, "") ?? "member";
-  if (normalizedRole === "admin" || normalizedRole === "owner") return ceiling;
-
-  const explicit = new Set(
-    (clerkPermissions ?? [])
-      .map((permission) => permission.replace(/^org:/, ""))
-      .filter((permission): permission is Permission => ceiling.has(permission as Permission))
-  );
-  if (explicit.size) return explicit;
-
-  return new Set(
-    [...ceiling].filter((permission) => {
-      if (normalizedRole === "viewer") return permission.endsWith(":view");
-      return permission !== "billing:manage" && permission !== "team:manage";
-    })
-  );
 }
 
 function demoCustomerSession(): CustomerSession {
@@ -251,7 +228,11 @@ export async function resolveCustomerSession(request: Request): Promise<Customer
     organizationId,
     permissions: isPlatformAdmin
       ? permissionsForTier("managed")
-      : roleScopedPermissions(tier, auth.orgRole, auth.orgPermissions)
+      : permissionsForOrganizationRole({
+          tier,
+          role: auth.orgRole,
+          explicitPermissions: auth.orgPermissions
+        })
   };
 
   return {

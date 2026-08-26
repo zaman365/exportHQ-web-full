@@ -51,6 +51,15 @@ export interface IdeaRecord {
 
 export type TeamGroup = "Company" | "Export HQ" | "Partner";
 export type TeamAvailability = "available" | "focused" | "away";
+export type TeamAccessRole = "owner" | "executive" | "department_lead" | "manager" | "member" | "viewer" | "external";
+
+export interface TeamAccessDefinition {
+  id: TeamAccessRole;
+  label: string;
+  rank: number;
+  summary: string;
+  capabilities: readonly string[];
+}
 
 export interface TeamProfile {
   id: string;
@@ -65,6 +74,41 @@ export interface TeamProfile {
   focus: string;
   skills: string[];
   email: string;
+  accessRole: TeamAccessRole;
+  accessScope: string;
+  departmentIds: string[];
+}
+
+export interface BusinessTeam {
+  id: string;
+  name: string;
+  purpose: string;
+  leadId: string;
+  memberIds: string[];
+  channelId: string;
+  createdAt: string;
+}
+
+export type TeamConversationKind = "department" | "direct" | "export_hq";
+
+export interface TeamConversation {
+  id: string;
+  title: string;
+  kind: TeamConversationKind;
+  participantIds: string[];
+  teamId?: string;
+  relatedEntity?: string;
+  unread: number;
+  lastActivity: string;
+}
+
+export interface TeamMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  body: string;
+  sentAt: string;
+  delivery: "sent" | "read";
 }
 
 export type CreateRecordType = "decision" | "idea" | "task" | "blueprint";
@@ -80,6 +124,20 @@ export interface RecentCreatedRecord {
 export const decisionsStorageKey = "exportpanel.decisions.v1";
 export const ideasStorageKey = "exportpanel.ideas.v1";
 export const recentCreatedStorageKey = "exportpanel.create.recent.v1";
+export const teamProfilesStorageKey = "exportpanel.team.profiles.v2";
+export const businessTeamsStorageKey = "exportpanel.team.departments.v2";
+export const teamConversationsStorageKey = "exportpanel.team.conversations.v2";
+export const teamMessagesStorageKey = "exportpanel.team.messages.v2";
+
+export const teamAccessCatalog: Readonly<Record<TeamAccessRole, TeamAccessDefinition>> = {
+  owner: { id: "owner", label: "Company owner", rank: 100, summary: "Full organization control, team creation, access, billing, and every approved workflow.", capabilities: ["Create teams", "Manage every member", "Billing & security", "All company records"] },
+  executive: { id: "executive", label: "Executive", rank: 80, summary: "Cross-company operating access without ownership transfer or protected billing changes.", capabilities: ["Cross-team visibility", "Approvals", "Company operations"] },
+  department_lead: { id: "department_lead", label: "Department lead", rank: 60, summary: "Coordinates assigned departments, their work, and member handoffs without owner controls.", capabilities: ["Coordinate assigned teams", "Assign work", "Department records"] },
+  manager: { id: "manager", label: "Manager", rank: 45, summary: "Coordinates work and messages in assigned teams without changing organization access.", capabilities: ["Coordinate work", "Team messages", "Assigned records"] },
+  member: { id: "member", label: "Member", rank: 30, summary: "Contributes to assigned workspaces and conversations.", capabilities: ["Assigned work", "Team messages", "Shared evidence"] },
+  viewer: { id: "viewer", label: "Viewer", rank: 10, summary: "Read-only access to explicitly shared teams and records.", capabilities: ["Read shared records", "Follow conversations"] },
+  external: { id: "external", label: "External partner", rank: 0, summary: "Limited access to explicitly shared handoffs; never a default company member.", capabilities: ["Shared handoffs only", "Scoped messages"] }
+};
 
 export const decisionSeeds: readonly DecisionRecord[] = [
   {
@@ -191,13 +249,38 @@ export const ideaSeeds: readonly IdeaRecord[] = [
 ];
 
 export const teamProfiles: readonly TeamProfile[] = [
-  { id: "team-nadia", name: "Nadia Rahman", initials: "NR", role: "Workspace owner", group: "Company", availability: "available", capacity: 62, activeHandoffs: 4, response: "Usually within 2h", focus: "Product evidence and commercial approvals", skills: ["Commercial", "Products", "Approvals"], email: "nadia@abctextiles.example" },
-  { id: "team-kamal", name: "Kamal Hossain", initials: "KH", role: "Operations editor", group: "Company", availability: "focused", capacity: 78, activeHandoffs: 3, response: "Usually within 4h", focus: "Factory capacity, costing, and sample execution", skills: ["Operations", "Costing", "Samples"], email: "kamal@abctextiles.example" },
-  { id: "team-anna", name: "Anna Keller", initials: "AK", role: "Market lead", group: "Export HQ", availability: "available", capacity: 68, activeHandoffs: 5, response: "Average 2h 10m", focus: "Germany market entry and buyer qualification", skills: ["Germany", "Market research", "Buyers"], email: "anna@exporthq.example" },
-  { id: "team-rahim", name: "Rahim Chowdhury", initials: "RC", role: "Compliance specialist", group: "Export HQ", availability: "focused", capacity: 84, activeHandoffs: 6, response: "Average 3h 05m", focus: "Product evidence and Germany requirements", skills: ["Compliance", "Evidence", "Textiles"], email: "rahim@exporthq.example" },
-  { id: "team-lisa", name: "Lisa Morgan", initials: "LM", role: "Trade operations", group: "Export HQ", availability: "available", capacity: 53, activeHandoffs: 3, response: "Average 3h 24m", focus: "Quotations, logistics assumptions, and handoffs", skills: ["Logistics", "Incoterms", "Quotations"], email: "lisa@exporthq.example" },
-  { id: "team-intertek", name: "Intertek Dhaka", initials: "ID", role: "Testing laboratory", group: "Partner", availability: "focused", capacity: 71, activeHandoffs: 1, response: "Next checkpoint 29 Aug", focus: "Certificate renewal and textile testing", skills: ["Testing", "Certificates"], email: "lab@partner.example" },
-  { id: "team-freight", name: "Rhein Freight Desk", initials: "RF", role: "Logistics partner", group: "Partner", availability: "away", capacity: 46, activeHandoffs: 1, response: "Next checkpoint 27 Aug", focus: "Germany lane assumptions and documentation", skills: ["Freight", "Customs", "Germany"], email: "desk@partner.example" }
+  { id: "team-nadia", name: "Nadia Rahman", initials: "NR", role: "Managing Director", group: "Company", availability: "available", capacity: 62, activeHandoffs: 4, response: "Usually within 2h", focus: "Product evidence and commercial approvals", skills: ["Commercial", "Products", "Approvals"], email: "nadia@abctextiles.example", accessRole: "owner", accessScope: "Entire organization", departmentIds: ["team-leadership", "team-sales-marketing", "team-operations-compliance"] },
+  { id: "team-kamal", name: "Kamal Hossain", initials: "KH", role: "Head of Operations", group: "Company", availability: "focused", capacity: 78, activeHandoffs: 3, response: "Usually within 4h", focus: "Factory capacity, costing, and sample execution", skills: ["Operations", "Costing", "Samples"], email: "kamal@abctextiles.example", accessRole: "department_lead", accessScope: "Operations & Compliance", departmentIds: ["team-operations-compliance"] },
+  { id: "team-samira", name: "Samira Ahmed", initials: "SA", role: "Sales & Marketing Manager", group: "Company", availability: "available", capacity: 57, activeHandoffs: 2, response: "Usually within 3h", focus: "Buyer outreach, campaigns, and sample follow-up", skills: ["Sales", "Marketing", "Buyers"], email: "samira@abctextiles.example", accessRole: "manager", accessScope: "Sales & Marketing", departmentIds: ["team-sales-marketing"] },
+  { id: "team-anna", name: "Anna Keller", initials: "AK", role: "Market Lead", group: "Export HQ", availability: "available", capacity: 68, activeHandoffs: 5, response: "Average 2h 10m", focus: "Germany market entry and buyer qualification", skills: ["Germany", "Market research", "Buyers"], email: "anna@exporthq.example", accessRole: "external", accessScope: "Explicit managed-service grant", departmentIds: ["team-export-hq"] },
+  { id: "team-rahim", name: "Rahim Chowdhury", initials: "RC", role: "Compliance Specialist", group: "Export HQ", availability: "focused", capacity: 84, activeHandoffs: 6, response: "Average 3h 05m", focus: "Product evidence and Germany requirements", skills: ["Compliance", "Evidence", "Textiles"], email: "rahim@exporthq.example", accessRole: "external", accessScope: "Explicit managed-service grant", departmentIds: ["team-export-hq"] },
+  { id: "team-lisa", name: "Lisa Morgan", initials: "LM", role: "Trade Operations", group: "Export HQ", availability: "available", capacity: 53, activeHandoffs: 3, response: "Average 3h 24m", focus: "Quotations, logistics assumptions, and handoffs", skills: ["Logistics", "Incoterms", "Quotations"], email: "lisa@exporthq.example", accessRole: "external", accessScope: "Explicit managed-service grant", departmentIds: ["team-export-hq"] },
+  { id: "team-intertek", name: "Intertek Dhaka", initials: "ID", role: "Testing Laboratory", group: "Partner", availability: "focused", capacity: 71, activeHandoffs: 1, response: "Next checkpoint 29 Aug", focus: "Certificate renewal and textile testing", skills: ["Testing", "Certificates"], email: "lab@partner.example", accessRole: "external", accessScope: "Certificate handoff only", departmentIds: [] },
+  { id: "team-freight", name: "Rhein Freight Desk", initials: "RF", role: "Logistics Partner", group: "Partner", availability: "away", capacity: 46, activeHandoffs: 1, response: "Next checkpoint 27 Aug", focus: "Germany lane assumptions and documentation", skills: ["Freight", "Customs", "Germany"], email: "desk@partner.example", accessRole: "external", accessScope: "Logistics handoff only", departmentIds: [] }
+];
+
+export const businessTeamSeeds: readonly BusinessTeam[] = [
+  { id: "team-leadership", name: "Leadership", purpose: "Company direction, approvals, risk, and cross-team priorities.", leadId: "team-nadia", memberIds: ["team-nadia", "team-kamal"], channelId: "conversation-leadership", createdAt: "2026-07-01T08:00:00.000Z" },
+  { id: "team-sales-marketing", name: "Sales & Marketing", purpose: "Buyer pipeline, market campaigns, samples, offers, and commercial follow-up.", leadId: "team-samira", memberIds: ["team-nadia", "team-samira", "team-anna"], channelId: "conversation-sales-marketing", createdAt: "2026-07-05T08:00:00.000Z" },
+  { id: "team-operations-compliance", name: "Operations & Compliance", purpose: "Factory readiness, evidence, production, logistics, and destination requirements.", leadId: "team-kamal", memberIds: ["team-nadia", "team-kamal", "team-rahim", "team-lisa"], channelId: "conversation-operations", createdAt: "2026-07-05T08:00:00.000Z" },
+  { id: "team-export-hq", name: "Export HQ Account Team", purpose: "Managed market, compliance, and trade support for this organization.", leadId: "team-anna", memberIds: ["team-nadia", "team-anna", "team-rahim", "team-lisa"], channelId: "conversation-export-hq", createdAt: "2026-07-12T08:00:00.000Z" }
+];
+
+export const teamConversationSeeds: readonly TeamConversation[] = [
+  { id: "conversation-export-hq", title: "Export HQ Account Team", kind: "export_hq", participantIds: ["team-nadia", "team-anna", "team-rahim", "team-lisa"], teamId: "team-export-hq", relatedEntity: "Germany launch · Managed work", unread: 2, lastActivity: "2026-08-26T08:42:00.000Z" },
+  { id: "conversation-sales-marketing", title: "Sales & Marketing", kind: "department", participantIds: ["team-nadia", "team-samira", "team-anna"], teamId: "team-sales-marketing", relatedEntity: "Germany buyer pipeline", unread: 1, lastActivity: "2026-08-26T07:55:00.000Z" },
+  { id: "conversation-operations", title: "Operations & Compliance", kind: "department", participantIds: ["team-nadia", "team-kamal", "team-rahim", "team-lisa"], teamId: "team-operations-compliance", relatedEntity: "Cotton T-shirt · Germany", unread: 0, lastActivity: "2026-08-25T16:28:00.000Z" },
+  { id: "conversation-kamal", title: "Kamal Hossain", kind: "direct", participantIds: ["team-nadia", "team-kamal"], unread: 0, lastActivity: "2026-08-25T11:12:00.000Z" }
+];
+
+export const teamMessageSeeds: readonly TeamMessage[] = [
+  { id: "message-1", conversationId: "conversation-export-hq", senderId: "team-anna", body: "We have qualified six German wholesale buyers against the revised evidence profile. Two are ready for a controlled introduction once the certificate timeline is confirmed.", sentAt: "2026-08-26T08:22:00.000Z", delivery: "read" },
+  { id: "message-2", conversationId: "conversation-export-hq", senderId: "team-rahim", body: "The laboratory confirmed a 10–12 working day renewal window. I linked the evidence gap to the Operations & Compliance team so ownership stays clear.", sentAt: "2026-08-26T08:34:00.000Z", delivery: "read" },
+  { id: "message-3", conversationId: "conversation-export-hq", senderId: "team-lisa", body: "Recommended next move: approve the renewal this week, then open buyer introductions in two batches rather than waiting for every packaging improvement.", sentAt: "2026-08-26T08:42:00.000Z", delivery: "read" },
+  { id: "message-4", conversationId: "conversation-sales-marketing", senderId: "team-samira", body: "The first buyer-outreach message is ready for review. I kept the sustainability claims limited to evidence we can already substantiate.", sentAt: "2026-08-26T07:55:00.000Z", delivery: "read" },
+  { id: "message-5", conversationId: "conversation-operations", senderId: "team-kamal", body: "Capacity for the pilot is available in the second September production window. Costing still needs the updated testing fee.", sentAt: "2026-08-25T15:48:00.000Z", delivery: "read" },
+  { id: "message-6", conversationId: "conversation-operations", senderId: "team-rahim", body: "I will add the confirmed laboratory fee to the evidence task after the quote arrives tomorrow morning.", sentAt: "2026-08-25T16:28:00.000Z", delivery: "read" },
+  { id: "message-7", conversationId: "conversation-kamal", senderId: "team-kamal", body: "The sample room can prepare twelve buyer sets this week. Please confirm whether Germany-only labels are sufficient for this batch.", sentAt: "2026-08-25T11:12:00.000Z", delivery: "read" }
 ];
 
 export function loadCollection<T>(key: string, seeds: readonly T[]): T[] {

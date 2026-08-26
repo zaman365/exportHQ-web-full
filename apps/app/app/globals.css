@@ -2905,3 +2905,214 @@ main { padding-left: 246px; min-width: 0; }
   .sidebar__team > strong { margin-top: 8px; }
   .sidebar__team a { margin-top: 8px; padding-top: 8px; }
 }
+
+/* Team workspace: hierarchy-aware departments and contextual messaging */
+.team-workspace-head { align-items: flex-end; }
+.team-head-actions { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.team-preview-notice { min-height: 64px; display: grid; grid-template-columns: 28px 1fr auto; align-items: center; gap: 10px; margin-bottom: 14px; padding: 12px 15px; border: 1px solid var(--signal-line); border-radius: 11px; background: var(--signal-wash); color: var(--signal-deep); }
+.team-preview-notice strong, .team-preview-notice small { display: block; }
+.team-preview-notice strong { color: var(--ink); font-size: 12px; }
+.team-preview-notice small { margin-top: 3px; color: var(--muted); font-size: 11px; line-height: 1.45; }
+.team-preview-notice a { display: flex; align-items: center; gap: 5px; color: var(--signal-deep); font-size: 11px; font-weight: 700; white-space: nowrap; }
+.team-workspace-tabs { width: fit-content; display: flex; gap: 4px; margin-bottom: 12px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: white; box-shadow: var(--shadow); }
+.team-workspace-tabs button { min-height: 36px; display: flex; align-items: center; gap: 6px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: var(--fg-3); font-size: 11px; font-weight: 680; cursor: pointer; }
+.team-workspace-tabs button:hover { background: var(--paper-1); color: var(--ink); }
+.team-workspace-tabs button.active { background: var(--signal-wash); color: var(--signal-deep); box-shadow: inset 0 0 0 1px var(--signal-line); }
+.team-role-badge { width: fit-content; min-height: 20px; display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 999px; background: var(--paper-2); color: var(--fg-2); font-size: 9px; font-style: normal; font-weight: 720; line-height: 1; white-space: nowrap; }
+.team-role-badge--owner { border-color: var(--signal-line); background: var(--signal-wash); color: var(--signal-deep); }
+.team-role-badge--executive, .team-role-badge--department_lead { border-color: var(--mint-wash); background: var(--green-soft); color: var(--green); }
+.team-role-badge--manager { border-color: var(--tide-wash); background: var(--tide-wash); color: var(--tide-ink); }
+.team-role-badge--external { border-color: var(--plum-wash); background: var(--plum-wash); color: var(--plum-ink); }
+.team-profile__main > span > span { flex-wrap: wrap; }
+
+.team-messaging-layout { min-height: 610px; display: grid; grid-template-columns: 280px minmax(380px, 1fr) 270px; overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: white; box-shadow: var(--shadow); }
+.team-thread-list { min-width: 0; display: flex; flex-direction: column; border-right: 1px solid var(--line); background: var(--paper-1); }
+.team-thread-list > header, .team-chat-context > header { min-height: 67px; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--line); background: white; }
+.team-thread-list > header p, .team-thread-list > header h2, .team-chat-context > header p, .team-chat-context > header h2 { margin: 0; }
+.team-thread-list > header p, .team-chat-context > header p { color: var(--signal-deep); font-size: 9px; font-weight: 760; letter-spacing: .12em; }
+.team-thread-list > header h2, .team-chat-context > header h2 { margin-top: 4px; font-size: 12px; }
+.team-thread-list > header button { width: 30px; height: 30px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--signal-deep); cursor: pointer; }
+.team-thread-list > label { min-height: 37px; display: flex; align-items: center; gap: 7px; margin: 9px; padding: 0 9px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--fg-3); }
+.team-thread-list > label input { min-width: 0; width: 100%; border: 0; outline: 0; background: transparent; font-size: 11px; }
+.team-thread-list > div { min-height: 0; overflow-y: auto; padding: 0 7px 8px; }
+.team-thread-list > div > button { width: 100%; min-height: 64px; display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 8px; padding: 8px; border: 0; border-radius: 9px; background: transparent; text-align: left; cursor: pointer; }
+.team-thread-list > div > button:hover { background: white; }
+.team-thread-list > div > button.active { background: white; box-shadow: inset 2px 0 var(--signal), 0 1px 4px rgb(32 24 20 / .05); }
+.team-thread-icon { width: 32px; height: 32px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 9px; background: var(--signal-wash); color: var(--signal-deep); }
+.team-thread-icon .avatar { width: 32px; height: 32px; border: 0; }
+.team-thread-list button > span:nth-child(2) { min-width: 0; }
+.team-thread-list button strong, .team-thread-list button small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-thread-list button strong { font-size: 11px; }
+.team-thread-list button small { margin-top: 4px; color: var(--muted); font-size: 9px; }
+.team-thread-list button > b { min-width: 18px; padding: 3px 5px; border-radius: 999px; background: var(--signal); color: var(--ink-0); text-align: center; font-size: 9px; }
+
+.team-chat { min-width: 0; display: grid; grid-template-rows: auto 1fr auto; background: white; }
+.team-chat > header { min-height: 67px; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; align-items: center; gap: 9px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.team-chat__icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 9px; background: var(--signal-wash); color: var(--signal-deep); }
+.team-chat > header strong, .team-chat > header small { display: block; }
+.team-chat > header strong { font-size: 12px; }
+.team-chat > header small { margin-top: 3px; color: var(--muted); font-size: 10px; }
+.team-chat > header > button { min-height: 31px; display: flex; align-items: center; gap: 5px; padding: 0 8px; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--fg-2); font-size: 10px; cursor: pointer; }
+.team-chat__messages { min-height: 390px; max-height: 545px; overflow-y: auto; padding: 20px; background: linear-gradient(180deg, rgb(255 253 249 / .58), white 110px); }
+.team-chat__messages article { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 8px; margin-bottom: 16px; }
+.team-chat__messages article.own { grid-template-columns: minmax(0, 1fr) 30px; }
+.team-chat__messages article.own > .avatar { grid-column: 2; grid-row: 1; }
+.team-chat__messages article.own > div { grid-column: 1; grid-row: 1; justify-self: end; }
+.team-chat__messages article > .avatar { width: 30px; height: 30px; }
+.team-chat__messages article > div { max-width: min(620px, 85%); }
+.team-chat__messages article > div > header { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-bottom: 5px; }
+.team-chat__messages article > div > header strong { font-size: 10px; }
+.team-chat__messages article > div > header time { margin-left: auto; color: var(--fg-3); font-size: 9px; }
+.team-chat__messages article p { margin: 0; padding: 9px 11px; border: 1px solid var(--line); border-radius: 4px 11px 11px 11px; background: var(--paper-1); color: var(--ink-1); font-size: 11px; line-height: 1.55; }
+.team-chat__messages article.own p { border-color: var(--signal-line); border-radius: 11px 4px 11px 11px; background: var(--signal-wash); }
+.team-chat__messages article > div > small { display: flex; align-items: center; justify-content: flex-end; gap: 3px; margin-top: 4px; color: var(--fg-3); font-size: 9px; }
+.team-chat__empty { min-height: 300px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--fg-3); text-align: center; }
+.team-chat__empty strong { margin-top: 10px; color: var(--ink); font-size: 12px; }
+.team-chat__empty span { margin-top: 4px; font-size: 10px; }
+.team-chat > footer { padding: 10px 12px; border-top: 1px solid var(--line); background: white; }
+.team-chat > footer textarea { width: 100%; min-height: 68px; padding: 9px 10px; border: 1px solid var(--line-strong); border-radius: 9px; outline: 0; background: white; color: var(--ink); resize: vertical; font: inherit; font-size: 11px; line-height: 1.5; }
+.team-chat > footer textarea:focus { border-color: var(--signal); box-shadow: 0 0 0 3px var(--signal-wash); }
+.team-chat > footer.locked textarea { background: var(--paper-2); }
+.team-chat > footer > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 7px; }
+.team-chat > footer > div > span { display: flex; align-items: center; gap: 4px; color: var(--fg-3); font-size: 9px; }
+.team-chat > footer button { min-height: 31px; display: flex; align-items: center; gap: 5px; padding: 0 11px; border: 0; border-radius: 7px; background: var(--signal); color: var(--ink-0); font-size: 10px; font-weight: 720; cursor: pointer; }
+.team-chat > footer button:disabled { background: var(--paper-2); color: var(--fg-3); cursor: not-allowed; }
+
+.team-chat-context { min-width: 0; border-left: 1px solid var(--line); background: var(--paper-1); }
+.team-chat-context__people { max-height: 360px; overflow-y: auto; padding: 7px; }
+.team-chat-context__people > button { width: 100%; display: grid; grid-template-columns: 30px minmax(0, 1fr) auto 14px; align-items: center; gap: 7px; padding: 8px 6px; border: 0; border-radius: 8px; background: transparent; text-align: left; cursor: pointer; }
+.team-chat-context__people > button:hover { background: white; }
+.team-chat-context__people .avatar { width: 30px; height: 30px; }
+.team-chat-context__people strong, .team-chat-context__people small { display: block; }
+.team-chat-context__people strong { font-size: 10px; }
+.team-chat-context__people small { margin-top: 3px; color: var(--muted); font-size: 9px; }
+.team-chat-context > section { margin: 8px; padding: 11px; border: 1px solid var(--line); border-radius: 9px; background: white; }
+.team-chat-context > section > small, .team-chat-context > section > strong { display: block; }
+.team-chat-context > section > small { color: var(--signal-deep); font-size: 9px; font-weight: 740; letter-spacing: .08em; }
+.team-chat-context > section > strong { margin-top: 5px; font-size: 11px; }
+.team-chat-context > section > a { display: flex; align-items: center; gap: 4px; margin-top: 8px; color: var(--signal-deep); font-size: 10px; font-weight: 680; }
+.team-chat-context .team-chat-context__security { display: grid; grid-template-columns: 20px 1fr; gap: 6px; color: var(--green); }
+.team-chat-context__security span strong, .team-chat-context__security span small { display: block; }
+.team-chat-context__security span strong { color: var(--ink); font-size: 10px; }
+.team-chat-context__security span small { margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.45; }
+
+.team-role-select { display: grid; gap: 5px; margin-top: 10px; }
+.team-role-select > span, .team-role-select > small { color: var(--muted); font-size: 9px; }
+.team-role-select select { width: 100%; min-height: 35px; padding: 0 9px; border: 1px solid var(--line-strong); border-radius: 7px; background: white; font-size: 10px; }
+.team-access-scope { margin-top: 10px; padding: 8px; border-radius: 8px; background: var(--paper-1); }
+.team-access-scope small, .team-access-scope strong { display: block; }
+.team-access-scope small { color: var(--signal-deep); font-size: 9px; font-weight: 720; letter-spacing: .08em; }
+.team-access-scope strong { margin-top: 4px; font-size: 10px; }
+
+.teams-access-layout { display: grid; grid-template-columns: minmax(0, 1fr) 370px; gap: 13px; align-items: start; }
+.business-team-list, .role-hierarchy { overflow: hidden; border: 1px solid var(--line); border-radius: 11px; background: white; box-shadow: var(--shadow); }
+.business-team-list > header { min-height: 65px; display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 15px; border-bottom: 1px solid var(--line); }
+.business-team-list > header p, .business-team-list > header h2, .role-hierarchy > header p, .role-hierarchy > header h2 { margin: 0; }
+.business-team-list > header p, .role-hierarchy > header p { color: var(--signal-deep); font-size: 9px; font-weight: 760; letter-spacing: .11em; }
+.business-team-list > header h2, .role-hierarchy > header h2 { margin-top: 4px; font-size: 12px; }
+.business-team-list > header button, .business-team-list > header a { min-height: 31px; display: flex; align-items: center; gap: 5px; padding: 0 9px; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--signal-deep); font-size: 10px; font-weight: 680; }
+.business-team-list > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; padding: 10px; }
+.business-team-list article { padding: 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--paper-1); }
+.business-team-list article > header { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 8px; }
+.business-team-icon { width: 32px; height: 32px; display: grid; place-items: center; border-radius: 8px; background: var(--signal-wash); color: var(--signal-deep); }
+.business-team-list article header strong, .business-team-list article header small { display: block; }
+.business-team-list article header strong { font-size: 11px; }
+.business-team-list article header small { margin-top: 3px; color: var(--muted); font-size: 9px; }
+.business-team-list article > p { min-height: 49px; margin: 10px 0; color: var(--muted); font-size: 10px; line-height: 1.55; }
+.business-team-people { display: flex; align-items: center; gap: 9px; }
+.business-team-people .avatar { width: 27px; height: 27px; font-size: 8px; }
+.business-team-people > span:last-child strong, .business-team-people > span:last-child small { display: block; }
+.business-team-people > span:last-child strong { font-size: 10px; }
+.business-team-people > span:last-child small { margin-top: 3px; color: var(--muted); font-size: 9px; }
+.business-team-list article > footer { display: flex; gap: 5px; margin-top: 11px; padding-top: 9px; border-top: 1px solid var(--line); }
+.business-team-list article > footer button { min-height: 29px; display: flex; align-items: center; gap: 4px; padding: 0 7px; border: 1px solid var(--line); border-radius: 6px; background: white; color: var(--fg-2); font-size: 9px; cursor: pointer; }
+.business-team-list article > footer button:first-child { color: var(--signal-deep); }
+.role-hierarchy { position: sticky; top: 78px; }
+.role-hierarchy > header { padding: 14px 15px; border-bottom: 1px solid var(--line); }
+.role-hierarchy > header > span { display: block; margin-top: 6px; color: var(--muted); font-size: 10px; line-height: 1.5; }
+.role-hierarchy ol { margin: 0; padding: 7px 12px; list-style: none; }
+.role-hierarchy li { display: grid; grid-template-columns: 30px minmax(0, 1fr) 20px; align-items: start; gap: 8px; padding: 9px 2px; border-bottom: 1px solid var(--line); }
+.role-hierarchy li:last-child { border-bottom: 0; }
+.role-hierarchy li > span { width: 26px; height: 26px; display: grid; place-items: center; border-radius: 8px; background: var(--signal-wash); color: var(--signal-deep); font-size: 9px; font-weight: 760; }
+.role-hierarchy li strong, .role-hierarchy li small { display: block; }
+.role-hierarchy li strong { font-size: 10px; }
+.role-hierarchy li small { margin-top: 3px; color: var(--muted); font-size: 9px; line-height: 1.4; }
+.role-hierarchy li em { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 5px; }
+.role-hierarchy li em b { padding: 2px 4px; border-radius: 5px; background: var(--paper-2); color: var(--fg-3); font-size: 8px; font-style: normal; }
+.role-hierarchy li > i { width: 19px; height: 19px; display: grid; place-items: center; border-radius: 999px; background: var(--paper-2); color: var(--fg-2); font-size: 8px; font-style: normal; font-weight: 720; }
+.role-hierarchy > a { min-height: 42px; display: flex; align-items: center; justify-content: center; gap: 5px; border-top: 1px solid var(--line); color: var(--signal-deep); font-size: 10px; font-weight: 680; }
+
+.team-modal-backdrop { position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 20px; background: rgb(32 24 20 / .48); backdrop-filter: blur(3px); }
+.team-modal { width: min(590px, 100%); max-height: min(760px, calc(100vh - 40px)); overflow-y: auto; border: 1px solid var(--line); border-radius: 13px; background: white; box-shadow: 0 30px 80px rgb(32 24 20 / .25); }
+.team-modal--message { width: min(480px, 100%); }
+.team-modal > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 15px 17px; border-bottom: 1px solid var(--line); }
+.team-modal > header p, .team-modal > header h2 { margin: 0; }
+.team-modal > header p { color: var(--signal-deep); font-size: 9px; font-weight: 760; letter-spacing: .11em; }
+.team-modal > header h2 { margin-top: 5px; font-size: 16px; }
+.team-modal > header button { width: 30px; height: 30px; display: grid; place-items: center; border: 0; border-radius: 7px; background: var(--paper-2); color: var(--fg-2); cursor: pointer; }
+.team-modal__body { display: grid; gap: 12px; padding: 15px 17px; }
+.team-modal__body > label { display: grid; gap: 6px; }
+.team-modal__body > label > span, .team-modal fieldset legend { color: var(--fg-2); font-size: 10px; font-weight: 680; }
+.team-modal__body input, .team-modal__body textarea, .team-modal__body select { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid var(--line-strong); border-radius: 8px; outline: 0; background: white; color: var(--ink); font: inherit; font-size: 11px; }
+.team-modal__body textarea { min-height: 82px; resize: vertical; }
+.team-modal__body input:focus, .team-modal__body textarea:focus, .team-modal__body select:focus { border-color: var(--signal); box-shadow: 0 0 0 3px var(--signal-wash); }
+.team-modal fieldset { display: grid; gap: 5px; margin: 0; padding: 10px; border: 1px solid var(--line); border-radius: 9px; }
+.team-modal fieldset > label { display: grid; grid-template-columns: 16px 30px 1fr; align-items: center; gap: 8px; padding: 6px; border-radius: 7px; cursor: pointer; }
+.team-modal fieldset > label:hover { background: var(--paper-1); }
+.team-modal fieldset input { width: 14px; min-height: 14px; padding: 0; }
+.team-modal fieldset .avatar { width: 30px; height: 30px; }
+.team-modal fieldset strong, .team-modal fieldset small { display: block; }
+.team-modal fieldset strong { font-size: 10px; }
+.team-modal fieldset small { margin-top: 2px; color: var(--muted); font-size: 9px; }
+.team-modal__promise { display: grid; grid-template-columns: 20px 1fr; gap: 6px; padding: 9px; border-radius: 8px; background: var(--signal-wash); color: var(--signal-deep); font-size: 10px; line-height: 1.45; }
+.team-modal > footer { display: flex; justify-content: flex-end; gap: 7px; padding: 12px 17px; border-top: 1px solid var(--line); }
+
+.sidebar__team--preview > div:first-child { color: var(--signal); }
+
+@media (max-width: 1280px) {
+  .team-messaging-layout { grid-template-columns: 250px minmax(360px, 1fr); }
+  .team-chat-context { display: none; }
+  .teams-access-layout { grid-template-columns: minmax(0, 1fr) 330px; }
+}
+
+@media (max-width: 980px) {
+  .team-messaging-layout { grid-template-columns: 220px minmax(0, 1fr); }
+  .business-team-list > div { grid-template-columns: 1fr; }
+  .teams-access-layout { grid-template-columns: 1fr; }
+  .role-hierarchy { position: relative; top: 0; }
+}
+
+@media (max-width: 760px) {
+  .team-workspace-head { align-items: flex-start; }
+  .team-head-actions { width: 100%; justify-content: stretch; }
+  .team-head-actions .button { flex: 1; }
+  .team-preview-notice { grid-template-columns: 24px 1fr; }
+  .team-preview-notice a { grid-column: 2; }
+  .team-summary { grid-template-columns: 1fr 1fr; }
+  .team-summary > div:nth-child(2) { border-right: 0; }
+  .team-summary > div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+  .team-workspace-tabs { width: 100%; overflow-x: auto; }
+  .team-workspace-tabs button { flex: 1; justify-content: center; white-space: nowrap; }
+  .team-messaging-layout { display: block; min-height: 0; overflow: visible; border: 0; background: transparent; box-shadow: none; }
+  .team-thread-list { margin-bottom: 10px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; }
+  .team-thread-list > div { display: flex; gap: 5px; overflow-x: auto; }
+  .team-thread-list > div > button { min-width: 210px; }
+  .team-chat { overflow: hidden; border: 1px solid var(--line); border-radius: 10px; }
+  .team-chat > header > button { width: 32px; padding: 0; justify-content: center; font-size: 0; }
+  .team-chat__messages { min-height: 330px; max-height: 470px; padding: 13px 10px; }
+  .team-chat__messages article > div { max-width: 92%; }
+  .business-team-list > div { padding: 7px; }
+  .role-hierarchy li em { display: none; }
+  .team-modal-backdrop { padding: 10px; align-items: end; }
+  .team-modal { max-height: calc(100vh - 20px); border-radius: 13px 13px 0 0; }
+  .team-modal > footer .button { flex: 1; }
+}
+
+@media (max-width: 470px) {
+  .team-head-actions { align-items: stretch; flex-direction: column; }
+  .team-workspace-tabs button { padding: 0 8px; font-size: 9px; }
+  .team-chat > header { grid-template-columns: 32px minmax(0, 1fr) 31px; padding: 9px; }
+  .team-chat__messages article > div > header .team-role-badge { display: none; }
+  .team-chat > footer > div > span { display: none; }
+  .team-chat > footer button { margin-left: auto; }
+}

@@ -18,7 +18,7 @@ UI visibility is convenience only. Every read, write, download, enumeration, exp
 
 ## Roles
 
-Customer role templates map to granular permissions such as `company:manage`, `products:manage`, `compliance:manage`, `documents:manage`, and `team:manage`. Templates are defaults, not security shortcuts; authorization checks the resolved permission set.
+Customer position templates follow the default hierarchy Company owner, Executive, Department lead, Manager, Member, Viewer, and External partner. They map to granular permissions such as `company:manage`, `products:manage`, `compliance:manage`, `documents:manage`, `team:view`, `team:message`, and `team:manage`. Owners/admins receive the subscription ceiling; lower roles receive progressively narrower defaults. Explicit grants replace a non-owner role's defaults but are still intersected with the subscription ceiling. Templates are defaults, not security shortcuts; authorization checks the resolved permission set for every operation.
 
 Staff grants record customer, staff user, scope, reason, approver, start, expiry, and revocation. Elevated access creates audit events.
 
