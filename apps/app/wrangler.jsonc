@@ -4,11 +4,7 @@
   "main": "vinext/server/fetch-handler",
   "routes": [
     {
-      "pattern": "export-hq.com/ExportPanel",
-      "zone_name": "export-hq.com"
-    },
-    {
-      "pattern": "export-hq.com/ExportPanel/*",
+      "pattern": "export-hq.com/ExportPanel*",
       "zone_name": "export-hq.com"
     }
   ],
