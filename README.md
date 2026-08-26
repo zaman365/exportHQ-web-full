@@ -33,3 +33,6 @@ pnpm dev
 Public website: `http://localhost:3000`. Customer app: `http://localhost:3001`. Operator app: `http://localhost:3002`.
 
 Demo mode is intentionally limited to local development. Production must provide Clerk and PostgreSQL configuration. See `docs/implementation-status.md`.
+
+Production activation work is tracked in
+[`docs/production-activation-todo.md`](docs/production-activation-todo.md).

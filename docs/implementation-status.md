@@ -1,5 +1,10 @@
 # Implementation status
 
+The actionable completion backlog is maintained in
+[`production-activation-todo.md`](production-activation-todo.md). This status document describes
+what exists; the TODO defines the required sequence and acceptance evidence for finishing the
+remaining production components.
+
 ## Implemented
 
 - Greenfield monorepo and deployment-ready customer/ops application split.
@@ -25,6 +30,32 @@
 - A versioned, transactional market catalog publisher and incremental PostgreSQL migration for country, product, opportunity, evidence, verification, and shortlist records.
 - Internal customer portfolio and scoped operator workspace over the same domain projection.
 - Unit, journey, and cross-tenant isolation tests; CI runs lint, typecheck, tests, and production builds.
+- A production activation spine (`@exporthq/platform`): recorded activation gates that make document
+  upload, mailbox connection, provider referral and live adapters fail closed until their evidence is
+  recorded; a single authority for what "production" means; telemetry redaction and a PostHog metadata
+  allowlist; a generated Content Security Policy and security headers; per-capability rate limits;
+  idempotency with bounded retries and a dead-letter threshold; Clerk webhook signature verification
+  with replay protection.
+- A Clerk webhook endpoint that verifies signatures, refuses replays, deduplicates deliveries, and
+  reports honestly that it persists nothing while tenant persistence is unactivated.
+- A platform-admin-only activation report at `/ExportPanel/api/activation` so deployment state can be
+  checked against this document rather than trusted.
+
+## Production activation state
+
+Activation is tracked in [`production-activation-todo.md`](production-activation-todo.md) and the
+deployment's own gate state is readable at `/ExportPanel/api/activation`.
+
+| Gate | State | What is blocking |
+| --- | --- | --- |
+| Gate 0 — ownership and freeze | In progress | Owner rows unnamed; policies drafted, not approved |
+| Gate 1 — identity and PostgreSQL | In progress | Clerk production live; Billing not enabled, no webhook registered, Neon not provisioned |
+| Gate 2 — evidence vault | Not started | R2 not provisioned; uploads fail closed |
+| Gate 3 — production persistence | Not started | Preview adapters still back customer workflows |
+| Gate 4 — trust and integrations | Not started | No reviewed provider or mail applications |
+| Gate 5 — pilot and launch | In progress | CSP, rate limits and redaction shipped; CSP is report-only until exercised |
+
+No capability in this table may be described as live before its gate records evidence.
 
 ## Local preview behavior
 

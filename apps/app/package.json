@@ -18,6 +18,7 @@
     "@exporthq/auth": "workspace:*",
     "@exporthq/authorization": "workspace:*",
     "@exporthq/domain": "workspace:*",
+    "@exporthq/platform": "workspace:*",
     "@exporthq/ui": "workspace:*",
     "@exporthq/validation": "workspace:*",
     "@tailwindcss/postcss": "4.3.3",

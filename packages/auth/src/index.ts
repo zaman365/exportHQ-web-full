@@ -1,4 +1,5 @@
 import { createClerkClient } from "@clerk/backend";
+import { isDemoModeEnabled } from "@exporthq/platform";
 import {
   featuresForTier,
   permissionsForOrganizationRole,
@@ -19,11 +20,11 @@ const ownerPermissions: Permission[] = [
   "team:view", "team:message", "team:manage", "billing:manage"
 ];
 
+/* Demo identity is a preview adapter. `isDemoModeEnabled` is the single place
+   that decides what production means, so this can never be true on a
+   production deployment regardless of how the variable is set. */
 function isDemoMode() {
-  return (
-    process.env.NODE_ENV !== "production" &&
-    process.env.EXPORTHQ_DEMO_MODE !== "false"
-  );
+  return isDemoModeEnabled();
 }
 
 export type CustomerSessionStatus =

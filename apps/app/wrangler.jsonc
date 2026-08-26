@@ -21,8 +21,14 @@
     ]
   },
   "vars": {
+    // The runtime authority for what "production" means. Preview adapters,
+    // demo identity and every unactivated capability fail closed on this.
+    "EXPORTHQ_ENVIRONMENT": "production",
     "EXPORTHQ_DEMO_MODE": "false",
     "EXPORTHQ_WEB_URL": "https://export-hq.com",
-    "EXPORTHQ_AUTHORIZED_PARTIES": "https://export-hq.com"
+    "EXPORTHQ_AUTHORIZED_PARTIES": "https://export-hq.com",
+    // Gate identifiers are added here only from recorded evidence.
+    // See docs/activation-gates.md.
+    "EXPORTHQ_ACTIVATION_GATES_PASSED": ""
   }
 }

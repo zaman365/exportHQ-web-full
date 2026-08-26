@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { getClerkClient } from "@exporthq/auth";
 import { businessVerificationSchema } from "@exporthq/validation";
+import { checkRateLimit } from "../_lib/activation";
 import { getWorkspaceSession } from "../_lib/session";
 
 export type VerificationActionState = { error?: string };
@@ -24,6 +25,13 @@ export async function requestBusinessVerification(
   if (session.businessVerification === "verified") {
     redirect("/verify-business?verified=1");
   }
+
+  /* Verification submissions reach a human reviewer, so the limit protects the
+     operations queue as well as the platform. It is keyed on the organization
+     rather than the person so one workspace cannot flood the queue by
+     rotating submitters. */
+  const withinLimit = await checkRateLimit("verification-submission", session.organizationId);
+  if (!withinLimit.ok) return { error: withinLimit.message };
 
   const parsed = businessVerificationSchema.safeParse({
     legalName: formData.get("legalName"),

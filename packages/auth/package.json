@@ -3,7 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "lint": "eslint src --max-warnings=0",
     "typecheck": "tsc --noEmit",
@@ -11,7 +13,12 @@
   },
   "dependencies": {
     "@clerk/backend": "3.16.4",
-    "@exporthq/authorization": "workspace:*"
+    "@exporthq/authorization": "workspace:*",
+    "@exporthq/platform": "workspace:*"
   },
-  "devDependencies": { "@types/node": "26.2.0", "typescript": "5.9.3", "vitest": "4.1.10" }
+  "devDependencies": {
+    "@types/node": "26.2.0",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
 }
