@@ -1,8 +1,10 @@
 "use server";
 
 import { getClerkClient } from "@exporthq/auth";
+import { saveCompanyProfile } from "@exporthq/db";
 import { organizationProfileSchema } from "@exporthq/validation";
 import { getWorkspaceSession } from "../_lib/session";
+import { runTenantCommand } from "../_lib/tenant";
 
 export type OrganizationProfileActionResult = { ok: boolean; message: string };
 
@@ -30,14 +32,30 @@ export async function saveOrganizationProfile(payload: string): Promise<Organiza
   if (!parsed.success) return { ok: false, message: "Review the profile values. HS classification may stay blank; primary market and channel choices cannot also be secondary." };
   if (session.isDemo) return { ok: true, message: "Organization profile saved for this preview." };
 
+  const { organization: profile, primaryOffer, marketStrategy } = parsed.data;
+
+  /* Authoritative path: the profile and its audit event commit together in the
+     tenant database. The identity-provider metadata below is the documented
+     preview adapter and is mirrored only until Gate 3 removes it. */
+  await runTenantCommand(session, (tx, context) =>
+    saveCompanyProfile(tx, context, {
+      originCountryCode: countryCodes[profile.country] ?? "BD",
+      industry: primaryOffer.category || "Unspecified",
+      website: profile.website || null,
+      supportEmail: profile.supportEmail,
+      defaultCurrency: profile.defaultCurrency,
+      exportStage: marketStrategy.currentExportStage || null,
+      primarySalesChannel: marketStrategy.primarySalesChannel || null,
+      marketStrategy
+    })
+  );
+
   const client = getClerkClient();
   const organization = await client.organizations.getOrganization({ organizationId: session.organizationId });
   const privateMetadata = organization.privateMetadata as { exportPanel?: Record<string, unknown> };
   const exportPanel = privateMetadata.exportPanel ?? {};
   const existingCompany = typeof exportPanel.company === "object" && exportPanel.company ? exportPanel.company as Record<string, unknown> : {};
   const existingProduct = typeof exportPanel.firstProduct === "object" && exportPanel.firstProduct ? exportPanel.firstProduct as Record<string, unknown> : {};
-  const { organization: profile, primaryOffer, marketStrategy } = parsed.data;
-
   await client.organizations.updateOrganization(session.organizationId, { name: profile.tradingName });
   await client.organizations.updateOrganizationMetadata(session.organizationId, {
     privateMetadata: {

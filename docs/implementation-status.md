@@ -49,7 +49,7 @@ deployment's own gate state is readable at `/ExportPanel/api/activation`.
 | Gate | State | What is blocking |
 | --- | --- | --- |
 | Gate 0 — ownership and freeze | In progress | Owner rows unnamed; policies drafted, not approved |
-| Gate 1 — identity and PostgreSQL | In progress | Clerk production live; Billing not enabled, no webhook registered, Neon not provisioned |
+| Gate 1 — identity and PostgreSQL | In progress | Persistence layer built; Neon not provisioned, so isolation tests are skipped |
 | Gate 2 — evidence vault | Not started | R2 not provisioned; uploads fail closed |
 | Gate 3 — production persistence | Not started | Preview adapters still back customer workflows |
 | Gate 4 — trust and integrations | Not started | No reviewed provider or mail applications |

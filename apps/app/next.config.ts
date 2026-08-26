@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
   transpilePackages: [
     "@exporthq/auth",
     "@exporthq/authorization",
+    "@exporthq/db",
     "@exporthq/domain",
     "@exporthq/platform",
     "@exporthq/ui",

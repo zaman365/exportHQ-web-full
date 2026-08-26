@@ -107,10 +107,23 @@ Gate 5: one real pilot Export Lane and controlled launch
 
 ### Neon PostgreSQL and RLS
 
+> **Built 2026-08-26, unverified against a live database.** Transaction-scoped
+> tenant context (`set_config(..., true)`, discarded on commit), transactional
+> append-only audit, database-held plan entitlements replacing the identity
+> provider's billing product, the identity bridge as `SECURITY DEFINER`
+> functions, durable idempotency, and the organization/company-profile
+> repositories. Onboarding and profile saves now write to PostgreSQL when the
+> capability is activated. The cross-tenant isolation suite is written but
+> **skipped**: it needs `EXPORTHQ_TEST_DATABASE_URL`, and a mocked row-level
+> security test would prove nothing, since the behaviour under test lives in
+> the database. No box below is closed on unverified behaviour.
+
 - [ ] Provision separate development, staging and production Neon projects.
 - [ ] Place production in the approved Frankfurt/EU region and record the vendor/security review.
-- [ ] Generate and review the structural Drizzle migration before applying the checked-in RLS
+- [x] Generate and review the structural Drizzle migration before applying the checked-in RLS
       envelope.
+      <br>`0005_production_persistence.sql` is structural, `0006_production_persistence_rls.sql`
+      is the envelope, `0007_database_roles.sql` is the roles. Apply in that order.
 - [ ] Create separate migration, application and read-only support roles.
 - [ ] Ensure the application role is non-owner and does not have `BYPASSRLS`.
 - [ ] Set organization context transactionally for every tenant request and reset it safely.
@@ -118,7 +131,9 @@ Gate 5: one real pilot Export Lane and controlled launch
 - [ ] Replace Clerk organization metadata as storage for onboarding, readiness and profile state.
 - [ ] Make privileged changes, membership changes, evidence state changes and business decisions
       write append-only audit events in the same transaction.
-- [ ] Add idempotency for webhooks and retryable commands.
+- [x] Add idempotency for webhooks and retryable commands.
+      <br>Durable `idempotency_keys` with a conditional-insert claim, plus `webhook_deliveries`
+      recording every inbound delivery including ignored ones.
 - [ ] Prove migrations on a production-shaped staging database with rollback/forward-fix steps.
 - [ ] Configure automated backups, point-in-time recovery and an independent encrypted export.
 - [ ] Perform and document a restore drill.

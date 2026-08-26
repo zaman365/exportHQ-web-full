@@ -50,6 +50,9 @@ importers:
       '@exporthq/authorization':
         specifier: workspace:*
         version: link:../../packages/authorization
+      '@exporthq/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@exporthq/domain':
         specifier: workspace:*
         version: link:../../packages/domain
@@ -83,6 +86,9 @@ importers:
       react-server-dom-webpack:
         specifier: ^19.2.8
         version: 19.2.8(react-dom@19.2.8(react@19.2.8))(react@19.2.8)(webpack@5.109.2(esbuild@0.28.2)(lightningcss@1.33.0)(postcss@8.5.26))
+      server-only:
+        specifier: 0.0.1
+        version: 0.0.1
       tailwindcss:
         specifier: 4.3.3
         version: 4.3.3
@@ -240,6 +246,9 @@ importers:
 
   packages/db:
     dependencies:
+      '@exporthq/platform':
+        specifier: workspace:*
+        version: link:../platform
       drizzle-orm:
         specifier: 0.45.2
         version: 0.45.2(postgres@3.4.9)

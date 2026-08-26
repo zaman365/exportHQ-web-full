@@ -1,6 +1,10 @@
 {
   "name": "exporthq-app",
   "compatibility_date": "2026-08-20",
+  // The PostgreSQL driver needs Node built-ins. Neon's pooled connection string
+  // is required alongside this; `createDatabase` sets `prepare: false` so the
+  // pooler cannot carry prepared statements across sessions.
+  "compatibility_flags": ["nodejs_compat"],
   "main": "vinext/server/fetch-handler",
   "routes": [
     {

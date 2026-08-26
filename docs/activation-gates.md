@@ -82,3 +82,36 @@ pnpm --filter @exporthq/app exec wrangler secret put CLERK_WEBHOOK_SECRET
 
 Until that secret exists the endpoint answers `503` and accepts nothing, which
 is the correct behaviour for an unconfigured deployment.
+
+## Plan entitlements without a billing provider
+
+Plan tiers are held in `organization_entitlements` in Export HQ's own database,
+not in the identity provider's billing product. That means:
+
+- a pilot exporter can be granted Scale without a payment processor existing;
+- a plan change is an audited row committed in the same transaction as the
+  decision that caused it;
+- authorization does not fail open or closed because a third party is
+  unreachable;
+- the highest active tier wins, so an expiring trial cannot silently downgrade
+  a paying customer.
+
+An organization may read the tier it holds and may never grant itself one:
+there is no INSERT policy for a customer actor, and the write policy requires
+`app.actor_type` to be `staff` or `system`.
+
+Until `customer-postgres-persistence` is activated, the session keeps whatever
+tier the identity provider reports — today, Basic for every organization.
+
+## Running the isolation tests
+
+They are skipped without a database, deliberately: a mocked row-level security
+test proves nothing, because the behaviour under test lives in PostgreSQL.
+
+```bash
+EXPORTHQ_TEST_DATABASE_URL=postgres://... pnpm --filter @exporthq/db test
+```
+
+Point it at a throwaway database with `0000`–`0007` applied and connect as the
+non-owner `exporthq_app` role. Connecting as the owner would pass every test
+while proving nothing, because a table owner bypasses row-level security.

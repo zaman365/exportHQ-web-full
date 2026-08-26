@@ -2,7 +2,11 @@
 
 import { redirect } from "next/navigation";
 import { getClerkClient } from "@exporthq/auth";
+import { completeOnboarding as completeOnboardingRecord } from "@exporthq/db";
 import { getWorkspaceSession } from "../_lib/session";
+import { runTenantCommand } from "../_lib/tenant";
+
+const onboardingVersion = 3;
 
 export type OnboardingActionState = { error?: string };
 
@@ -20,6 +24,14 @@ export async function completeOnboarding(
     redirect(`/?access=basic&business=${encodeURIComponent(businessName)}&welcome=1`);
   }
 
+  /* Authoritative path: the workspace is activated in PostgreSQL, with the
+     audit event committing in the same transaction. Identity metadata is only
+     mirrored afterwards so the session can still read completion before the
+     first database round trip. */
+  const persisted = await runTenantCommand(session, (tx, context) =>
+    completeOnboardingRecord(tx, context, onboardingVersion)
+  );
+
   const client = getClerkClient();
   const organization = await client.organizations.getOrganization({ organizationId: session.organizationId });
   const currentPublic = organization.publicMetadata as { exportPanel?: Record<string, unknown> };
@@ -30,7 +42,8 @@ export async function completeOnboarding(
       exportPanel: {
         ...(currentPublic.exportPanel ?? {}),
         onboardingComplete: true,
-        onboardingVersion: 3,
+        onboardingVersion,
+        persistedToTenantDatabase: persisted.ran,
         productSetupComplete: currentPublic.exportPanel?.productSetupComplete === true
       }
     },

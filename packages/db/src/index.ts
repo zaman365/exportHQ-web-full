@@ -11,3 +11,59 @@ export function createDatabase(databaseUrl: string) {
 
 export { schema };
 export { upsertMarketIntelligenceCatalog, type MarketOpportunitySeed } from "./market-intelligence";
+
+export {
+  assertOrganizationId,
+  readTenantContext,
+  TenantContextError,
+  withPlatformTransaction,
+  withTenantTransaction,
+  type ActorType,
+  type ExportHqTransaction,
+  type TenantContext
+} from "./tenant";
+
+export {
+  assertSafeAuditMetadata,
+  auditableActions,
+  recordAuditEvent,
+  recordPlatformAuditEvent,
+  type AuditEventInput,
+  type AuditableAction
+} from "./audit";
+
+export {
+  grantOrganizationEntitlement,
+  isEntitlementActive,
+  readOrganizationEntitlements,
+  readOrganizationTier,
+  resolveEntitlementTier,
+  revokeOrganizationEntitlement,
+  type EntitlementRecord,
+  type EntitlementSource,
+  type EntitlementTier,
+  type GrantEntitlementInput
+} from "./entitlements";
+
+export {
+  countDeadLetteredDeliveries,
+  PostgresIdempotencyStore,
+  recordWebhookDelivery,
+  type WebhookDeliveryOutcome
+} from "./stores";
+
+export {
+  projectMembership,
+  provisionOrganization,
+  resolveOrganizationId,
+  type MembershipIdentity,
+  type OrganizationIdentity
+} from "./repositories/organizations";
+
+export {
+  completeOnboarding,
+  readCompanyProfile,
+  saveCompanyProfile,
+  type CompanyProfileInput,
+  type CompanyProfileRecord
+} from "./repositories/company-profile";

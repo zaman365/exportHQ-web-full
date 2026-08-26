@@ -44,6 +44,12 @@ export const mailboxConnectionStatus = pgEnum("mailbox_connection_status", [
   "pending_authorization", "connected", "reauthorization_required", "paused", "disconnected"
 ]);
 export const emailMessageDirection = pgEnum("email_message_direction", ["inbound", "outbound"]);
+export const subscriptionTier = pgEnum("subscription_tier", ["preview", "explore", "launch", "scale", "managed"]);
+export const entitlementSource = pgEnum("entitlement_source", ["platform_grant", "trial", "paid", "pilot"]);
+export const idempotencyState = pgEnum("idempotency_state", ["in_progress", "succeeded", "failed"]);
+export const webhookDeliveryState = pgEnum("webhook_delivery_state", [
+  "received", "processed", "ignored", "failed", "dead_letter"
+]);
 
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -269,6 +275,18 @@ export const companyProfiles = pgTable("company_profiles", {
   employeeCount: integer("employee_count"),
   exportMarkets: text("export_markets").array().notNull().default([]),
   onboardingPercent: integer("onboarding_percent").notNull().default(0),
+  /* Replaces Clerk organization metadata as the store for onboarding and
+     profile state. Metadata has no transaction, no audit trail, no row-level
+     security and no restore path. */
+  onboardingComplete: boolean("onboarding_complete").notNull().default(false),
+  onboardingVersion: integer("onboarding_version").notNull().default(0),
+  activatedBy: text("activated_by"),
+  activatedAt: timestamp("activated_at", { withTimezone: true }),
+  supportEmail: text("support_email"),
+  defaultCurrency: text("default_currency").notNull().default("USD"),
+  exportStage: text("export_stage"),
+  primarySalesChannel: text("primary_sales_channel"),
+  marketStrategy: jsonb("market_strategy").$type<Record<string, unknown>>().notNull().default({}),
   verificationStatus: businessVerificationStatus("verification_status").notNull().default("unverified"),
   verificationSubmittedAt: timestamp("verification_submitted_at", { withTimezone: true }),
   verifiedAt: timestamp("verified_at", { withTimezone: true }),
@@ -599,3 +617,63 @@ export const auditEvents = pgTable("audit_events", {
   ipHash: text("ip_hash"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [index("audit_events_org_time_idx").on(table.organizationId, table.createdAt)]);
+
+/**
+ * Plan entitlements live here rather than in the identity provider's billing
+ * product. Keeping them in the tenant database means a plan change is an
+ * audited row in the same transaction as the decision that caused it, it can
+ * be granted for a pilot without a payment processor, and the authorization
+ * ceiling does not depend on a third party being reachable.
+ */
+export const organizationEntitlements = pgTable("organization_entitlements", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  tier: subscriptionTier("tier").notNull(),
+  source: entitlementSource("source").notNull(),
+  reason: text("reason").notNull(),
+  grantedBy: text("granted_by").notNull(),
+  effectiveFrom: timestamp("effective_from", { withTimezone: true }).notNull().defaultNow(),
+  effectiveTo: timestamp("effective_to", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  index("organization_entitlements_org_effective_idx").on(table.organizationId, table.effectiveFrom),
+  check("organization_entitlements_window_check", sql`${table.effectiveTo} is null or ${table.effectiveTo} > ${table.effectiveFrom}`)
+]);
+
+/**
+ * Durable idempotency for webhooks and retryable commands. `request_hash`
+ * makes a reused key carrying a different body a conflict rather than a silent
+ * overwrite.
+ */
+export const idempotencyKeys = pgTable("idempotency_keys", {
+  key: text("key").primaryKey(),
+  scope: text("scope").notNull(),
+  requestHash: text("request_hash").notNull(),
+  state: idempotencyState("state").notNull().default("in_progress"),
+  resultReference: text("result_reference"),
+  attempts: integer("attempts").notNull().default(1),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  ...timestamps
+}, (table) => [index("idempotency_keys_expiry_idx").on(table.expiresAt)]);
+
+/**
+ * Every inbound provider delivery, including the ones this deployment ignores
+ * by design. Retained so a missing projection can be distinguished from a
+ * delivery that never arrived.
+ */
+export const webhookDeliveries = pgTable("webhook_deliveries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  provider: text("provider").notNull(),
+  eventId: text("event_id").notNull(),
+  eventType: text("event_type").notNull(),
+  state: webhookDeliveryState("state").notNull().default("received"),
+  attempts: integer("attempts").notNull().default(1),
+  payloadHash: text("payload_hash").notNull(),
+  failureReason: text("failure_reason"),
+  receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+  processedAt: timestamp("processed_at", { withTimezone: true })
+}, (table) => [
+  uniqueIndex("webhook_deliveries_provider_event_unique").on(table.provider, table.eventId),
+  index("webhook_deliveries_state_idx").on(table.state, table.receivedAt)
+]);

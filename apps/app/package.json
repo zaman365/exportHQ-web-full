@@ -17,6 +17,7 @@
     "@clerk/nextjs": "7.7.4",
     "@exporthq/auth": "workspace:*",
     "@exporthq/authorization": "workspace:*",
+    "@exporthq/db": "workspace:*",
     "@exporthq/domain": "workspace:*",
     "@exporthq/platform": "workspace:*",
     "@exporthq/ui": "workspace:*",
@@ -28,6 +29,7 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "react-server-dom-webpack": "^19.2.8",
+    "server-only": "0.0.1",
     "tailwindcss": "4.3.3",
     "vinext": "1.0.0-beta.8"
   },

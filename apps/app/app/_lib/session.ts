@@ -9,6 +9,7 @@ import {
   resolveWorkspaceFeatureAccess,
   type WorkspaceFeature
 } from "@exporthq/authorization";
+import { applyOrganizationEntitlement } from "./entitlements";
 import { exportPanelPath } from "./export-panel-paths";
 
 type WorkspaceFeatureOptions = {
@@ -27,7 +28,11 @@ function requestUrl(requestHeaders: Headers): string {
 export async function getWorkspaceSession(): Promise<CustomerSession> {
   const incoming = await headers();
   const requestHeaders = new Headers(incoming);
-  return resolveCustomerSession(new Request(requestUrl(requestHeaders), { headers: requestHeaders }));
+  const session = await resolveCustomerSession(new Request(requestUrl(requestHeaders), { headers: requestHeaders }));
+  /* The identity provider says who the person is; Export HQ's own database says
+     what their organization may do. Until tenant persistence is activated this
+     returns the session unchanged. */
+  return applyOrganizationEntitlement(session);
 }
 
 function publicPreviewSession(session: CustomerSession): CustomerSession {
