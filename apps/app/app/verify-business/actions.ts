@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { getClerkClient } from "@exporthq/auth";
 import { businessVerificationSchema } from "@exporthq/validation";
 import { getWorkspaceSession } from "../_lib/session";
-import { exportPanelPath } from "../_lib/export-panel-paths";
 
 export type VerificationActionState = { error?: string };
 
@@ -23,7 +22,7 @@ export async function requestBusinessVerification(
     return { error: "A business owner or admin must submit the verification request." };
   }
   if (session.businessVerification === "verified") {
-    redirect(exportPanelPath("/verify-business?verified=1"));
+    redirect("/verify-business?verified=1");
   }
 
   const parsed = businessVerificationSchema.safeParse({
@@ -40,7 +39,7 @@ export async function requestBusinessVerification(
     return { error: "Check every field, use full https:// links, and accept the declaration before submitting." };
   }
 
-  if (session.isDemo) redirect(exportPanelPath("/verify-business?submitted=1"));
+  if (session.isDemo) redirect("/verify-business?submitted=1");
 
   const client = getClerkClient();
   const organization = await client.organizations.getOrganization({ organizationId: session.organizationId });
@@ -70,5 +69,5 @@ export async function requestBusinessVerification(
     }
   });
 
-  redirect(exportPanelPath("/verify-business?submitted=1"));
+  redirect("/verify-business?submitted=1");
 }

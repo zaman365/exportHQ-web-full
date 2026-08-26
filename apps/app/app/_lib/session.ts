@@ -63,14 +63,14 @@ export async function getWorkspaceFeatureSession(
     if (preview.features.includes(feature)) return preview;
   }
 
-  if (session.status === "misconfigured") redirect(exportPanelPath("/sign-in?reason=configuration"));
+  if (session.status === "misconfigured") redirect("/sign-in?reason=configuration");
   if (session.status === "signed-out") {
     const returnTo = options.signedOutRedirectTo?.startsWith("/") ? options.signedOutRedirectTo : undefined;
-    redirect(exportPanelPath(returnTo ? `/sign-in?redirect_url=${encodeURIComponent(exportPanelPath(returnTo))}` : "/sign-in"));
+    redirect(returnTo ? `/sign-in?redirect_url=${encodeURIComponent(exportPanelPath(returnTo))}` : "/sign-in");
   }
-  if (session.status === "needs-organization") redirect(exportPanelPath("/onboarding"));
-  if (session.status === "needs-onboarding" && !options.allowIncompleteOnboarding) redirect(exportPanelPath("/onboarding"));
-  if (!session.features.includes(feature)) redirect(exportPanelPath(`/plans?feature=${encodeURIComponent(feature)}`));
+  if (session.status === "needs-organization") redirect("/onboarding");
+  if (session.status === "needs-onboarding" && !options.allowIncompleteOnboarding) redirect("/onboarding");
+  if (!session.features.includes(feature)) redirect(`/plans?feature=${encodeURIComponent(feature)}`);
   return session;
 }
 
@@ -79,13 +79,13 @@ export async function requireWorkspaceFeature(
   options: WorkspaceFeatureOptions = {}
 ): Promise<CustomerSession & { principal: NonNullable<CustomerSession["principal"]> }> {
   const session = await getWorkspaceFeatureSession(feature, options);
-  if (!session.principal) redirect(exportPanelPath("/onboarding"));
+  if (!session.principal) redirect("/onboarding");
   return session as CustomerSession & { principal: NonNullable<CustomerSession["principal"]> };
 }
 
 export async function requireOnboardingSession(): Promise<CustomerSession> {
   const session = await getWorkspaceSession();
-  if (session.status === "misconfigured") redirect(exportPanelPath("/sign-in?reason=configuration"));
-  if (session.status === "signed-out") redirect(exportPanelPath("/sign-up"));
+  if (session.status === "misconfigured") redirect("/sign-in?reason=configuration");
+  if (session.status === "signed-out") redirect("/sign-up");
   return session;
 }

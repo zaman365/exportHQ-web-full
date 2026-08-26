@@ -4,7 +4,6 @@ import { redirect } from "next/navigation";
 import { getClerkClient } from "@exporthq/auth";
 import { companyOnboardingSchema, productSchema } from "@exporthq/validation";
 import { getWorkspaceSession } from "../_lib/session";
-import { exportPanelPath } from "../_lib/export-panel-paths";
 
 export type OnboardingActionState = { error?: string };
 
@@ -32,7 +31,7 @@ export async function completeOnboarding(
 
   if (session.isDemo) {
     const businessName = String(formData.get("demoBusinessName") ?? company.data.tradingName).slice(0, 100);
-    redirect(exportPanelPath(`/readiness?access=basic&business=${encodeURIComponent(businessName)}&productName=${encodeURIComponent(product.data.name)}&market=${encodeURIComponent(product.data.targetMarketCode)}`));
+    redirect(`/readiness?access=basic&business=${encodeURIComponent(businessName)}&productName=${encodeURIComponent(product.data.name)}&market=${encodeURIComponent(product.data.targetMarketCode)}`);
   }
 
   const client = getClerkClient();
@@ -44,5 +43,5 @@ export async function completeOnboarding(
     publicMetadata: { ...currentPublic, exportPanel: { ...(currentPublic.exportPanel ?? {}), onboardingComplete: true, onboardingVersion: 1, originCountry: company.data.originCountry, industry: company.data.industry, targetMarketCode: product.data.targetMarketCode } },
     privateMetadata: { ...currentPrivate, exportPanel: { ...(currentPrivate.exportPanel ?? {}), company: company.data, firstProduct: product.data, stage, salesChannel, completedBy: session.userId, completedAt: new Date().toISOString() } }
   });
-  redirect(exportPanelPath("/readiness?onboarding=complete"));
+  redirect("/readiness?onboarding=complete");
 }
