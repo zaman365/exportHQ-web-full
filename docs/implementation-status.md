@@ -19,13 +19,14 @@
 - A connected Export Studio built around one `ExportLane`: lifecycle progress, commercial economics, deal milestones, buyer cohorts, provider disclosures, finance readiness, SME clusters, shipment-to-proceeds checkpoints, lane-specific policy alerts, and a controlled Trust Passport projection.
 - A public opportunity-to-payment acquisition story, a limited ExportPanel Export Studio preview, and plan language aligned to the Basic → verified/paid → Scale/Managed trust ladder.
 - A dedicated Export operations Learning Center category with contextual hints for lanes, economics, deals, buyer trust, provider matching, finance, shipment, policy, and clusters.
+- A primary Email Inbox beside the retained Actionable Inbox, with export-aware categories, related-record context, private drafts, email-to-follow-up conversion, provider setup guidance, plan/role gates, and tenant-scoped mail persistence contracts.
 - A versioned, transactional market catalog publisher and incremental PostgreSQL migration for country, product, opportunity, evidence, verification, and shortlist records.
 - Internal customer portfolio and scoped operator workspace over the same domain projection.
 - Unit, journey, and cross-tenant isolation tests; CI runs lint, typecheck, tests, and production builds.
 
 ## Local preview behavior
 
-The UI uses an authorized, realistic domain projection when `EXPORTHQ_DEMO_MODE` is enabled outside production. Export Studio interactions use clearly labelled local browser persistence for draft economics, milestones, shortlists, and cluster interest. These are explicit preview adapters, not production persistence paths. Demo mode is impossible in `NODE_ENV=production`.
+The UI uses an authorized, realistic domain projection when `EXPORTHQ_DEMO_MODE` is enabled outside production. Export Studio interactions use clearly labelled local browser persistence for draft economics, milestones, shortlists, and cluster interest. Email Inbox displays explicitly labelled illustrative conversations and can save an unsent browser-local draft; it does not read or send provider mail. These are explicit preview adapters, not production persistence paths. Demo mode is impossible in `NODE_ENV=production`.
 
 ## Production authentication activation
 
@@ -54,6 +55,7 @@ Before accepting real customer data:
 8. apply the market intelligence migration, publish the reviewed starter catalog, and connect verification approval to the trusted operations workflow.
 9. replace Export Studio preview persistence with tenant-scoped PostgreSQL repositories and audited commands;
 10. activate reviewed adapters for buyer data, provider credentialing, banks, laboratories, freight, shipment events, policy sources, and proceeds reconciliation before representing any of them as live.
+11. activate reviewed mail-provider applications, encrypted token storage, organization-scoped message repositories, Gmail Pub/Sub, Microsoft Graph subscriptions, Yahoo/Apple/Zoho/custom IMAP workers, MIME parsing, attachment scanning, delivery monitoring, revocation, and recovery before connecting customer mailboxes.
 
 The data model and interfaces are ready for this activation, but claiming those external controls are live without provisioned services would be misleading.
 

@@ -18,6 +18,7 @@ import {
   Lightbulb,
   Link2,
   ListTodo,
+  Mail,
   PartyPopper,
   Plus,
   RotateCcw,
@@ -61,6 +62,8 @@ import {
   type InboxRequestKind
 } from "../_components/inbox-data";
 import { blueprintRunsStorageKey, type BlueprintRun } from "../_components/workflow-data";
+import { emailThreadToInboxRequest, type EmailThreadPreview } from "../_components/email-data";
+import { EmailInbox } from "./email-inbox";
 
 type KindFilter = InboxRequestKind | "all";
 type PriorityFilter = InboxPriority | "all";
@@ -148,7 +151,17 @@ function QuickCapture({
   return <section className="inbox-capture"><header><span className="inbox-capture__spark"><WandSparkles size={18} /></span><span><strong>Quick Capture <HintButton topic="inbox-quick-capture" /></strong><small>Personal capture stays separate from communication that needs a response.</small></span><kbd>C</kbd></header><label><textarea ref={captureRef} aria-label="Quick capture" value={content} onChange={(event) => setContent(event.target.value)} onKeyDown={(event) => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") { event.preventDefault(); onCapture(); } }} placeholder="Capture a task, idea, link, or note…" /></label>{(suggestedType && suggestedType !== type) || (suggestedDate && suggestedDate !== date) ? <div className="inbox-smart-nudge"><Sparkles size={13} /><span>ExportPanel noticed</span>{suggestedType && suggestedType !== type && <button type="button" onClick={() => setType(suggestedType)}>Use {captureTypeLabels[suggestedType]}</button>}{suggestedDate && suggestedDate !== date && <button type="button" onClick={() => setDate(suggestedDate)}>Set {dateLabels[suggestedDate]}</button>}</div> : null}<footer><div><label><CaptureIcon type={type} /><select aria-label="Capture type" value={type} onChange={(event) => setType(event.target.value as CaptureType)}><option value="task">Task</option><option value="idea">Idea</option><option value="link">Link</option><option value="note">Note</option></select><ChevronDown size={13} /></label><label><Folder size={14} /><select aria-label="Capture Hub" value={hub} onChange={(event) => setHub(event.target.value as CaptureHub)}><option value="inbox">No Hub</option><option value="germany-launch">Germany launch</option><option value="compliance">Compliance</option><option value="buyer-pipeline">Buyer pipeline</option><option value="product-readiness">Product readiness</option></select><ChevronDown size={13} /></label><label><CalendarClock size={14} /><select aria-label="Capture date" value={date} onChange={(event) => setDate(event.target.value as CaptureDatePreset)}><option value="none">No date</option><option value="today">Today</option><option value="tomorrow">Tomorrow</option><option value="next-week">Next week</option></select><ChevronDown size={13} /></label></div><span><small><CornerDownLeft size={12} />⌘ Enter</small><button type="button" className="button button--primary" onClick={onCapture} disabled={!canManage || !content.trim()}><Plus size={15} /> Capture</button></span></footer></section>;
 }
 
-export default function InboxClient({ canManage }: { canManage: boolean }) {
+export default function InboxClient({
+  canManage,
+  canSendEmail,
+  canManageEmail,
+  emailAccountLimit
+}: {
+  canManage: boolean;
+  canSendEmail: boolean;
+  canManageEmail: boolean;
+  emailAccountLimit: number;
+}) {
   const captureRef = useRef<HTMLTextAreaElement>(null);
   const [content, setContent] = useState("");
   const [captureType, setCaptureType] = useState<CaptureType>("task");
@@ -166,6 +179,7 @@ export default function InboxClient({ canManage }: { canManage: boolean }) {
   const [snoozeId, setSnoozeId] = useState<string | null>(null);
   const [toast, setToast] = useState("");
   const [undoAction, setUndoAction] = useState<UndoAction | null>(null);
+  const [activeTab, setActiveTab] = useState<"email" | "actionable">("email");
 
   useEffect(() => {
     setCaptures(loadCollection<CapturedItem>(capturedItemsStorageKey, []));
@@ -180,6 +194,7 @@ export default function InboxClient({ canManage }: { canManage: boolean }) {
     if (requestedId && loadedRequests.some((item) => item.id === requestedId)) {
       setSelectedId(requestedId);
     }
+    if (new URLSearchParams(window.location.search).get("tab") === "actionable") setActiveTab("actionable");
   }, []);
 
   useEffect(() => {
@@ -310,8 +325,27 @@ export default function InboxClient({ canManage }: { canManage: boolean }) {
     if (next) setSelectedId(next.id);
   }
 
+  function createActionFromEmail(thread: EmailThreadPreview) {
+    const action = emailThreadToInboxRequest(thread);
+    const existing = requests.find((item) => item.id === action.id);
+    if (!existing) saveRequests([action, ...requests]);
+    setActiveTab("actionable");
+    setSelectedId(action.id);
+    notify(existing ? "This email already has an actionable follow-up." : "Email converted into a linked Actionable Inbox follow-up.");
+  }
+
   return <>
-    <section className="workspace-page-head inbox-head"><div><p>ExportPanel / INBOX</p><h1>One thought in. One clear move out. <HintButton topic="inbox-overview" /></h1><span>Capture without losing momentum, then triage requests that genuinely need your attention.</span></div><button type="button" className="button button--primary" onClick={() => captureRef.current?.focus()}><Plus size={16} /> Capture item</button></section>
+    <section className="workspace-page-head inbox-head"><div><p>ExportPanel / INBOX</p><h1>Communication in. Clear export work out. <HintButton topic="inbox-overview" /></h1><span>Read business email, preserve export context, and keep requests that need action in their own focused queue.</span></div>{activeTab === "actionable" && <button type="button" className="button button--primary" onClick={() => captureRef.current?.focus()}><Plus size={16} /> Capture item</button>}</section>
+
+    <div className="inbox-tabs" role="tablist" aria-label="Inbox views"><button type="button" role="tab" aria-selected={activeTab === "email"} className={activeTab === "email" ? "active" : ""} onClick={() => setActiveTab("email")}><Mail size={16} /><span><strong>Email Inbox</strong><small>Business conversations</small></span><i>Primary</i></button><button type="button" role="tab" aria-selected={activeTab === "actionable"} className={activeTab === "actionable" ? "active" : ""} onClick={() => setActiveTab("actionable")}><ListTodo size={16} /><span><strong>Actionable Inbox</strong><small>Requests needing you</small></span><i>{openRequests.length}</i></button></div>
+
+    {activeTab === "email" ? <EmailInbox
+      canManage={canManage}
+      canSend={canSendEmail}
+      canManageAccount={canManageEmail}
+      accountLimit={emailAccountLimit}
+      onCreateAction={createActionFromEmail}
+    /> : <>
 
     <section className="inbox-pulse" aria-label="Inbox pulse"><div><Inbox size={18} /><span><strong>{openRequests.length - snoozedCount}</strong><small>ready for triage</small></span></div><div><Zap size={18} /><span><strong>{urgentCount}</strong><small>urgent decision</small></span></div><div><CalendarClock size={18} /><span><strong>{dueToday}</strong><small>due today</small></span></div><div><Clock3 size={18} /><span><strong>{snoozedCount}</strong><small>safely snoozed</small></span></div><button type="button" onClick={focusNext} disabled={visibleRequests.length === 0}><Target size={15} /> Focus next</button></section>
 
@@ -327,6 +361,7 @@ export default function InboxClient({ canManage }: { canManage: boolean }) {
     </div>
 
     <section className="capture-tray"><header><span><h2>Captured for later <HintButton topic="inbox-capture-tray" /></h2><small>{captures.length ? `${captures.length} private ${captures.length === 1 ? "capture" : "captures"}` : "Your low-friction holding space"}</small></span><Link href="/create">Open full Create center <ArrowRight size={13} /></Link></header>{captures.length === 0 ? <div className="capture-tray__empty"><StickyNote size={20} /><span>Notes and links stay here until you choose where they belong. Tasks and ideas keep a capture receipt after routing.</span></div> : <div className="capture-tray__list">{captures.slice(0, 8).map((capture) => <article key={capture.id}><span className={`capture-type capture-type--${capture.type}`}><CaptureIcon type={capture.type} /></span><span><small>{captureTypeLabels[capture.type]} · {captureHubLabels[capture.hub]} · {formatDate(capture.createdAt, true)}</small><strong>{firstLine(capture.content)}</strong>{capture.content !== firstLine(capture.content) && <p>{capture.content}</p>}</span><div>{capture.routedTo ? <Link href={capture.routedTo === "waiting" ? `/waiting?record=${capture.routedRecordId}` : `/ideas?record=${capture.routedRecordId}`}><Check size={13} /> In {capture.routedTo === "waiting" ? "Waiting" : "Ideas"}<ArrowRight size={12} /></Link> : <><button type="button" onClick={() => routeExisting(capture, "waiting")} disabled={!canManage}><ListTodo size={13} /> Make task</button><button type="button" onClick={() => routeExisting(capture, "ideas")} disabled={!canManage}><Lightbulb size={13} /> Send to Ideas</button></>}</div></article>)}</div>}</section>
+    </>}
 
     {toast && <div className="settings-toast inbox-toast" role="status"><Sparkles size={16} /><span>{toast}</span>{undoAction && <button type="button" onClick={undoLastAction}>{undoAction.label}</button>}</div>}
   </>;

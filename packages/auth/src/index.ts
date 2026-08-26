@@ -15,7 +15,8 @@ const ownerPermissions: Permission[] = [
   "company:view", "company:manage", "products:view", "products:manage",
   "compliance:view", "compliance:manage", "documents:view", "documents:manage",
   "readiness:view", "readiness:manage",
-  "tasks:view", "tasks:manage", "team:view", "team:message", "team:manage", "billing:manage"
+  "tasks:view", "tasks:manage", "email:view", "email:send", "email:manage",
+  "team:view", "team:message", "team:manage", "billing:manage"
 ];
 
 function isDemoMode() {

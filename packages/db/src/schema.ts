@@ -40,6 +40,10 @@ export const providerReferralStatus = pgEnum("provider_referral_status", ["reque
 export const teamAccessRole = pgEnum("team_access_role", ["owner", "executive", "department_lead", "manager", "member", "viewer", "external"]);
 export const conversationKind = pgEnum("conversation_kind", ["department", "direct", "export_hq"]);
 export const messageDeliveryStatus = pgEnum("message_delivery_status", ["sent", "read"]);
+export const mailboxConnectionStatus = pgEnum("mailbox_connection_status", [
+  "pending_authorization", "connected", "reauthorization_required", "paused", "disconnected"
+]);
+export const emailMessageDirection = pgEnum("email_message_direction", ["inbound", "outbound"]);
 
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -170,6 +174,89 @@ export const organizationMessages = pgTable("organization_messages", {
   index("organization_messages_org_created_idx").on(table.organizationId, table.createdAt),
   check("organization_message_sender_check", sql`num_nonnulls(${table.senderMembershipId}, ${table.senderStaffProfileId}) = 1`),
   check("organization_message_body_check", sql`char_length(${table.body}) between 1 and 4000`)
+]);
+
+export const emailConnections = pgTable("email_connections", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  provider: text("provider").notNull(),
+  emailAddress: text("email_address").notNull(),
+  displayName: text("display_name").notNull(),
+  authStrategy: text("auth_strategy").notNull(),
+  status: mailboxConnectionStatus("status").notNull().default("pending_authorization"),
+  credentialSecretRef: text("credential_secret_ref"),
+  grantedScopes: text("granted_scopes").array().notNull().default([]),
+  syncCursor: text("sync_cursor"),
+  subscriptionId: text("subscription_id"),
+  subscriptionExpiresAt: timestamp("subscription_expires_at", { withTimezone: true }),
+  lastSuccessfulSyncAt: timestamp("last_successful_sync_at", { withTimezone: true }),
+  lastSyncErrorCode: text("last_sync_error_code"),
+  createdBy: text("created_by").notNull(),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("email_connections_org_provider_address_unique").on(table.organizationId, table.provider, table.emailAddress),
+  index("email_connections_org_status_idx").on(table.organizationId, table.status)
+]);
+
+export const emailThreads = pgTable("email_threads", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  emailConnectionId: uuid("email_connection_id").notNull().references(() => emailConnections.id, { onDelete: "cascade" }),
+  providerThreadId: text("provider_thread_id").notNull(),
+  subject: text("subject").notNull(),
+  snippet: text("snippet").notNull().default(""),
+  participants: text("participants").array().notNull().default([]),
+  unread: boolean("unread").notNull().default(true),
+  flagged: boolean("flagged").notNull().default(false),
+  attachmentCount: integer("attachment_count").notNull().default(0),
+  latestMessageAt: timestamp("latest_message_at", { withTimezone: true }).notNull(),
+  relatedEntityType: text("related_entity_type"),
+  relatedEntityId: text("related_entity_id"),
+  relatedEntityLabel: text("related_entity_label"),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("email_threads_connection_provider_thread_unique").on(table.emailConnectionId, table.providerThreadId),
+  index("email_threads_org_activity_idx").on(table.organizationId, table.latestMessageAt),
+  index("email_threads_org_unread_idx").on(table.organizationId, table.unread)
+]);
+
+export const emailMessages = pgTable("email_messages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  emailConnectionId: uuid("email_connection_id").notNull().references(() => emailConnections.id, { onDelete: "cascade" }),
+  emailThreadId: uuid("email_thread_id").notNull().references(() => emailThreads.id, { onDelete: "cascade" }),
+  providerMessageId: text("provider_message_id").notNull(),
+  direction: emailMessageDirection("direction").notNull(),
+  fromAddress: text("from_address").notNull(),
+  toAddresses: text("to_addresses").array().notNull().default([]),
+  ccAddresses: text("cc_addresses").array().notNull().default([]),
+  replyToAddress: text("reply_to_address"),
+  subject: text("subject").notNull(),
+  textPreview: text("text_preview").notNull().default(""),
+  bodyStorageRef: text("body_storage_ref"),
+  internetMessageId: text("internet_message_id"),
+  sentAt: timestamp("sent_at", { withTimezone: true }).notNull(),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("email_messages_connection_provider_message_unique").on(table.emailConnectionId, table.providerMessageId),
+  index("email_messages_thread_sent_idx").on(table.emailThreadId, table.sentAt),
+  index("email_messages_org_sent_idx").on(table.organizationId, table.sentAt)
+]);
+
+export const emailAttachments = pgTable("email_attachments", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  emailMessageId: uuid("email_message_id").notNull().references(() => emailMessages.id, { onDelete: "cascade" }),
+  providerAttachmentId: text("provider_attachment_id").notNull(),
+  fileName: text("file_name").notNull(),
+  mimeType: text("mime_type").notNull(),
+  byteSize: integer("byte_size").notNull(),
+  objectKey: text("object_key"),
+  scanStatus: text("scan_status").notNull().default("pending"),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("email_attachments_message_provider_unique").on(table.emailMessageId, table.providerAttachmentId),
+  index("email_attachments_org_idx").on(table.organizationId)
 ]);
 
 export const companyProfiles = pgTable("company_profiles", {

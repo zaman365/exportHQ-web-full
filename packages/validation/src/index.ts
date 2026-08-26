@@ -174,6 +174,61 @@ export const organizationMessageSchema = z.object({
   body: z.string().trim().min(1).max(4000)
 });
 
+export const emailProviderSchema = z.enum([
+  "google",
+  "microsoft",
+  "yahoo_aol",
+  "icloud",
+  "zoho",
+  "custom_imap"
+]);
+
+export const mailboxConnectionIntentSchema = z.object({
+  organizationId: z.uuid(),
+  provider: emailProviderSchema,
+  emailAddress: z.email(),
+  displayName: z.string().trim().min(2).max(120).optional(),
+  sharedMailbox: z.boolean().default(false),
+  customServer: z.object({
+    imapHost: z.string().trim().min(3).max(253),
+    imapPort: z.number().int().min(1).max(65535).default(993),
+    imapSecurity: z.enum(["tls", "starttls"]),
+    smtpHost: z.string().trim().min(3).max(253),
+    smtpPort: z.number().int().min(1).max(65535),
+    smtpSecurity: z.enum(["tls", "starttls"])
+  }).optional()
+}).superRefine(({ provider, customServer }, context) => {
+  if (provider === "custom_imap" && !customServer) {
+    context.addIssue({ code: "custom", path: ["customServer"], message: "Custom-domain mail needs IMAP and SMTP server settings." });
+  }
+  if (provider !== "custom_imap" && customServer) {
+    context.addIssue({ code: "custom", path: ["customServer"], message: "Managed providers use their reviewed server configuration." });
+  }
+});
+
+/**
+ * Credentials and OAuth tokens are intentionally absent. The browser may send
+ * this non-secret intent, while the server completes authorization and stores
+ * only an encrypted vault reference on the connection record.
+ */
+export const mailboxCredentialActivationSchema = z.object({
+  organizationId: z.uuid(),
+  connectionId: z.uuid(),
+  credentialSecretRef: z.string().trim().min(8).max(240),
+  grantedScopes: z.array(z.string().trim().min(1).max(160)).min(1).max(20),
+  expiresAt: z.string().datetime().optional()
+});
+
+export const emailToActionSchema = z.object({
+  organizationId: z.uuid(),
+  mailboxConnectionId: z.uuid(),
+  providerThreadId: z.string().trim().min(1).max(512),
+  actionType: z.enum(["follow_up", "decision_request", "task"]),
+  title: z.string().trim().min(2).max(180),
+  relatedEntityType: z.string().trim().min(1).max(80).optional(),
+  relatedEntityId: z.string().trim().min(1).max(120).optional()
+});
+
 export type CompanyOnboardingInput = z.infer<typeof companyOnboardingSchema>;
 export type ProductInput = z.infer<typeof productSchema>;
 export type OrganizationProfileInput = z.infer<typeof organizationProfileSchema>;
@@ -184,3 +239,7 @@ export type OrganizationTeamInput = z.infer<typeof organizationTeamSchema>;
 export type OrganizationMemberAccessInput = z.infer<typeof organizationMemberAccessSchema>;
 export type OrganizationConversationInput = z.infer<typeof organizationConversationSchema>;
 export type OrganizationMessageInput = z.infer<typeof organizationMessageSchema>;
+export type EmailProviderInput = z.infer<typeof emailProviderSchema>;
+export type MailboxConnectionIntentInput = z.infer<typeof mailboxConnectionIntentSchema>;
+export type MailboxCredentialActivationInput = z.infer<typeof mailboxCredentialActivationSchema>;
+export type EmailToActionInput = z.infer<typeof emailToActionSchema>;

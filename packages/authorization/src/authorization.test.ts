@@ -3,6 +3,7 @@ import {
   AuthorizationError,
   authorizeOrganization,
   canAccessOrganization,
+  emailAccountLimitForTier,
   featuresForTier,
   isPaidTier,
   minimumTierForFeature,
@@ -91,6 +92,8 @@ describe("subscription entitlements", () => {
     expect(leadPermissions.has("team:manage")).toBe(false);
     expect(managerPermissions.has("documents:manage")).toBe(true);
     expect(managerPermissions.has("team:message")).toBe(true);
+    expect(managerPermissions.has("email:send")).toBe(true);
+    expect(managerPermissions.has("email:manage")).toBe(false);
     expect(managerPermissions.has("products:manage")).toBe(false);
     expect([...viewerPermissions].every((permission) => permission.endsWith(":view"))).toBe(true);
     expect(externalPermissions.size).toBe(0);
@@ -136,6 +139,11 @@ describe("subscription entitlements", () => {
     expect(permissionsForTier("scale").has("team:manage")).toBe(true);
     expect(permissionsForTier("scale").has("team:view")).toBe(true);
     expect(permissionsForTier("scale").has("team:message")).toBe(true);
+    expect(permissionsForTier("launch").has("email:send")).toBe(true);
+    expect(emailAccountLimitForTier("explore")).toBe(0);
+    expect(emailAccountLimitForTier("launch")).toBe(1);
+    expect(emailAccountLimitForTier("scale")).toBe(5);
+    expect(emailAccountLimitForTier("managed")).toBe(12);
   });
 
   it("keeps premium features discoverable through safe progressive previews", () => {

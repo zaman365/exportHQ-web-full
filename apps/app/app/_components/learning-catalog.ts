@@ -446,13 +446,46 @@ export const learningCatalog: readonly LearningResource[] = [
   {
     id: "inbox-overview",
     title: "Use Inbox as a clarity boundary",
-    summary: "Capture personal thoughts quickly while keeping decisions, mentions, approvals, assignments, and follow-ups visibly actionable.",
-    content: "Inbox has two lanes. Quick Capture is a private, low-friction holding space for your own tasks, ideas, links, and notes. Actionable Inbox contains communication or system prompts that need a response. Keeping the lanes separate prevents an unfinished thought from looking like a team commitment.",
+    summary: "Read business email, capture personal thoughts, and keep requests that need a response in distinct, connected views.",
+    content: "Inbox has a primary Email view and a selectable Actionable Inbox. Email keeps external business conversations connected to the relevant buyer, Export Lane, requirement, shipment, or finance decision. Actionable Inbox holds decisions, mentions, approvals, assignments, and follow-ups that need an owned response. Quick Capture stays inside the Actionable view as a private, low-friction holding space for your own tasks, ideas, links, and notes.",
     category: "actions",
     kind: "hint",
     minutes: 2,
     keywords: ["inbox", "capture", "requests", "triage"],
     featured: true
+  },
+  {
+    id: "email-inbox-overview",
+    title: "Turn business email into export work",
+    summary: "Read a conversation in context, then create the follow-up, decision, or task that should outlive the email thread.",
+    content: "Email is the communication layer, not the final system of record. ExportPanel connects a conversation to its buyer, Export Lane, product, requirement, shipment, or payment context. When a message creates a commitment, use Make actionable so an owner, due checkpoint, and detailed operational record remain visible after the email is archived.",
+    category: "actions",
+    kind: "tutorial",
+    minutes: 4,
+    keywords: ["email", "mailbox", "inbox", "buyer", "follow-up", "export lane"],
+    steps: ["Open the Email Inbox.", "Read the suggested next move and related export context.", "Open the connected record if evidence or a decision is needed.", "Choose Make actionable for a commitment that needs ownership.", "Complete the work in its source record, then clear the Actionable Inbox request."],
+    featured: true
+  },
+  {
+    id: "email-provider-setup",
+    title: "Connect a mailbox securely",
+    summary: "Use provider authorization where available and keep tokens or app passwords in the encrypted server vault.",
+    content: "Google mail uses the Gmail API and Google consent. Outlook, Hotmail, and Microsoft 365 use Microsoft Graph. Yahoo and AOL use approved Yahoo authorization with IMAP and SMTP, or an eligible app password fallback. iCloud uses Apple's supported authorization where available or an app-specific password—never the primary Apple Account password. Zoho and custom domains use their reviewed OAuth or IMAP/SMTP path. ExportPanel never stores mailbox credentials in browser storage.",
+    category: "settings",
+    kind: "tutorial",
+    minutes: 6,
+    keywords: ["Gmail", "Outlook", "Microsoft 365", "Yahoo", "AOL", "iCloud", "Zoho", "IMAP", "SMTP", "OAuth"],
+    steps: ["Ask an owner or administrator to open Connect mailbox.", "Choose the actual hosting provider, not only the email domain.", "Review the requested read, send, and background-sync permissions.", "Authorize with the provider or use an app-specific password when the provider requires it.", "Confirm the mailbox scope and initial sync window.", "Review connection health and revoke access when the mailbox is no longer needed."]
+  },
+  {
+    id: "email-security-boundary",
+    title: "Understand the email security boundary",
+    summary: "Mailbox access is organization-scoped, role-gated, auditable, and separate from provider credentials.",
+    content: "Mailbox connections belong to one ExportPanel organization. Owners and administrators manage connections; operational members can read or send only within their role; viewers remain read-only. OAuth refresh tokens and app passwords belong in an encrypted server vault. Email bodies and attachments require private storage, malware scanning, retention controls, authorized downloads, revocation, and audit history before live customer data is accepted.",
+    category: "settings",
+    kind: "reference",
+    minutes: 4,
+    keywords: ["email security", "credentials", "vault", "roles", "audit", "attachments", "retention"]
   },
   {
     id: "inbox-quick-capture",

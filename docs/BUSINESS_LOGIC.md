@@ -175,6 +175,8 @@ Hover, focus, tap, or the opened locked state must explain how to unlock the fea
 
 The central feature catalog in `packages/authorization` is the executable entitlement source. Plan copy must follow it rather than inventing page-specific tiers.
 
+Email Inbox is part of Inbox, but connected mailbox capacity is metered separately: Public and Basic receive a safe illustrative preview, Launch can connect one mailbox, Scale up to five, and Managed up to twelve. The plan ceiling does not replace role authorization: owners/admins manage connections, eligible operational roles may read and send, and viewers remain read-only.
+
 ### 7.3 Executable feature ladder
 
 This table summarizes the current central policy. “Projection” means the module intentionally changes data depth according to public/member/full trust access. “Preview” means safe sample records with protected mutations disabled.
@@ -298,9 +300,13 @@ Attention Center ranks operational signals so important work stays visible. Each
 
 Signals are not merely points. Snoozed or dismissed items leave the active queue according to policy, and every state change is auditable.
 
-### 9.3 Inbox and Quick Capture
+### 9.3 Email Inbox, Actionable Inbox, and Quick Capture
 
-Inbox separates personal capture from requests that need a response. Quick Capture accepts tasks, ideas, links, and notes, with optional hub and date. The actionable inbox supports filtering, detail navigation, Done, and Snooze. Capture must be useful but should not create unowned orphan records.
+Inbox opens on Email so exporters can read business communication without losing its operational meaning. Each email conversation should show the connected organization, buyer, Export Lane, product, requirement, shipment, payment issue, or other explicit context where available. A commitment in email can become a linked follow-up, task, or Decision with an owner and checkpoint; the email thread is not the authoritative work record.
+
+Actionable Inbox remains a selectable, first-class view for decisions, mentions, approvals, assignments, and follow-ups that need a response. It supports filtering, detail navigation, Done, and Snooze. Quick Capture stays within the actionable view and accepts personal tasks, ideas, links, and notes, with optional hub and date. Capture must be useful but should not create unowned orphan records.
+
+Mailbox providers are adapter boundaries. Google mail uses the Gmail API and Pub/Sub; Outlook, Hotmail, and Microsoft 365 use Microsoft Graph and renewable change-notification subscriptions; Yahoo/AOL use approved Yahoo authorization with IMAP/SMTP or an eligible app-password fallback; iCloud uses supported Apple authorization or an app-specific password with IMAP/SMTP; Zoho and custom domains use their reviewed OAuth or IMAP/SMTP path. IMAP providers need IDLE plus scheduled catch-up because they do not provide the same webhook semantics. Tokens, app passwords, message bodies, and attachments never belong in browser storage.
 
 ### 9.4 My Work
 
@@ -595,6 +601,8 @@ Business/organization switching and user/account actions belong in one coherent 
 - Scan/quarantine uploads and audit downloads.
 - Validate input, use CSRF-safe mutations, secure headers/CSP, rate limiting, secret management, backups, and restore drills.
 - Scrub confidential evidence and personal information from telemetry.
+- Store mailbox OAuth tokens and app passwords only in an encrypted server-side secret vault; database records keep a credential reference, scoped grants, cursor/subscription state, and revocation status.
+- Treat email bodies and attachments as confidential organization data; use private storage, malware scanning, bounded retention, authorized downloads, sender-content sanitization, and audit events before live mailbox activation.
 - Business-verification submission creates `pending`; only a trusted operations workflow can approve `verified`.
 - Account deletion respects valid legal holds and retention policies.
 
@@ -605,6 +613,8 @@ Threat modelling and external security review are release gates before real expo
 External systems are adapter boundaries with explicit connection states. Never represent a government, bank, carrier, insurer, laboratory, customs, provider, buyer-data, or payment integration as live until credentials, contracts, security review, monitoring, and operational ownership exist.
 
 UI sample data must be labelled illustrative. A provider request is not a confirmed booking. A finance path is not an approval. A shipment timeline is not a live carrier feed without an activated adapter.
+
+An Email Inbox preview is not a connected mailbox. “Connected” requires a reviewed provider application or server configuration, encrypted credential storage, organization-scoped repositories, webhook/queue or IMAP synchronization, renewal and catch-up jobs, delivery monitoring, revocation, rate limits, MIME parsing, attachment controls, and operational ownership.
 
 ## 22. Success metrics
 
@@ -664,6 +674,7 @@ Build the commercial spine before multiplying integrations.
 - Export Lane and Export Studio domain models, calculations, public/member/full projections, and interactive preview adapters.
 - Company/profile settings with optional product, market, channel, and verification detail.
 - Team directory, position hierarchy, department creation, dedicated channels, direct and Export HQ conversations, role-gated mutations, and organization-scoped persistence contracts.
+- Primary Email Inbox and selectable Actionable Inbox UX, provider catalog, email-to-action conversion, tier/role policy, Learning Center guidance, and tenant-scoped persistence/validation contracts.
 - Clerk session boundary, organization-aware authorization, admin allowlist design, database schema, RLS envelope, and tests.
 
 ### Preview adapters or incomplete production persistence
@@ -672,6 +683,7 @@ Build the commercial spine before multiplying integrations.
 - Clerk organization metadata temporarily stores selected onboarding/readiness/profile state.
 - Export Studio draft interactions are local preview adapters.
 - Team conversations, department changes, and profile-role changes currently use a browser-local vertical-slice adapter while the organization-scoped message repository and realtime delivery service are activated.
+- Email threads, message bodies, provider connections, sending, and background synchronization currently use an explicitly labelled illustrative preview; no live mailbox or credential is connected.
 - Operations-console records are illustrative projections.
 
 ### Production activation still required
@@ -680,6 +692,7 @@ Build the commercial spine before multiplying integrations.
 - Production RLS role and tenant-context verification.
 - Private EU R2 upload, scanning, signed-download, and audit pipeline.
 - Complete Clerk production methods, billing plans, webhooks, role templates, and MFA policy.
+- Reviewed Google, Microsoft, Yahoo/AOL, Apple/iCloud, Zoho, and custom IMAP/SMTP mail adapters; encrypted token vault; Gmail Pub/Sub; Microsoft Graph subscriptions; IMAP sync workers; MIME/attachment pipeline; delivery monitoring; and mailbox security review.
 - Trusted business-verification review workflow.
 - Reviewed live market/readiness catalog publishing operations.
 - Qualified provider onboarding, agreements, disclosure, referral, feedback, and settlement operations.
@@ -737,6 +750,7 @@ Before implementing a product change, answer:
 | Market intelligence | `packages/domain/src/market-opportunities.ts`, `docs/market-intelligence.md` |
 | Tenant/domain persistence model | `packages/db/src/schema.ts`, `docs/domain-model.md` |
 | Validation contracts | `packages/validation/src/index.ts` |
+| Email provider architecture | `packages/domain/src/email-integration.ts`, `docs/email-integration.md` |
 | Workspace feature map | `apps/app/app/_components/workspace-navigation.ts` |
 | Learning resources and hints | `apps/app/app/_components/learning-catalog.ts`, `hint-button.tsx` |
 | Production activation truth | `docs/implementation-status.md` |

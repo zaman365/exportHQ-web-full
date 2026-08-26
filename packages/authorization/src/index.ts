@@ -11,6 +11,9 @@ export type Permission =
   | "readiness:manage"
   | "tasks:view"
   | "tasks:manage"
+  | "email:view"
+  | "email:send"
+  | "email:manage"
   | "team:view"
   | "team:message"
   | "team:manage"
@@ -168,18 +171,19 @@ const permissionCatalog: Readonly<Record<SubscriptionTier, readonly Permission[]
   explore: ["company:view", "readiness:view", "readiness:manage"],
   launch: [
     "company:view", "company:manage", "products:view", "products:manage",
-    "compliance:view", "documents:view", "documents:manage", "readiness:view", "readiness:manage", "tasks:view", "tasks:manage"
+    "compliance:view", "documents:view", "documents:manage", "readiness:view", "readiness:manage", "tasks:view", "tasks:manage",
+    "email:view", "email:send", "email:manage"
   ],
   scale: [
     "company:view", "company:manage", "products:view", "products:manage",
     "compliance:view", "compliance:manage", "documents:view", "documents:manage",
-    "readiness:view", "readiness:manage", "tasks:view", "tasks:manage",
+    "readiness:view", "readiness:manage", "tasks:view", "tasks:manage", "email:view", "email:send", "email:manage",
     "team:view", "team:message", "team:manage", "billing:manage"
   ],
   managed: [
     "company:view", "company:manage", "products:view", "products:manage",
     "compliance:view", "compliance:manage", "documents:view", "documents:manage",
-    "readiness:view", "readiness:manage", "tasks:view", "tasks:manage",
+    "readiness:view", "readiness:manage", "tasks:view", "tasks:manage", "email:view", "email:send", "email:manage",
     "team:view", "team:message", "team:manage", "billing:manage"
   ]
 };
@@ -205,6 +209,18 @@ export function resolveWorkspaceFeatureAccess(input: {
 
 export function permissionsForTier(tier: SubscriptionTier): ReadonlySet<Permission> {
   return new Set(permissionCatalog[tier]);
+}
+
+/**
+ * Mailbox limits are deliberately independent from route visibility. Everyone
+ * can understand the Email Inbox from a redacted preview; paid organizations
+ * can connect accounts, with wider team coverage at Scale and Managed.
+ */
+export function emailAccountLimitForTier(tier: SubscriptionTier): number {
+  if (tier === "launch") return 1;
+  if (tier === "scale") return 5;
+  if (tier === "managed") return 12;
+  return 0;
 }
 
 function normalizeOrganizationAccessRole(role: string | null | undefined): OrganizationAccessRole {
@@ -248,11 +264,11 @@ export function permissionsForOrganizationRole(input: {
 
   const deniedByRole: Readonly<Record<Exclude<OrganizationAccessRole, "owner" | "admin" | "external">, ReadonlySet<Permission>>> = {
     executive: new Set(["billing:manage", "team:manage"]),
-    department_lead: new Set(["billing:manage", "team:manage", "company:manage"]),
-    manager: new Set(["billing:manage", "team:manage", "company:manage", "compliance:manage", "products:manage"]),
+    department_lead: new Set(["billing:manage", "team:manage", "company:manage", "email:manage"]),
+    manager: new Set(["billing:manage", "team:manage", "company:manage", "compliance:manage", "products:manage", "email:manage"]),
     member: new Set([
       "billing:manage", "team:manage", "company:manage", "compliance:manage",
-      "products:manage", "documents:manage", "readiness:manage"
+      "products:manage", "documents:manage", "readiness:manage", "email:manage"
     ]),
     viewer: new Set([...ceiling].filter((permission) => !permission.endsWith(":view")))
   };
