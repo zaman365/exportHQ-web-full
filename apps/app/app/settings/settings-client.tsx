@@ -47,6 +47,7 @@ import { Avatar, Logo } from "@exporthq/ui";
 import {
   minimumTierForFeature,
   subscriptionCatalog,
+  workspaceFeatureEntitlement,
   type BusinessVerificationStatus,
   type WorkspaceFeature
 } from "@exporthq/authorization";
@@ -680,6 +681,9 @@ export default function SettingsClient({
 
   const copy = sectionCopy[section];
   const currentNavigation = navigation.find((item) => item.id === section);
+  const premiumFeature = currentNavigation?.feature && workspaceFeatureEntitlement(currentNavigation.feature)
+    ? currentNavigation.feature
+    : null;
   const lockedFeature = currentNavigation?.feature && !features.includes(currentNavigation.feature)
     ? currentNavigation.feature
     : null;
@@ -703,10 +707,16 @@ export default function SettingsClient({
             {availableNavigation.map((item) => {
               const Icon = item.icon;
               const locked = Boolean(item.feature && !features.includes(item.feature));
+              const premium = Boolean(item.feature && workspaceFeatureEntitlement(item.feature));
               const unlockTier = item.feature
                 ? subscriptionCatalog[minimumTierForFeature(item.feature)].name
                 : null;
-              return <div key={item.id}>{item.group && <p>{item.group}</p>}<button type="button" className={`${section === item.id ? "active" : ""}${locked ? " locked" : ""}`} onClick={() => chooseSection(item.id)} aria-current={section === item.id ? "page" : undefined} title={locked ? `${item.label} unlocks with ${unlockTier}. Open to see what is included.` : undefined}><Icon size={17} /><span>{item.label}</span>{locked ? <Gem className="settings-nav-lock" size={14} aria-label="Premium feature" /> : <ChevronRight size={14} />}</button></div>;
+              const premiumTitle = locked
+                ? `${item.label} unlocks with ${unlockTier}. Open to see what is included.`
+                : premium
+                  ? `Your premium ${item.label} access is active with ${tierName}.`
+                  : undefined;
+              return <div key={item.id}>{item.group && <p>{item.group}</p>}<button type="button" className={`${section === item.id ? "active" : ""}${locked ? " locked" : ""}${premium ? " premium" : ""}`} onClick={() => chooseSection(item.id)} aria-current={section === item.id ? "page" : undefined} title={premiumTitle}><Icon size={17} /><span>{item.label}</span>{premium ? <Gem className="settings-nav-premium" size={14} aria-label={locked ? "Premium feature locked" : `Premium feature included with ${tierName}`} /> : <ChevronRight size={14} />}</button></div>;
             })}
           </nav>
           <Link href="/learn" className="settings-sidebar__help"><CircleAlert size={16} /><span><strong>Need a hand?</strong><small>Open the ExportPanel Learning Center for hints and tutorials.</small></span></Link>
@@ -718,6 +728,11 @@ export default function SettingsClient({
             <span className="settings-feature-gate__icon"><Gem size={22} /></span>
             <div><small>PREMIUM SETTINGS</small><h2>{copy.title} is visible, not enabled</h2><p>Keep this capability in view as your operation grows. {requiredTier.name} unlocks the complete {copy.title.toLowerCase()} workspace, its records, and every related action.</p></div>
             <Link href={`/plans?feature=${lockedFeature}`} className="settings-button settings-button--primary">Unlock with {requiredTier.name} <ArrowRight size={14} /></Link>
+          </section>}
+          {premiumFeature && !lockedFeature && <section className="settings-feature-included" aria-label={`${copy.title} premium access`}>
+            <span><Gem size={17} /></span>
+            <div><small>YOUR PREMIUM ACCESS · ACTIVE</small><strong>Your workspace includes {copy.title}</strong><p>This capability is part of your {tierName} workspace and ready for your team to use.</p></div>
+            <Link href="/plans">View plan access <ArrowRight size={13} /></Link>
           </section>}
           {!lockedFeature && !canManage && <div className="settings-readonly"><LockKeyhole size={17} /><span><strong>Read-only access</strong><small>An organization owner or admin must make changes.</small></span></div>}
 

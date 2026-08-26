@@ -15,16 +15,14 @@ import {
 import { demoSnapshot } from "@exporthq/domain";
 import { Avatar, Logo } from "@exporthq/ui";
 import {
-  minimumTierForFeature,
-  resolveWorkspaceFeatureAccess,
   subscriptionCatalog,
-  type WorkspaceFeature,
-  type WorkspaceFeatureAccess
+  type WorkspaceFeature
 } from "@exporthq/authorization";
 import type { CustomerSession } from "@exporthq/auth";
 import { WorkspaceAccountControl } from "./account-controls";
 import { DemoBanner } from "./demo-banner";
 import { MobileNavigation } from "./workspace-mobile-navigation";
+import { describeWorkspaceEntitlement, type WorkspaceAccessIndicator } from "./workspace-entitlements";
 import {
   workspaceFeatureForDestination,
   workspaceFeatureLabel,
@@ -38,21 +36,15 @@ export const workspaceWebsiteUrl =
   process.env.NEXT_PUBLIC_WEB_URL ??
   "https://export-hq.com";
 
-function accessMessage(feature: WorkspaceFeature, access: WorkspaceFeatureAccess, authenticated: boolean): string {
-  const tierName = subscriptionCatalog[minimumTierForFeature(feature)].name;
-  if (access === "preview") {
-    return authenticated
-      ? `Preview sample data and explore the workflow. Upgrade to ${tierName} to save records and use actions.`
-      : `Open a safe sample of this workflow. Create a free account to keep progress; ${tierName} unlocks actions.`;
-  }
-  return authenticated
-    ? `Available with ${tierName}. Open plans to compare access and unlock this capability.`
-    : `Premium capability on ${tierName}. Create an account or open plans to unlock it.`;
-}
-
-function accessHref(feature: WorkspaceFeature, access: WorkspaceFeatureAccess, href: string, publicPreview: boolean): string {
+function accessHref(feature: WorkspaceFeature, access: "full" | "preview" | "locked", href: string, publicPreview: boolean): string {
   if (access !== "locked") return workspaceHref(href, publicPreview);
   return `/plans?feature=${encodeURIComponent(feature)}`;
+}
+
+function AccessIcon({ indicator, size = 11 }: { indicator: WorkspaceAccessIndicator; size?: number }) {
+  if (indicator === "shield") return <ShieldCheck size={size} />;
+  if (indicator === "gem") return <Gem size={size} />;
+  return <Eye size={size} />;
 }
 
 function NavigationLinks({ active, session, mobile = false }: { active: WorkspaceDestination; session: CustomerSession; mobile?: boolean }) {
@@ -64,19 +56,25 @@ function NavigationLinks({ active, session, mobile = false }: { active: Workspac
         return <div className="nav-group" key={group.label}>
           <p>{group.label}</p>
           {group.items.map(([label, Icon, href, id, feature]) => {
-            const access = resolveWorkspaceFeatureAccess({ authenticated, feature, tier: session.tier });
-            const message = access === "full" ? undefined : accessMessage(feature, access, authenticated);
+            const presentation = describeWorkspaceEntitlement({
+              authenticated,
+              businessVerification: session.businessVerification,
+              feature,
+              isPlatformAdmin: session.isPlatformAdmin,
+              tier: session.tier
+            });
+            const message = presentation.message ?? undefined;
             const tooltipId = `nav-access-${feature}${mobile ? "-mobile" : ""}`;
             return <Link
-              href={accessHref(feature, access, href, publicPreview)}
-              className={`${active === id ? "active " : ""}nav-access-link nav-access-link--${access}`}
+              href={accessHref(feature, presentation.routeAccess, href, publicPreview)}
+              className={`${active === id ? "active " : ""}nav-access-link nav-access-link--${presentation.displayAccess}${presentation.premium ? " nav-access-link--premium" : ""}`}
               key={label}
               title={message}
               aria-describedby={message ? tooltipId : undefined}
             >
               <Icon size={17} strokeWidth={1.8} /><span className="nav-access-link__label">{label}</span>
-              {access !== "full" && <span className="nav-access-indicator" aria-label={access === "preview" ? "Preview available" : "Premium feature"}>{access === "preview" ? <Eye size={11} /> : <Gem size={11} />}</span>}
-              {message && <span className="nav-access-tooltip" id={tooltipId} role="tooltip"><strong>{access === "preview" ? "Preview available" : "Premium feature"}</strong>{message}</span>}
+              {presentation.indicator && <span className={`nav-access-indicator nav-access-indicator--${presentation.indicator}`} aria-label={presentation.category ?? "Feature access"}><AccessIcon indicator={presentation.indicator} /></span>}
+              {message && <span className="nav-access-tooltip" id={tooltipId} role="tooltip"><strong>{presentation.category}</strong>{message}</span>}
             </Link>;
           })}
         </div>;
@@ -120,21 +118,27 @@ function WorkspaceSidebar({ active, session }: { active: WorkspaceDestination; s
   );
 }
 
-function WorkspaceAccessNotice({ active, session }: { active: WorkspaceDestination; session: CustomerSession }) {
+function WorkspaceEntitlementNotice({ active, session }: { active: WorkspaceDestination; session: CustomerSession }) {
   const feature = workspaceFeatureForDestination(active);
   if (!feature) return null;
   const authenticated = Boolean(session.userId);
-  const access = resolveWorkspaceFeatureAccess({ authenticated, feature, tier: session.tier });
-  if (access !== "preview") return null;
+  const presentation = describeWorkspaceEntitlement({
+    authenticated,
+    businessVerification: session.businessVerification,
+    feature,
+    isPlatformAdmin: session.isPlatformAdmin,
+    tier: session.tier
+  });
+  if (!presentation.indicator) return null;
   const label = workspaceFeatureLabel(feature);
-  const tierName = subscriptionCatalog[minimumTierForFeature(feature)].name;
-  return <section className="workspace-access-notice" aria-label={`${label} preview access`}>
-    <span className="workspace-access-notice__icon"><Eye size={17} /></span>
-    <div><small>INTERACTIVE PREVIEW</small><strong>Explore {label} before you unlock it</strong><p>{accessMessage(feature, access, authenticated)}</p></div>
-    <div className="workspace-access-notice__actions">
+  return <section className={`workspace-access-notice workspace-access-notice--${presentation.displayAccess} workspace-access-notice--${presentation.indicator}`} aria-label={`${label} entitlement status`}>
+    <span className="workspace-access-notice__icon"><AccessIcon indicator={presentation.indicator} size={17} /></span>
+    <div><small>{presentation.category?.toUpperCase()}</small><strong>{presentation.fullDepth ? `Your workspace includes ${label}` : presentation.displayAccess === "locked" ? `Bring ${label} into your workspace` : `See what full ${label} can do`}</strong><p>{presentation.message}</p></div>
+    {!presentation.fullDepth && <div className="workspace-access-notice__actions">
       {!authenticated && <Link href="/sign-up">Create free account <ArrowRight size={13} /></Link>}
-      <Link href={`/plans?feature=${encodeURIComponent(feature)}`}>{authenticated ? `Unlock with ${tierName}` : "Compare access"} <ArrowRight size={13} /></Link>
-    </div>
+      {presentation.premium && authenticated && (feature === "readiness" || feature === "markets" || feature === "opportunities" || feature === "export-studio") && <Link href="/verify-business">Verify business <ShieldCheck size={13} /></Link>}
+      <Link href={`/plans?feature=${encodeURIComponent(feature)}`}>{authenticated ? `Add with ${presentation.requiredTierName}` : "See access options"} <ArrowRight size={13} /></Link>
+    </div>}
   </section>;
 }
 
@@ -143,7 +147,7 @@ function WorkspaceTopbar({ active, session }: { active: WorkspaceDestination; se
   const tierName = session.isPlatformAdmin ? "Platform admin" : subscriptionCatalog[session.tier].name;
   return (
     <header className="topbar">
-      <MobileNavigation active={active} tier={session.tier} authenticated={Boolean(session.userId)} organizationName={session.organizationName ?? "Public sample"} publicPreview={publicPreview} />
+      <MobileNavigation active={active} tier={session.tier} authenticated={Boolean(session.userId)} businessVerification={session.businessVerification} isPlatformAdmin={session.isPlatformAdmin} organizationName={session.organizationName ?? "Public sample"} publicPreview={publicPreview} />
       <a className="mobile-home" href={workspaceWebsiteUrl} target="_blank" rel="noreferrer" aria-label="Open the Export HQ homepage in a new tab"><House size={18} /></a>
       <Link href={workspaceHref("/learn", publicPreview)} className="search"><Search size={17} /><span>Search ExportPanel help…</span><kbd>⌘ K</kbd></Link>
       <div className="topbar__actions">
@@ -170,7 +174,7 @@ export function WorkspaceShell({
       <WorkspaceSidebar active={active} session={session} />
       <main>
         <WorkspaceTopbar active={active} session={session} />
-        <div className="content" id={contentId}><WorkspaceAccessNotice active={active} session={session} />{children}</div>
+        <div className="content" id={contentId}><WorkspaceEntitlementNotice active={active} session={session} />{children}</div>
         <footer className="legal-footer"><span>Export HQ · {session.userId ? "Private workspace" : "Public sample · no customer data"}</span><span><ShieldCheck size={14} /> Evidence-aware compliance · Last data review 8 Aug 2026</span></footer>
       </main>
       {session.isDemo && <DemoBanner />}

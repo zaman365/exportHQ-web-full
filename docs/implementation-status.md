@@ -9,6 +9,7 @@
 - Production Clerk session verification, organization selection/creation, real sign-in/sign-up routes, account controls, and sign-out.
 - Onboarding-gated workspaces with server-side organization metadata updates.
 - Preview, Explore, Launch, Scale, and Managed subscription entitlements with route-level enforcement and filtered navigation.
+- Persistent premium and verified-business entitlement signage across desktop/mobile navigation, page chrome, and premium Settings sections, including the active plan or trust state that supplies access.
 - A public, read-only ExportPanel preview and plan selection surface; protected data is never rendered into the preview.
 - A Home workspace that contains the dashboard, with feature-aware navigation across desktop and mobile.
 - Drizzle PostgreSQL schema for Phase 0 and the vertical slice, plus tenant RLS policies.

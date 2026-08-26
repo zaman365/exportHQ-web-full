@@ -1,18 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, BookOpenCheck, Eye, Gem, Menu, X } from "lucide-react";
+import { ArrowRight, BookOpenCheck, Eye, Gem, Menu, ShieldCheck, X } from "lucide-react";
 import { useRef } from "react";
 import { Logo } from "@exporthq/ui";
 import {
-  minimumTierForFeature,
-  resolveWorkspaceFeatureAccess,
-  subscriptionCatalog,
+  type BusinessVerificationStatus,
   type SubscriptionTier
 } from "@exporthq/authorization";
 import { workspaceGroups, workspaceHref, type WorkspaceDestination } from "./workspace-navigation";
+import { describeWorkspaceEntitlement } from "./workspace-entitlements";
 
-export function MobileNavigation({ active, tier, authenticated, organizationName, publicPreview }: { active: WorkspaceDestination; tier: SubscriptionTier; authenticated: boolean; organizationName: string; publicPreview: boolean }) {
+export function MobileNavigation({ active, tier, authenticated, businessVerification, isPlatformAdmin, organizationName, publicPreview }: { active: WorkspaceDestination; tier: SubscriptionTier; authenticated: boolean; businessVerification: BusinessVerificationStatus; isPlatformAdmin: boolean; organizationName: string; publicPreview: boolean }) {
   const detailsRef = useRef<HTMLDetailsElement>(null);
   const close = () => detailsRef.current?.removeAttribute("open");
 
@@ -24,16 +23,14 @@ export function MobileNavigation({ active, tier, authenticated, organizationName
         <nav aria-label="Mobile navigation">
           {workspaceGroups.map((group) => {
             return <div className="nav-group" key={group.label}><p>{group.label}</p>{group.items.map(([label, Icon, href, id, feature]) => {
-              const access = resolveWorkspaceFeatureAccess({ authenticated, feature, tier });
-              const requiredTier = subscriptionCatalog[minimumTierForFeature(feature)].name;
-              const message = access === "preview" ? `Interactive preview. ${requiredTier} unlocks actions and saved records.` : `Premium feature available with ${requiredTier}.`;
+              const presentation = describeWorkspaceEntitlement({ authenticated, businessVerification, feature, isPlatformAdmin, tier });
               return <Link
-                href={access === "locked" ? `/plans?feature=${encodeURIComponent(feature)}` : workspaceHref(href, publicPreview)}
-                className={`${active === id ? "active " : ""}nav-access-link nav-access-link--${access}`}
+                href={presentation.routeAccess === "locked" ? `/plans?feature=${encodeURIComponent(feature)}` : workspaceHref(href, publicPreview)}
+                className={`${active === id ? "active " : ""}nav-access-link nav-access-link--${presentation.displayAccess}${presentation.premium ? " nav-access-link--premium" : ""}`}
                 key={label}
                 onClick={close}
-                title={access === "full" ? undefined : message}
-              ><Icon size={17} strokeWidth={1.8} /><span className="nav-access-link__label">{label}</span>{access !== "full" && <span className="nav-access-indicator" aria-label={access === "preview" ? "Preview available" : "Premium feature"}>{access === "preview" ? <Eye size={11} /> : <Gem size={11} />}</span>}</Link>;
+                title={presentation.message ?? undefined}
+              ><Icon size={17} strokeWidth={1.8} /><span className="nav-access-link__label">{label}</span>{presentation.indicator && <span className={`nav-access-indicator nav-access-indicator--${presentation.indicator}`} aria-label={presentation.category ?? "Feature access"}>{presentation.indicator === "shield" ? <ShieldCheck size={11} /> : presentation.indicator === "gem" ? <Gem size={11} /> : <Eye size={11} />}</span>}</Link>;
             })}</div>;
           })}
         </nav>

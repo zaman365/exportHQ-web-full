@@ -25,6 +25,17 @@ export type TrustGatedAccess = "public" | "member" | "full";
 export type MarketIntelligenceAccess = TrustGatedAccess;
 export type ReadinessAccess = TrustGatedAccess;
 export type WorkspaceFeatureAccess = "full" | "preview" | "locked";
+export type PaidSubscriptionTier = "launch" | "scale" | "managed";
+export type WorkspaceFeatureEntitlement =
+  | {
+      kind: "subscription";
+      minimumTier: PaidSubscriptionTier;
+    }
+  | {
+      kind: "trust";
+      minimumTier: "launch";
+      verificationAlternative: true;
+    };
 export type OrganizationAccessRole =
   | "owner"
   | "admin"
@@ -194,6 +205,27 @@ export function featuresForTier(tier: SubscriptionTier): readonly WorkspaceFeatu
 
 export function minimumTierForFeature(feature: WorkspaceFeature): SubscriptionTier {
   return subscriptionTierOrder.find((tier) => subscriptionCatalog[tier].features.includes(feature)) ?? "managed";
+}
+
+const trustGatedFeatures = new Set<WorkspaceFeature>([
+  "markets",
+  "opportunities",
+  "readiness",
+  "export-studio"
+]);
+
+/**
+ * Describes capabilities whose premium/trust status must stay discoverable in
+ * product chrome even after the current organization has unlocked them.
+ */
+export function workspaceFeatureEntitlement(feature: WorkspaceFeature): WorkspaceFeatureEntitlement | null {
+  if (trustGatedFeatures.has(feature)) {
+    return { kind: "trust", minimumTier: "launch", verificationAlternative: true };
+  }
+
+  const minimumTier = minimumTierForFeature(feature);
+  if (minimumTier === "preview" || minimumTier === "explore") return null;
+  return { kind: "subscription", minimumTier };
 }
 
 export function resolveWorkspaceFeatureAccess(input: {

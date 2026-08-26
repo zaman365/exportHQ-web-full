@@ -157,11 +157,11 @@ Every feature is rendered in one of three states:
 
 | State | Visual language | Behavior |
 | --- | --- | --- |
-| Full | Normal navigation and controls | Organization data and allowed actions are available subject to role permissions |
-| Preview | Eye icon and “Interactive preview” guidance | Curated or redacted sample data is useful and navigable; protected mutations are disabled |
+| Full | Normal navigation and controls; premium gem or verified-business shield remains visible where applicable | Organization data and allowed actions are available subject to role permissions. The persistent label states which plan or trust state supplies access |
+| Preview | Eye icon for standard samples; premium gem for subscription/trust-gated samples | Curated or redacted sample data is useful and navigable; protected mutations are disabled |
 | Locked | Premium gem/lock icon | The capability stays visible and opens an explanation of its value, required tier/trust state, and exact unlock action |
 
-Hover, focus, tap, or the opened locked state must explain how to unlock the feature. Do not hide premium modules from the navigation or Settings. Locked pages must not receive private organization records merely to render a teaser.
+Premium and verified-business indicators are persistent entitlement labels, not merely lock warnings. They remain visible in desktop navigation, mobile navigation, page chrome, and premium Settings sections after access is granted. Locked and preview states use a warm, inviting upgrade treatment with a clear value/unlock action; activated states use a calm green/teal ownership treatment with language such as “Your premium access · Active” or “Your premium access · Verified business.” Hover, focus, tap, or the opened state must explain both how access is currently supplied and how to unlock it when unavailable. Do not hide premium modules from the navigation or Settings. Locked pages must not receive private organization records merely to render a teaser.
 
 ### 7.2 Current tier model
 

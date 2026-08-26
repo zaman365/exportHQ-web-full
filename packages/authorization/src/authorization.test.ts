@@ -14,6 +14,7 @@ import {
   resolveWorkspaceFeatureAccess,
   scopeRows,
   tierHasFeature,
+  workspaceFeatureEntitlement,
   type CustomerPrincipal,
   type StaffPrincipal
 } from "./index";
@@ -155,5 +156,22 @@ describe("subscription entitlements", () => {
     expect(resolveWorkspaceFeatureAccess({ authenticated: true, feature: "attention", tier: "scale" })).toBe("full");
     expect(minimumTierForFeature("inbox")).toBe("launch");
     expect(minimumTierForFeature("attention")).toBe("scale");
+  });
+
+  it("keeps premium and verified-business entitlement metadata visible after unlock", () => {
+    expect(workspaceFeatureEntitlement("home")).toBeNull();
+    expect(workspaceFeatureEntitlement("inbox")).toEqual({ kind: "subscription", minimumTier: "launch" });
+    expect(workspaceFeatureEntitlement("attention")).toEqual({ kind: "subscription", minimumTier: "scale" });
+    expect(workspaceFeatureEntitlement("managed-services")).toEqual({ kind: "subscription", minimumTier: "managed" });
+    expect(workspaceFeatureEntitlement("opportunities")).toEqual({
+      kind: "trust",
+      minimumTier: "launch",
+      verificationAlternative: true
+    });
+    expect(workspaceFeatureEntitlement("readiness")).toEqual({
+      kind: "trust",
+      minimumTier: "launch",
+      verificationAlternative: true
+    });
   });
 });
