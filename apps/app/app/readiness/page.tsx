@@ -50,7 +50,7 @@ function profileFromQuery(query: Query, saved?: ReadinessProgressInput): Readine
     businessModel: "manufacturer",
     productCategory: "apparel",
     productName: "Cotton apparel",
-    hsCode: "6205.20",
+    hsCode: "",
     targetMarketCode: "DE",
     salesChannel: "wholesale"
   };

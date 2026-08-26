@@ -62,7 +62,7 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
     <WorkspaceShell active="dashboard" contentId="overview" session={session}>
           <section className="welcome">
             <div><p>HOME / DASHBOARD</p><h1>Good morning, {session.userName?.split(" ")[0] ?? "there"}. <HintButton topic="dashboard-overview" /></h1><span>Here&apos;s what needs attention across your export business.</span></div>
-            <div className="welcome__actions"><Link href="/onboarding" className="button button--secondary"><Plus size={16} /> Add product</Link><Link href="/team" className="button button--primary"><MessageSquareText size={16} /> Ask Export HQ</Link></div>
+            <div className="welcome__actions"><Link href="/settings?section=organization#primary-offer" className="button button--secondary"><Plus size={16} /> Add product</Link><Link href="/team" className="button button--primary"><MessageSquareText size={16} /> Ask Export HQ</Link></div>
           </section>
 
           <section className="score-grid" aria-label="Export health summary">
@@ -79,11 +79,11 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
               </div>
             </Card>
             <Card className="onboarding-card">
-              <div className="card-kicker"><span>SETUP PROGRESS <HintButton topic="setup-progress" /></span><Badge tone="warning">2 steps left</Badge></div>
+              <div className="card-kicker"><span>PROFILE PROGRESS <HintButton topic="setup-progress" /></span><Badge tone="warning">Optional</Badge></div>
               <strong>{demoSnapshot.organization.onboardingPercent}%</strong>
               <Progress value={demoSnapshot.organization.onboardingPercent} label="Organization setup" />
-              <p>Complete your facility profile and upload your current certification.</p>
-              <Link href="/onboarding" className="button button--secondary">Continue setup <ArrowRight size={15} /></Link>
+              <p>Add product, facility, and evidence details gradually as they become relevant.</p>
+              <Link href="/settings?section=organization#primary-offer" className="button button--secondary">Open business profile <ArrowRight size={15} /></Link>
             </Card>
           </section>
 
@@ -122,7 +122,7 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
           </div>
 
           <section className="module-section" id="products">
-            <div className="section-head"><div><p>PRODUCT × MARKET</p><h2>Germany product readiness <HintButton topic="product-readiness" /></h2></div><Link href="/onboarding" className="button button--secondary"><Plus size={15} /> Add product</Link></div>
+            <div className="section-head"><div><p>PRODUCT × MARKET</p><h2>Germany product readiness <HintButton topic="product-readiness" /></h2></div><Link href="/settings?section=organization#primary-offer" className="button button--secondary"><Plus size={15} /> Add product</Link></div>
             <div className="product-table" role="table" aria-label="Product readiness">
               <div className="table-head" role="row"><span>Product</span><span>HS code</span><span>Target market</span><span>Readiness</span><span>Status</span></div>
               {demoSnapshot.products.map((product) => <div className="table-row" role="row" key={product.id}><span><span className="product-thumb"><Package size={18} /></span><span><strong>{product.name}</strong><small>{product.sku} · {product.composition}</small></span></span><span>{product.hsCode}</span><span>🇩🇪 {product.market}</span><span><Progress value={product.readiness} label={`${product.name} readiness`} /><strong>{product.readiness}%</strong></span><span><Badge tone={product.status === "needs_work" ? "warning" : "info"}>{product.status.replaceAll("_", " ")}</Badge></span></div>)}
@@ -135,7 +135,7 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
           </section>
 
           <div className="bottom-grid">
-            <section className="module-section" id="documents"><div className="section-head"><div><p>DOCUMENT VAULT</p><h2>Recent documents <HintButton topic="document-vault" /></h2></div><Link href="/onboarding" className="button button--secondary">Upload document</Link></div><div className="document-list">{demoSnapshot.documents.map((document) => <div key={document.id}><span className="file-icon"><FileText size={17} /></span><span><strong>{document.name}</strong><small>{document.category} · {document.linkedTo}</small></span><Badge tone={document.status === "approved" ? "success" : document.status === "missing" ? "danger" : "info"}>{document.status.replaceAll("_", " ")}</Badge></div>)}</div></section>
+            <section className="module-section" id="documents"><div className="section-head"><div><p>DOCUMENT VAULT</p><h2>Recent documents <HintButton topic="document-vault" /></h2></div><Link href="/readiness" className="button button--secondary">Upload document</Link></div><div className="document-list">{demoSnapshot.documents.map((document) => <div key={document.id}><span className="file-icon"><FileText size={17} /></span><span><strong>{document.name}</strong><small>{document.category} · {document.linkedTo}</small></span><Badge tone={document.status === "approved" ? "success" : document.status === "missing" ? "danger" : "info"}>{document.status.replaceAll("_", " ")}</Badge></div>)}</div></section>
             <section className="module-section" id="activity"><div className="section-head"><div><p>SHARED ACTIVITY</p><h2>Latest updates <HintButton topic="shared-activity" /></h2></div></div><div className="activity-list">{demoSnapshot.activity.map((item, index) => <div key={item.id}><Avatar initials={item.actor.split(" ").map((part) => part[0]).join("").slice(0, 2)} tone={index} /><span><strong>{item.actor}</strong><p>{item.action}</p><small>{item.at}</small></span></div>)}</div></section>
           </div>
 

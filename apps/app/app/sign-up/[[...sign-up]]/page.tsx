@@ -14,8 +14,8 @@ export default function SignUpPage() {
   return (
     <AuthScreen
       eyebrow="START WITH CONTEXT"
-      title="Build a workspace around your real export objective."
-      description="Create your account, add your organization, complete the guided brief, and choose the ExportPanel access level that fits the work."
+      title="Create the workspace. Add detail when it becomes useful."
+      description="Create your account and secure business workspace first. Products, markets, readiness, and verification can all be added later from inside ExportPanel."
     >
       <div className="auth-stack">
         <AuthMethodSummary />

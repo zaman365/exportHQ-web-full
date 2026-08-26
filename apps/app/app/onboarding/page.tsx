@@ -4,7 +4,7 @@ import OnboardingClient from "./onboarding-client";
 
 export const metadata: Metadata = {
   title: "Set up ExportPanel — Export HQ",
-  description: "Create your organization and complete the secure ExportPanel export brief."
+  description: "Open your secure ExportPanel workspace and add business or product details later."
 };
 
 export const dynamic = "force-dynamic";

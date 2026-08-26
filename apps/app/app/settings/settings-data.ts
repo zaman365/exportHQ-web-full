@@ -42,6 +42,49 @@ export interface OrganizationSettings {
   supportEmail: string;
 }
 
+export interface PrimaryOfferSettings {
+  name: string;
+  category: string;
+  internalReference: string;
+  hsCode: string;
+  specification: string;
+}
+
+export type TargetMarketCode = "DE" | "NL" | "GB" | "JP" | "SA" | "AE";
+export type SalesChannelCode = "wholesale" | "retail" | "marketplace" | "services";
+export type ExportStageCode = "exploring" | "preparing" | "exporting" | "scaling";
+
+export interface MarketStrategySettings {
+  primaryMarket: TargetMarketCode | "";
+  secondaryMarkets: TargetMarketCode[];
+  primarySalesChannel: SalesChannelCode | "";
+  secondarySalesChannels: SalesChannelCode[];
+  currentExportStage: ExportStageCode | "";
+}
+
+export const targetMarketCatalog: ReadonlyArray<{ code: TargetMarketCode; label: string; region: string }> = [
+  { code: "DE", label: "Germany", region: "European Union" },
+  { code: "NL", label: "Netherlands", region: "European Union" },
+  { code: "GB", label: "United Kingdom", region: "Europe" },
+  { code: "JP", label: "Japan", region: "East Asia" },
+  { code: "SA", label: "Saudi Arabia", region: "Gulf region" },
+  { code: "AE", label: "United Arab Emirates", region: "Gulf region" }
+];
+
+export const salesChannelCatalog: ReadonlyArray<{ code: SalesChannelCode; label: string; description: string }> = [
+  { code: "wholesale", label: "Wholesale / distributor", description: "Importers, distributors and buying houses" },
+  { code: "retail", label: "Direct retail", description: "Sell directly to overseas customers" },
+  { code: "marketplace", label: "Marketplace", description: "Third-party B2B or consumer platforms" },
+  { code: "services", label: "Direct services", description: "Contracted professional or digital delivery" }
+];
+
+export const exportStageCatalog: ReadonlyArray<{ code: ExportStageCode; label: string }> = [
+  { code: "exploring", label: "Exploring export opportunities" },
+  { code: "preparing", label: "Preparing the business and offer" },
+  { code: "exporting", label: "Already exporting" },
+  { code: "scaling", label: "Scaling into more markets" }
+];
+
 export interface WorkspaceMember {
   id: string;
   name: string;
@@ -75,6 +118,8 @@ export interface WorkspaceSettingsState {
   integrations: Record<IntegrationId, IntegrationState>;
   security: SecuritySettings;
   organization: OrganizationSettings;
+  primaryOffer: PrimaryOfferSettings;
+  marketStrategy: MarketStrategySettings;
   members: WorkspaceMember[];
   audit: AuditEvent[];
   exports: ExportJob[];
@@ -171,6 +216,20 @@ export const initialWorkspaceSettings: WorkspaceSettingsState = {
     timezone: "Asia/Dhaka",
     defaultCurrency: "USD",
     supportEmail: "export@abctextiles.com"
+  },
+  primaryOffer: {
+    name: "Cotton garments",
+    category: "Apparel & garments",
+    internalReference: "",
+    hsCode: "",
+    specification: ""
+  },
+  marketStrategy: {
+    primaryMarket: "DE",
+    secondaryMarkets: ["NL", "GB"],
+    primarySalesChannel: "wholesale",
+    secondarySalesChannels: ["marketplace"],
+    currentExportStage: "preparing"
   },
   members: [
     {

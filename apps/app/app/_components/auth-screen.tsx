@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { ArrowLeft, Globe2, KeyRound, LockKeyhole, MailCheck, ShieldCheck, Smartphone } from "lucide-react";
+import { ArrowLeft, Building2, CheckCircle2, Globe2, KeyRound, LockKeyhole, MailCheck, ShieldCheck, Smartphone } from "lucide-react";
 import { Logo } from "@exporthq/ui";
 
 export function AuthScreen({
@@ -17,17 +17,23 @@ export function AuthScreen({
   return (
     <main className="auth-page">
       <section className="auth-story">
-        <a href="https://export-hq.com" className="auth-story__brand"><Logo /></a>
-        <div>
+        <span className="auth-story__orb auth-story__orb--one" aria-hidden="true" />
+        <span className="auth-story__orb auth-story__orb--two" aria-hidden="true" />
+        <header className="auth-story__top">
+          <a href="https://export-hq.com" className="auth-story__brand" target="_blank" rel="noreferrer"><Logo /></a>
+          <span><ShieldCheck size={14} /> Secure workspace</span>
+        </header>
+        <div className="auth-story__content">
           <p>{eyebrow}</p>
           <h1>{title}</h1>
           <span>{description}</span>
           <ul>
-            <li><ShieldCheck size={17} /> Organization-scoped access</li>
-            <li><LockKeyhole size={17} /> Secure sessions and role controls</li>
+            <li><span><Building2 size={17} /></span><div><strong>Business-separated</strong><small>Every company stays inside its own workspace.</small></div></li>
+            <li><span><LockKeyhole size={17} /></span><div><strong>Role-aware access</strong><small>People see only the tools and evidence they need.</small></div></li>
           </ul>
+          <div className="auth-story__continuity"><CheckCircle2 size={17} /><span><strong>Continue with your context intact</strong><small>Products, markets, readiness progress, and decisions remain connected.</small></span></div>
         </div>
-        <a href="https://export-hq.com"><ArrowLeft size={15} /> Back to Export HQ</a>
+        <footer className="auth-story__foot"><a href="https://export-hq.com"><ArrowLeft size={15} /> Back to Export HQ</a><span>Private by organization · Protected by role</span></footer>
       </section>
       <section className="auth-panel">{children}</section>
     </main>

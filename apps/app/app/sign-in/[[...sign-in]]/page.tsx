@@ -14,7 +14,7 @@ export default function SignInPage() {
   return (
     <AuthScreen
       eyebrow="WELCOME BACK"
-      title="Continue the work that moves export forward."
+      title="Pick up where your export work left off."
       description="Sign in to your private ExportPanel workspace. Your organization, role, onboarding status, and plan determine what is available."
     >
       <div className="auth-stack">

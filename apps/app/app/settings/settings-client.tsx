@@ -5,6 +5,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Building2,
+  BadgeCheck,
   Check,
   CheckCircle2,
   ChevronRight,
@@ -38,27 +39,38 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState
+  useState,
+  useTransition
 } from "react";
 import { Avatar, Logo } from "@exporthq/ui";
-import type { WorkspaceFeature } from "@exporthq/authorization";
+import type { BusinessVerificationStatus, WorkspaceFeature } from "@exporthq/authorization";
 import {
   createAuditCsv,
   createWorkspaceExport,
+  exportStageCatalog,
   initialWorkspaceSettings,
   integrationCatalog,
+  salesChannelCatalog,
+  targetMarketCatalog,
   type AuditEvent,
+  type ExportStageCode,
   type ExportJob,
   type IntegrationId,
+  type MarketStrategySettings,
   type MemberRole,
+  type OrganizationSettings,
+  type PrimaryOfferSettings,
+  type SalesChannelCode,
   type SettingsSection,
+  type TargetMarketCode,
   type WorkspaceSettingsState
 } from "./settings-data";
 import { HintButton } from "../_components/hint-button";
 import { WorkspaceAccountControl } from "../_components/account-controls";
 import { exportPanelPath } from "../_lib/export-panel-paths";
+import { saveOrganizationProfile } from "./actions";
 
-const storageKey = "exporthq.workspace-settings.v1";
+const storageKey = "exporthq.workspace-settings.v2";
 
 const navigation: ReadonlyArray<{
   id: SettingsSection;
@@ -86,7 +98,7 @@ const sectionCopy: Record<SettingsSection, { title: string; description: string 
   },
   organization: {
     title: "Organization",
-    description: "Manage the verified workspace identity used across your export operation."
+    description: "Manage the workspace identity and export profile used across your operation."
   },
   members: {
     title: "Members",
@@ -137,18 +149,25 @@ function formatDate(value: string, includeTime = true): string {
   }).format(new Date(value));
 }
 
-function mergeStoredState(candidate: unknown): WorkspaceSettingsState {
-  if (!candidate || typeof candidate !== "object") return initialWorkspaceSettings;
+function mergeStoredState(candidate: unknown, defaults: WorkspaceSettingsState): WorkspaceSettingsState {
+  if (!candidate || typeof candidate !== "object") return defaults;
   const stored = candidate as Partial<WorkspaceSettingsState>;
   return {
-    ...initialWorkspaceSettings,
+    ...defaults,
     ...stored,
-    integrations: { ...initialWorkspaceSettings.integrations, ...stored.integrations },
-    security: { ...initialWorkspaceSettings.security, ...stored.security },
-    organization: { ...initialWorkspaceSettings.organization, ...stored.organization },
-    members: Array.isArray(stored.members) ? stored.members : initialWorkspaceSettings.members,
-    audit: Array.isArray(stored.audit) ? stored.audit : initialWorkspaceSettings.audit,
-    exports: Array.isArray(stored.exports) ? stored.exports : initialWorkspaceSettings.exports
+    integrations: { ...defaults.integrations, ...stored.integrations },
+    security: { ...defaults.security, ...stored.security },
+    organization: { ...defaults.organization, ...stored.organization },
+    primaryOffer: { ...defaults.primaryOffer, ...stored.primaryOffer },
+    marketStrategy: {
+      ...defaults.marketStrategy,
+      ...stored.marketStrategy,
+      secondaryMarkets: Array.isArray(stored.marketStrategy?.secondaryMarkets) ? stored.marketStrategy.secondaryMarkets : defaults.marketStrategy.secondaryMarkets,
+      secondarySalesChannels: Array.isArray(stored.marketStrategy?.secondarySalesChannels) ? stored.marketStrategy.secondarySalesChannels : defaults.marketStrategy.secondarySalesChannels
+    },
+    members: Array.isArray(stored.members) ? stored.members : defaults.members,
+    audit: Array.isArray(stored.audit) ? stored.audit : defaults.audit,
+    exports: Array.isArray(stored.exports) ? stored.exports : defaults.exports
   };
 }
 
@@ -204,8 +223,8 @@ function StatusBadge({ status }: { status: "active" | "pending" | "suspended" | 
   return <span className={`settings-status settings-status--${status}`}><span />{status}</span>;
 }
 
-function SettingsCard({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`settings-card ${className}`.trim()}>{children}</section>;
+function SettingsCard({ children, className = "", id }: { children: ReactNode; className?: string; id?: string }) {
+  return <section className={`settings-card ${className}`.trim()} id={id}>{children}</section>;
 }
 
 function IntegrationDialog({
@@ -334,7 +353,11 @@ export default function SettingsClient({
   authEnabled,
   userName,
   organizationName,
-  tierName
+  tierName,
+  businessVerification,
+  initialOrganization,
+  initialPrimaryOffer,
+  initialMarketStrategy
 }: {
   canManageOrganization: boolean;
   canManageTeam: boolean;
@@ -343,13 +366,23 @@ export default function SettingsClient({
   userName: string;
   organizationName: string;
   tierName: string;
+  businessVerification: BusinessVerificationStatus;
+  initialOrganization: Partial<OrganizationSettings>;
+  initialPrimaryOffer: Partial<PrimaryOfferSettings>;
+  initialMarketStrategy: Partial<MarketStrategySettings>;
 }) {
   const availableNavigation = useMemo(
     () => navigation.filter((item) => !item.feature || features.includes(item.feature)),
     [features]
   );
+  const workspaceDefaults = useMemo<WorkspaceSettingsState>(() => ({
+    ...initialWorkspaceSettings,
+    organization: { ...initialWorkspaceSettings.organization, ...initialOrganization },
+    primaryOffer: { ...initialWorkspaceSettings.primaryOffer, ...initialPrimaryOffer },
+    marketStrategy: { ...initialWorkspaceSettings.marketStrategy, ...initialMarketStrategy }
+  }), [initialOrganization, initialPrimaryOffer, initialMarketStrategy]);
   const [section, setSection] = useState<SettingsSection>(() => availableNavigation[0]?.id ?? "security");
-  const [workspace, setWorkspace] = useState<WorkspaceSettingsState>(initialWorkspaceSettings);
+  const [workspace, setWorkspace] = useState<WorkspaceSettingsState>(workspaceDefaults);
   const [hydrated, setHydrated] = useState(false);
   const [toast, setToast] = useState("");
   const [integrationDialog, setIntegrationDialog] = useState<IntegrationId | null>(null);
@@ -363,18 +396,19 @@ export default function SettingsClient({
   const [exportRange, setExportRange] = useState("all");
   const [revokedSessions, setRevokedSessions] = useState<string[]>([]);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [savingOrganization, startSavingOrganization] = useTransition();
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem(storageKey);
-      if (stored) setWorkspace(mergeStoredState(JSON.parse(stored)));
+      if (stored) setWorkspace(mergeStoredState(JSON.parse(stored), workspaceDefaults));
     } catch {
       localStorage.removeItem(storageKey);
     }
-    const initialSection = window.location.hash.slice(1);
+    const initialSection = new URLSearchParams(window.location.search).get("section") ?? window.location.hash.slice(1);
     if (isSettingsSection(initialSection) && availableNavigation.some((item) => item.id === initialSection)) setSection(initialSection);
     setHydrated(true);
-  }, [availableNavigation]);
+  }, [availableNavigation, workspaceDefaults]);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -451,11 +485,70 @@ export default function SettingsClient({
 
   function saveOrganization(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    startSavingOrganization(async () => {
+      const result = await saveOrganizationProfile(JSON.stringify({ organization: workspace.organization, primaryOffer: workspace.primaryOffer, marketStrategy: workspace.marketStrategy }));
+      if (result.ok) {
+        setWorkspace((current) => ({
+          ...current,
+          audit: [newAudit("Updated organization profile", "organization", "Saved organization identity, trade details, and locale preferences."), ...current.audit]
+        }));
+      }
+      notify(result.message);
+    });
+  }
+
+  function choosePrimaryMarket(primaryMarket: MarketStrategySettings["primaryMarket"]) {
     setWorkspace((current) => ({
       ...current,
-      audit: [newAudit("Updated organization profile", "organization", "Saved organization identity and locale preferences."), ...current.audit]
+      marketStrategy: {
+        ...current.marketStrategy,
+        primaryMarket,
+        secondaryMarkets: current.marketStrategy.secondaryMarkets.filter((code) => code !== primaryMarket)
+      }
     }));
-    notify("Organization profile saved.");
+  }
+
+  function toggleSecondaryMarket(code: TargetMarketCode) {
+    setWorkspace((current) => {
+      if (!current.marketStrategy.primaryMarket || code === current.marketStrategy.primaryMarket) return current;
+      const selected = current.marketStrategy.secondaryMarkets.includes(code);
+      return {
+        ...current,
+        marketStrategy: {
+          ...current.marketStrategy,
+          secondaryMarkets: selected
+            ? current.marketStrategy.secondaryMarkets.filter((candidate) => candidate !== code)
+            : [...current.marketStrategy.secondaryMarkets, code]
+        }
+      };
+    });
+  }
+
+  function choosePrimarySalesChannel(primarySalesChannel: MarketStrategySettings["primarySalesChannel"]) {
+    setWorkspace((current) => ({
+      ...current,
+      marketStrategy: {
+        ...current.marketStrategy,
+        primarySalesChannel,
+        secondarySalesChannels: current.marketStrategy.secondarySalesChannels.filter((code) => code !== primarySalesChannel)
+      }
+    }));
+  }
+
+  function toggleSecondarySalesChannel(code: SalesChannelCode) {
+    setWorkspace((current) => {
+      if (!current.marketStrategy.primarySalesChannel || code === current.marketStrategy.primarySalesChannel) return current;
+      const selected = current.marketStrategy.secondarySalesChannels.includes(code);
+      return {
+        ...current,
+        marketStrategy: {
+          ...current.marketStrategy,
+          secondarySalesChannels: selected
+            ? current.marketStrategy.secondarySalesChannels.filter((candidate) => candidate !== code)
+            : [...current.marketStrategy.secondarySalesChannels, code]
+        }
+      };
+    });
   }
 
   function saveSecurity(event: FormEvent<HTMLFormElement>) {
@@ -654,6 +747,11 @@ export default function SettingsClient({
           </form>}
 
           {section === "organization" && <form onSubmit={saveOrganization}>
+            <SettingsCard className={`settings-profile-status settings-profile-status--${businessVerification}`}>
+              <span className="summary-icon"><BadgeCheck size={19} /></span>
+              <span><small>BUSINESS VERIFICATION · OPTIONAL</small><h2>{businessVerification === "verified" ? "Business verified" : businessVerification === "pending" ? "Verification review in progress" : "Build your profile now. Verify when ready."}</h2><p>{businessVerification === "verified" ? "Your reusable trust status is active across eligible ExportPanel features." : businessVerification === "pending" ? "You can keep using ExportPanel while Export HQ reviews the submitted evidence." : "Verification is not part of onboarding. Complete it later to unlock trust-gated intelligence without a paid plan."}</p></span>
+              {businessVerification === "verified" ? <Link href="/verify-business" className="settings-button settings-button--secondary">View status <ArrowRight size={14} /></Link> : businessVerification === "pending" ? <Link href="/verify-business" className="settings-button settings-button--secondary">Check status <ArrowRight size={14} /></Link> : <Link href="/verify-business" className="settings-button settings-button--soft">Verify when ready <ArrowRight size={14} /></Link>}
+            </SettingsCard>
             <SettingsCard>
               <div className="organization-profile-head"><span className="organization-logo">AT</span><span><h2>{workspace.organization.tradingName}</h2><p>Workspace ID · org_abc_textiles</p></span><button type="button" className="settings-button settings-button--secondary" onClick={() => notify("Logo upload is ready for a PNG, JPG, or SVG file.")} disabled={!canManage}>Change logo</button></div>
               <div className="settings-form-grid">
@@ -666,8 +764,46 @@ export default function SettingsClient({
                 <label className="settings-field"><span>Default currency</span><select value={workspace.organization.defaultCurrency} onChange={(event) => setWorkspace((current) => ({ ...current, organization: { ...current.organization, defaultCurrency: event.target.value } }))} disabled={!canManage}><option>USD</option><option>EUR</option><option>GBP</option><option>BDT</option></select><small>Used for workspace summaries; individual deals keep their original currency.</small></label>
               </div>
             </SettingsCard>
+            <SettingsCard className="settings-trade-profile" id="primary-offer">
+              <div className="settings-card-head"><span><h2>Primary export offer</h2><p>Complete trade-specific details only when they become useful. None of these fields blocks onboarding.</p></span><span className="settings-status settings-status--available"><span />Complete later</span></div>
+              <div className="settings-form-grid">
+                <label className="settings-field"><span>Product or service</span><input value={workspace.primaryOffer.name} onChange={(event) => setWorkspace((current) => ({ ...current, primaryOffer: { ...current.primaryOffer, name: event.target.value } }))} placeholder="e.g. Cotton garments" disabled={!canManage} /></label>
+                <label className="settings-field"><span>Broad category</span><select value={workspace.primaryOffer.category} onChange={(event) => setWorkspace((current) => ({ ...current, primaryOffer: { ...current.primaryOffer, category: event.target.value } }))} disabled={!canManage}><option>Apparel & garments</option><option>Textiles & home textiles</option><option>Leather goods & footwear</option><option>Jute & natural fibre products</option><option>Agriculture & processed food</option><option>Frozen food & seafood</option><option>Light engineering products</option><option>Pharmaceutical products</option><option>ICT & digital services</option><option>Handicrafts & lifestyle products</option><option>Other</option></select></label>
+                <label className="settings-field"><span>Internal reference <em>Optional</em></span><input value={workspace.primaryOffer.internalReference} onChange={(event) => setWorkspace((current) => ({ ...current, primaryOffer: { ...current.primaryOffer, internalReference: event.target.value } }))} placeholder="SKU, style or service code—if you use one" maxLength={64} disabled={!canManage} /><small>For your own catalogue organization; ExportPanel does not require it.</small></label>
+                <label className="settings-field"><span>HS classification <em>Optional</em></span><input value={workspace.primaryOffer.hsCode} onChange={(event) => setWorkspace((current) => ({ ...current, primaryOffer: { ...current.primaryOffer, hsCode: event.target.value } }))} placeholder="Add after classification, e.g. 6205.20" maxLength={16} disabled={!canManage} /><small>Leave blank if unknown. Readiness guidance can help you find and confirm it.</small></label>
+                <label className="settings-field settings-field--wide"><span>Specification or delivery detail <em>Optional</em></span><textarea value={workspace.primaryOffer.specification} onChange={(event) => setWorkspace((current) => ({ ...current, primaryOffer: { ...current.primaryOffer, specification: event.target.value } }))} placeholder="Materials, sizes, packaging, minimum order, or service delivery format" maxLength={500} disabled={!canManage} /><small>Add detail gradually as the offer becomes export-ready.</small></label>
+              </div>
+              <div className="settings-trade-profile__help"><CircleAlert size={16} /><span><strong>Unsure about classification or requirements?</strong><small>Use guided readiness first; it will explain why a detail matters before asking for it.</small></span><Link href="/readiness">Open readiness <ArrowRight size={14} /></Link><Link href="/learn">Learning Center</Link></div>
+            </SettingsCard>
+            <SettingsCard className="settings-market-profile" id="market-direction">
+              <div className="settings-card-head"><span><h2>Market direction</h2><p>Keep several destinations and routes in view. Choose one primary option for readiness planning; every other selection stays secondary.</p></span><span className="settings-status settings-status--available"><span />Optional</span></div>
+              <div className="settings-form-grid settings-market-profile__grid">
+                <label className="settings-field"><span>Primary target market <em>Optional</em></span><select value={workspace.marketStrategy.primaryMarket} onChange={(event) => choosePrimaryMarket(event.target.value as MarketStrategySettings["primaryMarket"])} disabled={!canManage}><option value="">Choose later</option>{targetMarketCatalog.map((market) => <option value={market.code} key={market.code}>{market.label} · {market.region}</option>)}</select><small>The primary market shapes the first readiness and opportunity recommendations.</small></label>
+                <label className="settings-field"><span>Current export stage <em>Optional</em></span><select value={workspace.marketStrategy.currentExportStage} onChange={(event) => setWorkspace((current) => ({ ...current, marketStrategy: { ...current.marketStrategy, currentExportStage: event.target.value as ExportStageCode | "" } }))} disabled={!canManage}><option value="">Choose later</option>{exportStageCatalog.map((stage) => <option value={stage.code} key={stage.code}>{stage.label}</option>)}</select><small>Update this as the business progresses; it changes the order, not the availability, of guidance.</small></label>
+                <fieldset className="settings-choice-field settings-field--wide" disabled={!canManage || !workspace.marketStrategy.primaryMarket}>
+                  <legend>Secondary target markets <em>Optional</em></legend>
+                  <p>{workspace.marketStrategy.primaryMarket ? "Select every additional destination you want ExportPanel to monitor." : "Choose a primary target market first, then add any secondary destinations."}</p>
+                  <div className="settings-choice-grid">{targetMarketCatalog.map((market) => {
+                    const isPrimary = workspace.marketStrategy.primaryMarket === market.code;
+                    const selected = workspace.marketStrategy.secondaryMarkets.includes(market.code);
+                    return <label className={isPrimary ? "is-primary" : selected ? "is-selected" : ""} key={market.code}><input type="checkbox" checked={selected} disabled={isPrimary || !canManage || !workspace.marketStrategy.primaryMarket} onChange={() => toggleSecondaryMarket(market.code)} /><span><strong>{market.label}</strong><small>{market.region}</small></span>{isPrimary && <b>Primary</b>}{selected && <Check size={14} />}</label>;
+                  })}</div>
+                </fieldset>
+                <label className="settings-field settings-field--wide"><span>Primary sales channel <em>Optional</em></span><select value={workspace.marketStrategy.primarySalesChannel} onChange={(event) => choosePrimarySalesChannel(event.target.value as MarketStrategySettings["primarySalesChannel"])} disabled={!canManage}><option value="">Choose later</option>{salesChannelCatalog.map((channel) => <option value={channel.code} key={channel.code}>{channel.label}</option>)}</select><small>This route becomes the default context for contracts, buyer acquisition, delivery, and payment guidance.</small></label>
+                <fieldset className="settings-choice-field settings-field--wide" disabled={!canManage || !workspace.marketStrategy.primarySalesChannel}>
+                  <legend>Secondary sales channels <em>Optional</em></legend>
+                  <p>{workspace.marketStrategy.primarySalesChannel ? "Select other channels the business uses or wants to test." : "Choose a primary sales channel first, then add any secondary routes."}</p>
+                  <div className="settings-choice-grid settings-choice-grid--channels">{salesChannelCatalog.map((channel) => {
+                    const isPrimary = workspace.marketStrategy.primarySalesChannel === channel.code;
+                    const selected = workspace.marketStrategy.secondarySalesChannels.includes(channel.code);
+                    return <label className={isPrimary ? "is-primary" : selected ? "is-selected" : ""} key={channel.code}><input type="checkbox" checked={selected} disabled={isPrimary || !canManage || !workspace.marketStrategy.primarySalesChannel} onChange={() => toggleSecondarySalesChannel(channel.code)} /><span><strong>{channel.label}</strong><small>{channel.description}</small></span>{isPrimary && <b>Primary</b>}{selected && <Check size={14} />}</label>;
+                  })}</div>
+                </fieldset>
+              </div>
+              <div className="settings-market-profile__foot"><span><strong>No price or currency requested here.</strong><small>Add commercial terms later, when you create a quotation, opportunity, or shipment.</small></span><Link href="/opportunities">Explore market intelligence <ArrowRight size={14} /></Link></div>
+            </SettingsCard>
             <SettingsCard className="settings-danger-zone"><div><span className="summary-icon danger"><FolderLock size={18} /></span><span><h2>Workspace ownership</h2><p>Ownership transfer requires identity verification and acceptance by another active admin.</p></span></div><button type="button" className="settings-button settings-button--secondary" disabled={!canManage} onClick={() => notify("Ownership transfer request started. Select an active admin to continue.")}>Start transfer</button></SettingsCard>
-            <div className="settings-form-actions"><span>Changes apply across customer and operator workspaces.</span><button type="submit" className="settings-button settings-button--primary" disabled={!canManage}><Save size={15} /> Save organization</button></div>
+            <div className="settings-form-actions"><span>Changes apply across customer and operator workspaces.</span><button type="submit" className="settings-button settings-button--primary" disabled={!canManage || savingOrganization}><Save size={15} /> {savingOrganization ? "Saving…" : "Save organization"}</button></div>
           </form>}
 
           {section === "members" && <>
