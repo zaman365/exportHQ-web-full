@@ -29,7 +29,13 @@ function toneForGroup(group: TeamGroup): number {
 }
 
 function formatMessageTime(value: string): string {
-  return new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }).format(new Date(value));
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "Europe/Berlin"
+  }).format(new Date(value));
 }
 
 function RoleBadge({ role }: { role: TeamAccessRole }) {
