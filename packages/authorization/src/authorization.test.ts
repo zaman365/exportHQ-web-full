@@ -5,9 +5,11 @@ import {
   canAccessOrganization,
   featuresForTier,
   isPaidTier,
+  minimumTierForFeature,
   permissionsForTier,
   resolveMarketIntelligenceAccess,
   resolveReadinessAccess,
+  resolveWorkspaceFeatureAccess,
   scopeRows,
   tierHasFeature,
   type CustomerPrincipal,
@@ -95,5 +97,16 @@ describe("subscription entitlements", () => {
     expect(permissionsForTier("explore").has("documents:manage")).toBe(false);
     expect(permissionsForTier("launch").has("tasks:manage")).toBe(true);
     expect(permissionsForTier("scale").has("team:manage")).toBe(true);
+  });
+
+  it("keeps premium features discoverable through safe progressive previews", () => {
+    expect(resolveWorkspaceFeatureAccess({ authenticated: false, feature: "inbox", tier: "preview" })).toBe("preview");
+    expect(resolveWorkspaceFeatureAccess({ authenticated: false, feature: "team", tier: "preview" })).toBe("locked");
+    expect(resolveWorkspaceFeatureAccess({ authenticated: true, feature: "team", tier: "explore" })).toBe("preview");
+    expect(resolveWorkspaceFeatureAccess({ authenticated: true, feature: "documents", tier: "explore" })).toBe("locked");
+    expect(resolveWorkspaceFeatureAccess({ authenticated: true, feature: "inbox", tier: "launch" })).toBe("full");
+    expect(resolveWorkspaceFeatureAccess({ authenticated: true, feature: "attention", tier: "scale" })).toBe("full");
+    expect(minimumTierForFeature("inbox")).toBe("launch");
+    expect(minimumTierForFeature("attention")).toBe("scale");
   });
 });

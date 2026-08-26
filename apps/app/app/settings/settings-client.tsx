@@ -16,6 +16,7 @@ import {
   FileSpreadsheet,
   FolderLock,
   History,
+  Gem,
   KeyRound,
   Link2,
   LockKeyhole,
@@ -43,7 +44,12 @@ import {
   useTransition
 } from "react";
 import { Avatar, Logo } from "@exporthq/ui";
-import type { BusinessVerificationStatus, WorkspaceFeature } from "@exporthq/authorization";
+import {
+  minimumTierForFeature,
+  subscriptionCatalog,
+  type BusinessVerificationStatus,
+  type WorkspaceFeature
+} from "@exporthq/authorization";
 import {
   createAuditCsv,
   createWorkspaceExport,
@@ -371,10 +377,7 @@ export default function SettingsClient({
   initialPrimaryOffer: Partial<PrimaryOfferSettings>;
   initialMarketStrategy: Partial<MarketStrategySettings>;
 }) {
-  const availableNavigation = useMemo(
-    () => navigation.filter((item) => !item.feature || features.includes(item.feature)),
-    [features]
-  );
+  const availableNavigation = navigation;
   const workspaceDefaults = useMemo<WorkspaceSettingsState>(() => ({
     ...initialWorkspaceSettings,
     organization: { ...initialWorkspaceSettings.organization, ...initialOrganization },
@@ -676,7 +679,14 @@ export default function SettingsClient({
   }
 
   const copy = sectionCopy[section];
-  const canManage = section === "members" ? canManageTeam : canManageOrganization;
+  const currentNavigation = navigation.find((item) => item.id === section);
+  const lockedFeature = currentNavigation?.feature && !features.includes(currentNavigation.feature)
+    ? currentNavigation.feature
+    : null;
+  const requiredTier = lockedFeature
+    ? subscriptionCatalog[minimumTierForFeature(lockedFeature)]
+    : null;
+  const canManage = !lockedFeature && (section === "members" ? canManageTeam : canManageOrganization);
 
   return (
     <div className="settings-page">
@@ -692,7 +702,11 @@ export default function SettingsClient({
           <nav aria-label="Settings navigation">
             {availableNavigation.map((item) => {
               const Icon = item.icon;
-              return <div key={item.id}>{item.group && <p>{item.group}</p>}<button type="button" className={section === item.id ? "active" : ""} onClick={() => chooseSection(item.id)} aria-current={section === item.id ? "page" : undefined}><Icon size={17} />{item.label}<ChevronRight size={14} /></button></div>;
+              const locked = Boolean(item.feature && !features.includes(item.feature));
+              const unlockTier = item.feature
+                ? subscriptionCatalog[minimumTierForFeature(item.feature)].name
+                : null;
+              return <div key={item.id}>{item.group && <p>{item.group}</p>}<button type="button" className={`${section === item.id ? "active" : ""}${locked ? " locked" : ""}`} onClick={() => chooseSection(item.id)} aria-current={section === item.id ? "page" : undefined} title={locked ? `${item.label} unlocks with ${unlockTier}. Open to see what is included.` : undefined}><Icon size={17} /><span>{item.label}</span>{locked ? <Gem className="settings-nav-lock" size={14} aria-label="Premium feature" /> : <ChevronRight size={14} />}</button></div>;
             })}
           </nav>
           <Link href="/learn" className="settings-sidebar__help"><CircleAlert size={16} /><span><strong>Need a hand?</strong><small>Open the ExportPanel Learning Center for hints and tutorials.</small></span></Link>
@@ -700,9 +714,14 @@ export default function SettingsClient({
 
         <main className="settings-main">
           <header className="settings-heading"><p>EXPORT HQ / SETTINGS</p><h1>{copy.title} <HintButton topic={`settings-${section}`} /></h1><span>{copy.description}</span></header>
-          {!canManage && <div className="settings-readonly"><LockKeyhole size={17} /><span><strong>Read-only access</strong><small>An organization owner or admin must make changes.</small></span></div>}
+          {lockedFeature && requiredTier && <section className="settings-feature-gate">
+            <span className="settings-feature-gate__icon"><Gem size={22} /></span>
+            <div><small>PREMIUM SETTINGS</small><h2>{copy.title} is visible, not enabled</h2><p>Keep this capability in view as your operation grows. {requiredTier.name} unlocks the complete {copy.title.toLowerCase()} workspace, its records, and every related action.</p></div>
+            <Link href={`/plans?feature=${lockedFeature}`} className="settings-button settings-button--primary">Unlock with {requiredTier.name} <ArrowRight size={14} /></Link>
+          </section>}
+          {!lockedFeature && !canManage && <div className="settings-readonly"><LockKeyhole size={17} /><span><strong>Read-only access</strong><small>An organization owner or admin must make changes.</small></span></div>}
 
-          {section === "integrations" && <>
+          {!lockedFeature && section === "integrations" && <>
             <div className="settings-info-banner"><ShieldCheck size={21} /><span><strong>Optional by design</strong><small>Your products, documents, tasks, and decisions keep working if every provider is disconnected.</small></span></div>
             <SettingsCard className="integration-list">
               {integrationCatalog.map((integration) => {
@@ -716,7 +735,7 @@ export default function SettingsClient({
             </SettingsCard>
           </>}
 
-          {section === "security" && <form onSubmit={saveSecurity}>
+          {!lockedFeature && section === "security" && <form onSubmit={saveSecurity}>
             <div className="security-summary">
               <SettingsCard><span className="summary-icon"><KeyRound size={19} /></span><span><small>Two-factor policy</small><strong>{workspace.security.twoFactorRequired ? "Required" : "Optional"}</strong></span><StatusBadge status="active" /></SettingsCard>
               <SettingsCard><span className="summary-icon"><Monitor size={19} /></span><span><small>Active sessions</small><strong>{activeSessions.length - revokedSessions.length} devices</strong></span></SettingsCard>
@@ -746,7 +765,7 @@ export default function SettingsClient({
             <div className="settings-form-actions"><span>Security changes are recorded in the audit log.</span><button type="submit" className="settings-button settings-button--primary" disabled={!canManage}><Save size={15} /> Save security policy</button></div>
           </form>}
 
-          {section === "organization" && <form onSubmit={saveOrganization}>
+          {!lockedFeature && section === "organization" && <form onSubmit={saveOrganization}>
             <SettingsCard className={`settings-profile-status settings-profile-status--${businessVerification}`}>
               <span className="summary-icon"><BadgeCheck size={19} /></span>
               <span><small>BUSINESS VERIFICATION · OPTIONAL</small><h2>{businessVerification === "verified" ? "Business verified" : businessVerification === "pending" ? "Verification review in progress" : "Build your profile now. Verify when ready."}</h2><p>{businessVerification === "verified" ? "Your reusable trust status is active across eligible ExportPanel features." : businessVerification === "pending" ? "You can keep using ExportPanel while Export HQ reviews the submitted evidence." : "Verification is not part of onboarding. Complete it later to unlock trust-gated intelligence without a paid plan."}</p></span>
@@ -806,7 +825,7 @@ export default function SettingsClient({
             <div className="settings-form-actions"><span>Changes apply across customer and operator workspaces.</span><button type="submit" className="settings-button settings-button--primary" disabled={!canManage || savingOrganization}><Save size={15} /> {savingOrganization ? "Saving…" : "Save organization"}</button></div>
           </form>}
 
-          {section === "members" && <>
+          {!lockedFeature && section === "members" && <>
             <div className="member-toolbar"><label className="settings-search"><Search size={16} /><input aria-label="Search members" placeholder="Search members…" value={memberQuery} onChange={(event) => setMemberQuery(event.target.value)} /></label><select aria-label="Filter member status" value={memberStatus} onChange={(event) => setMemberStatus(event.target.value)}><option value="all">All statuses</option><option value="active">Active</option><option value="pending">Pending</option><option value="suspended">Suspended</option></select><button type="button" className="settings-button settings-button--primary" onClick={() => setInviteDialog(true)} disabled={!canManage}><UserPlus size={15} /> Invite member</button></div>
             <SettingsCard className="member-list">
               <div className="member-list-head"><span>Member</span><span>Role</span><span>Status</span><span>Last active</span><span>Actions</span></div>
@@ -821,13 +840,13 @@ export default function SettingsClient({
             <div className="settings-footnote"><ShieldCheck size={15} /><span>Role and status changes take effect immediately and are recorded in the audit log.</span></div>
           </>}
 
-          {section === "audit" && <>
+          {!lockedFeature && section === "audit" && <>
             <div className="audit-toolbar"><label className="settings-search"><Search size={16} /><input aria-label="Search audit events" placeholder="Search activity…" value={auditQuery} onChange={(event) => setAuditQuery(event.target.value)} /></label><select aria-label="Filter audit category" value={auditCategory} onChange={(event) => setAuditCategory(event.target.value)}><option value="all">All activity</option><option value="organization">Organization</option><option value="member">Members</option><option value="security">Security</option><option value="integration">Integrations</option><option value="export">Exports</option></select><button type="button" className="settings-button settings-button--secondary" onClick={exportAudit}><Download size={14} /> Export CSV</button></div>
             <SettingsCard className="audit-list"><div className="audit-list-head"><span>Event</span><span>Category</span><span>Date & time</span><span>IP address</span></div>{filteredAudit.length === 0 && <div className="settings-empty"><History size={22} /><strong>No audit events match these filters.</strong><button type="button" className="text-button" onClick={() => { setAuditQuery(""); setAuditCategory("all"); }}>Clear filters</button></div>}{filteredAudit.map((event, index) => <article className="audit-row" key={event.id}><span className="audit-event"><Avatar initials={event.actorInitials} tone={index % 3} /><span><strong>{event.action}</strong><small>{event.detail}</small><em>{event.actor}</em></span></span><span className={`audit-category audit-category--${event.category}`}>{event.category}</span><span>{formatDate(event.at)}</span><span>{event.ip}</span></article>)}</SettingsCard>
             <div className="settings-footnote"><LockKeyhole size={15} /><span>Audit entries are append-only in production and retained according to your organization policy.</span></div>
           </>}
 
-          {section === "export" && <>
+          {!lockedFeature && section === "export" && <>
             <div className="settings-info-banner"><Download size={21} /><span><strong>Your data stays portable</strong><small>Exports exclude passwords, authentication secrets, document binaries, and integration tokens.</small></span></div>
             <div className="export-grid"><SettingsCard>
               <div className="settings-card-head"><span><h2>Choose data</h2><p>Select the workspace settings to include.</p></span></div>
@@ -844,8 +863,8 @@ export default function SettingsClient({
         </main>
       </div>
 
-      {integrationDialog && <IntegrationDialog key={integrationDialog} integrationId={integrationDialog} workspace={workspace} onClose={() => setIntegrationDialog(null)} onSave={saveIntegration} onDisconnect={disconnectIntegration} canManage={canManage} />}
-      {inviteDialog && <InviteDialog onClose={() => setInviteDialog(false)} onInvite={inviteMember} canManage={canManage} />}
+      {!lockedFeature && integrationDialog && <IntegrationDialog key={integrationDialog} integrationId={integrationDialog} workspace={workspace} onClose={() => setIntegrationDialog(null)} onSave={saveIntegration} onDisconnect={disconnectIntegration} canManage={canManage} />}
+      {!lockedFeature && inviteDialog && <InviteDialog onClose={() => setInviteDialog(false)} onInvite={inviteMember} canManage={canManage} />}
       {toast && <div className="settings-toast" role="status"><CheckCircle2 size={17} />{toast}</div>}
     </div>
   );

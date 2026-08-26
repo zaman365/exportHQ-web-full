@@ -19,6 +19,7 @@ export type BusinessVerificationStatus = "unverified" | "pending" | "verified";
 export type TrustGatedAccess = "public" | "member" | "full";
 export type MarketIntelligenceAccess = TrustGatedAccess;
 export type ReadinessAccess = TrustGatedAccess;
+export type WorkspaceFeatureAccess = "full" | "preview" | "locked";
 
 export type WorkspaceFeature =
   | "home"
@@ -94,6 +95,30 @@ const scaleFeatures = [
   "export"
 ] as const satisfies readonly WorkspaceFeature[];
 
+const subscriptionTierOrder = ["preview", "explore", "launch", "scale", "managed"] as const satisfies readonly SubscriptionTier[];
+
+/**
+ * These modules can safely expose curated sample records without exposing
+ * organization data or enabling mutations. Public visitors receive the
+ * smallest useful operating-system tour; signed-in Basic members can explore
+ * a few more workflows before choosing a plan.
+ */
+const publicFeaturePreviews = new Set<WorkspaceFeature>([
+  "attention",
+  "inbox",
+  "my-work",
+  "waiting",
+  "blueprints",
+  "decisions"
+]);
+
+const memberFeaturePreviews = new Set<WorkspaceFeature>([
+  ...publicFeaturePreviews,
+  "ideas",
+  "create",
+  "team"
+]);
+
 export const subscriptionCatalog: Readonly<Record<SubscriptionTier, SubscriptionDefinition>> = {
   preview: {
     id: "preview",
@@ -148,6 +173,21 @@ const permissionCatalog: Readonly<Record<SubscriptionTier, readonly Permission[]
 
 export function featuresForTier(tier: SubscriptionTier): readonly WorkspaceFeature[] {
   return subscriptionCatalog[tier].features;
+}
+
+export function minimumTierForFeature(feature: WorkspaceFeature): SubscriptionTier {
+  return subscriptionTierOrder.find((tier) => subscriptionCatalog[tier].features.includes(feature)) ?? "managed";
+}
+
+export function resolveWorkspaceFeatureAccess(input: {
+  authenticated: boolean;
+  feature: WorkspaceFeature;
+  tier: SubscriptionTier;
+}): WorkspaceFeatureAccess {
+  if (subscriptionCatalog[input.tier].features.includes(input.feature)) return "full";
+  if (input.authenticated && memberFeaturePreviews.has(input.feature)) return "preview";
+  if (!input.authenticated && publicFeaturePreviews.has(input.feature)) return "preview";
+  return "locked";
 }
 
 export function permissionsForTier(tier: SubscriptionTier): ReadonlySet<Permission> {

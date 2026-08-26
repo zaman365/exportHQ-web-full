@@ -29,6 +29,7 @@ export default async function OpportunitiesPage({ searchParams }: { searchParams
     organizationName: demoBasicBusiness,
     tier: "explore" as const,
     businessVerification: "unverified" as const,
+    isPlatformAdmin: false,
     features: featuresForTier("explore"),
     principal: baseSession.principal
       ? { ...baseSession.principal, permissions: permissionsForTier("explore") }

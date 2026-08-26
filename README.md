@@ -2,6 +2,8 @@
 
 Export HQ is a managed export operating system: one shared workspace where exporters and Export HQ specialists prepare companies, products, documents, requirements, and actions for international growth.
 
+The canonical system-wide business logic is maintained in [`docs/BUSINESS_LOGIC.md`](docs/BUSINESS_LOGIC.md). Read it before changing journeys, access rules, onboarding, monetization, or product behavior.
+
 ## Workspace
 
 - `apps/web` — public cross-industry Export HQ website

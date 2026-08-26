@@ -5,7 +5,7 @@ import {
 } from "@exporthq/authorization";
 import { WorkspaceShell } from "../_components/workspace-shell";
 import MyWorkClient from "./work-client";
-import { requireWorkspaceFeature } from "../_lib/session";
+import { getProgressiveWorkspaceFeatureSession } from "../_lib/session";
 
 export const metadata: Metadata = {
   title: "My Work — Export HQ",
@@ -15,14 +15,11 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function MyWorkPage() {
-  const session = await requireWorkspaceFeature("my-work");
+  const session = await getProgressiveWorkspaceFeatureSession("my-work");
   const principal = session.principal;
-  authorizeOrganization(principal, principal.organizationId, "tasks:view");
-  const canManage = canAccessOrganization(
-    principal,
-    principal.organizationId,
-    "tasks:manage",
-  );
+  const fullAccess = session.features.includes("my-work");
+  if (fullAccess && principal) authorizeOrganization(principal, principal.organizationId, "tasks:view");
+  const canManage = Boolean(fullAccess && principal && canAccessOrganization(principal, principal.organizationId, "tasks:manage"));
   return (
     <WorkspaceShell active="work" session={session}>
       <MyWorkClient canManage={canManage} />

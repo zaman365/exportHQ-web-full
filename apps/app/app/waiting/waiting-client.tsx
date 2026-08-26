@@ -122,6 +122,7 @@ export default function WaitingClient({ initialTasks, canManage }: { initialTask
   }
 
   function resolveItem(item: WaitingItem) {
+    if (!canManage) return;
     const next = [...resolved, item.id];
     setResolved(next);
     localStorage.setItem(resolvedStorageKey, JSON.stringify(next));
@@ -130,6 +131,7 @@ export default function WaitingClient({ initialTasks, canManage }: { initialTask
   }
 
   function restoreItem(item: WaitingItem) {
+    if (!canManage) return;
     const next = resolved.filter((id) => id !== item.id);
     setResolved(next);
     localStorage.setItem(resolvedStorageKey, JSON.stringify(next));
@@ -137,6 +139,7 @@ export default function WaitingClient({ initialTasks, canManage }: { initialTask
   }
 
   function snoozeItem(item: WaitingItem) {
+    if (!canManage) return;
     const currentDue = new Date(item.dueAt);
     const due = currentDue.getTime() > Date.now() ? currentDue : new Date();
     due.setDate(due.getDate() + 7);
@@ -157,7 +160,7 @@ export default function WaitingClient({ initialTasks, canManage }: { initialTask
       const isResolved = resolved.includes(item.id) || item.status === "completed";
       const isOverdue = !isResolved && new Date(item.dueAt).getTime() < Date.now();
       return <article className={`waiting-row${selectedId === item.id ? " active" : ""}`} key={item.id}><button type="button" className={`waiting-check${isResolved ? " complete" : ""}`} aria-label={isResolved ? `Restore ${item.title}` : `Resolve ${item.title}`} onClick={() => isResolved ? restoreItem(item) : resolveItem(item)} disabled={!canManage}>{isResolved ? <Undo2 size={14} /> : <Check size={14} />}</button><span className="waiting-copy"><span><strong>{item.title}</strong><Badge tone={statusTone[item.status]}>{isResolved ? "resolved" : item.status.replaceAll("_", " ")}</Badge>{item.source === "blueprint" && <em>Blueprint run</em>}</span><p>{item.description}</p><footer><span className={isOverdue ? "overdue" : ""}><Clock3 size={13} />{isOverdue ? "Overdue · " : "Due "}{formatDue(item.dueAt)}</span><span>Owner · {item.ownerName}</span><span>{item.relatedEntity}</span></footer>{item.totalSteps && <span className="waiting-progress"><Progress value={Math.round(((item.completedSteps ?? 0) / item.totalSteps) * 100)} label={`${item.title} progress`} /><small>{item.completedSteps ?? 0} of {item.totalSteps} steps</small></span>}</span><span className="waiting-row__actions">{!isResolved && <button type="button" onClick={() => snoozeItem(item)} disabled={!canManage}>Snooze 7d</button>}<button type="button" onClick={() => setSelectedId(item.id)}>Details <ArrowRight size={13} /></button></span></article>;
-    })}</section>{selected && <aside className="waiting-detail"><header><span><p>NEXT HANDOFF</p><h2>{selected.title}</h2></span><button type="button" aria-label="Close waiting item details" onClick={() => setSelectedId(null)}><X size={17} /></button></header><Badge tone={statusTone[selected.status]}>{selected.status.replaceAll("_", " ")}</Badge><p>{selected.description}</p><dl><div><dt>Accountable owner</dt><dd>{selected.ownerName}</dd></div><div><dt>Due checkpoint</dt><dd>{formatDue(selected.dueAt)}</dd></div><div><dt>Related record</dt><dd>{selected.relatedEntity}</dd></div><div><dt>Ownership queue</dt><dd>{queueMeta[selected.responsibility as Exclude<Responsibility, never>]?.label ?? selected.responsibility}</dd></div></dl><div className="waiting-next-step"><strong>What moves this forward?</strong><p>{selected.source === "blueprint" ? "Confirm the target and accountable owner, then complete the first Blueprint step." : "Provide the requested decision or evidence, then resolve the handoff so downstream work can continue."}</p></div><footer>{resolved.includes(selected.id) ? <button type="button" className="button button--secondary" onClick={() => restoreItem(selected)}><Undo2 size={15} /> Restore item</button> : <><button type="button" className="button button--secondary" onClick={() => snoozeItem(selected)}><CalendarClock size={15} /> Snooze 7 days</button><button type="button" className="button button--primary" onClick={() => resolveItem(selected)}><Check size={15} /> Mark resolved</button></>}</footer></aside>}</div>
+    })}</section>{selected && <aside className="waiting-detail"><header><span><p>NEXT HANDOFF</p><h2>{selected.title}</h2></span><button type="button" aria-label="Close waiting item details" onClick={() => setSelectedId(null)}><X size={17} /></button></header><Badge tone={statusTone[selected.status]}>{selected.status.replaceAll("_", " ")}</Badge><p>{selected.description}</p><dl><div><dt>Accountable owner</dt><dd>{selected.ownerName}</dd></div><div><dt>Due checkpoint</dt><dd>{formatDue(selected.dueAt)}</dd></div><div><dt>Related record</dt><dd>{selected.relatedEntity}</dd></div><div><dt>Ownership queue</dt><dd>{queueMeta[selected.responsibility as Exclude<Responsibility, never>]?.label ?? selected.responsibility}</dd></div></dl><div className="waiting-next-step"><strong>What moves this forward?</strong><p>{selected.source === "blueprint" ? "Confirm the target and accountable owner, then complete the first Blueprint step." : "Provide the requested decision or evidence, then resolve the handoff so downstream work can continue."}</p></div><footer>{resolved.includes(selected.id) ? <button type="button" className="button button--secondary" onClick={() => restoreItem(selected)} disabled={!canManage}><Undo2 size={15} /> Restore item</button> : <><button type="button" className="button button--secondary" onClick={() => snoozeItem(selected)} disabled={!canManage}><CalendarClock size={15} /> Snooze 7 days</button><button type="button" className="button button--primary" onClick={() => resolveItem(selected)} disabled={!canManage}><Check size={15} /> Mark resolved</button></>}</footer></aside>}</div>
     {toast && <div className="settings-toast" role="status"><CheckCircle2 size={16} />{toast}</div>}
   </>;
 }

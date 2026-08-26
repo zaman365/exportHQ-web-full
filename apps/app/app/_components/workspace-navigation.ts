@@ -42,3 +42,19 @@ export const workspaceGroups = [
   label: string;
   items: ReadonlyArray<readonly [string, typeof House, string, WorkspaceDestination, WorkspaceFeature]>;
 }>;
+
+export function workspaceFeatureForDestination(destination: WorkspaceDestination): WorkspaceFeature | undefined {
+  for (const group of workspaceGroups) {
+    const item = group.items.find(([, , , id]) => id === destination);
+    if (item) return item[4];
+  }
+  return undefined;
+}
+
+export function workspaceFeatureLabel(feature: WorkspaceFeature): string {
+  for (const group of workspaceGroups) {
+    const item = group.items.find(([, , , , itemFeature]) => itemFeature === feature);
+    if (item) return item[0];
+  }
+  return feature.replaceAll("-", " ");
+}

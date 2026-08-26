@@ -4,12 +4,17 @@ import {
   resolveCustomerSession,
   type CustomerSession
 } from "@exporthq/auth";
-import { featuresForTier, type WorkspaceFeature } from "@exporthq/authorization";
+import {
+  featuresForTier,
+  resolveWorkspaceFeatureAccess,
+  type WorkspaceFeature
+} from "@exporthq/authorization";
 import { exportPanelPath } from "./export-panel-paths";
 
 type WorkspaceFeatureOptions = {
   allowIncompleteOnboarding?: boolean;
   allowPublicPreview?: boolean;
+  allowProgressivePreview?: boolean;
   forcePublicPreview?: boolean;
   signedOutRedirectTo?: string;
 };
@@ -61,6 +66,10 @@ export async function getWorkspaceFeatureSession(
   if (shouldUsePublicPreview) {
     const preview = publicPreviewSession(session);
     if (preview.features.includes(feature)) return preview;
+    if (
+      options.allowProgressivePreview
+      && resolveWorkspaceFeatureAccess({ authenticated: false, feature, tier: preview.tier }) === "preview"
+    ) return preview;
   }
 
   if (session.status === "misconfigured") redirect("/sign-in?reason=configuration");
@@ -70,7 +79,11 @@ export async function getWorkspaceFeatureSession(
   }
   if (session.status === "needs-organization") redirect("/onboarding");
   if (session.status === "needs-onboarding" && !options.allowIncompleteOnboarding) redirect("/onboarding");
-  if (!session.features.includes(feature)) redirect(`/plans?feature=${encodeURIComponent(feature)}`);
+  if (!session.features.includes(feature)) {
+    const access = resolveWorkspaceFeatureAccess({ authenticated: true, feature, tier: session.tier });
+    if (options.allowProgressivePreview && access === "preview") return session;
+    redirect(`/plans?feature=${encodeURIComponent(feature)}`);
+  }
   return session;
 }
 
@@ -81,6 +94,18 @@ export async function requireWorkspaceFeature(
   const session = await getWorkspaceFeatureSession(feature, options);
   if (!session.principal) redirect("/onboarding");
   return session as CustomerSession & { principal: NonNullable<CustomerSession["principal"]> };
+}
+
+/**
+ * Render curated sample records for explicitly previewable capabilities while
+ * keeping every mutation permission and organization authorization check
+ * unchanged. Non-previewable capabilities still redirect to Plans.
+ */
+export async function getProgressiveWorkspaceFeatureSession(feature: WorkspaceFeature): Promise<CustomerSession> {
+  return getWorkspaceFeatureSession(feature, {
+    allowPublicPreview: true,
+    allowProgressivePreview: true
+  });
 }
 
 export async function requireOnboardingSession(): Promise<CustomerSession> {

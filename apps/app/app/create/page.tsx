@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { authorizeOrganization, canAccessOrganization } from "@exporthq/authorization";
 import { WorkspaceShell } from "../_components/workspace-shell";
 import CreateClient from "./create-client";
-import { requireWorkspaceFeature } from "../_lib/session";
+import { getProgressiveWorkspaceFeatureSession } from "../_lib/session";
 
 export const metadata: Metadata = {
   title: "Create — Export HQ",
@@ -12,9 +12,10 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function CreatePage() {
-  const session = await requireWorkspaceFeature("create");
+  const session = await getProgressiveWorkspaceFeatureSession("create");
   const principal = session.principal;
-  authorizeOrganization(principal, principal.organizationId, "tasks:view");
-  const canManage = canAccessOrganization(principal, principal.organizationId, "tasks:manage");
+  const fullAccess = session.features.includes("create");
+  if (fullAccess && principal) authorizeOrganization(principal, principal.organizationId, "tasks:view");
+  const canManage = Boolean(fullAccess && principal && canAccessOrganization(principal, principal.organizationId, "tasks:manage"));
   return <WorkspaceShell active="create" session={session}><CreateClient canManage={canManage} /></WorkspaceShell>;
 }

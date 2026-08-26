@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { authorizeOrganization, canAccessOrganization } from "@exporthq/authorization";
 import { WorkspaceShell } from "../_components/workspace-shell";
 import TeamClient from "./team-client";
-import { requireWorkspaceFeature } from "../_lib/session";
+import { getProgressiveWorkspaceFeatureSession } from "../_lib/session";
 
 export const metadata: Metadata = {
   title: "Team — Export HQ",
@@ -12,9 +12,10 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 export default async function TeamPage() {
-  const session = await requireWorkspaceFeature("team");
+  const session = await getProgressiveWorkspaceFeatureSession("team");
   const principal = session.principal;
-  authorizeOrganization(principal, principal.organizationId, "company:view");
-  const canManageAccess = canAccessOrganization(principal, principal.organizationId, "team:manage");
+  const fullAccess = session.features.includes("team");
+  if (fullAccess && principal) authorizeOrganization(principal, principal.organizationId, "company:view");
+  const canManageAccess = Boolean(fullAccess && principal && canAccessOrganization(principal, principal.organizationId, "team:manage"));
   return <WorkspaceShell active="team" session={session}><TeamClient canManageAccess={canManageAccess} /></WorkspaceShell>;
 }
