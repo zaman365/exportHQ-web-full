@@ -45,6 +45,22 @@ under `apps/app/app/_components/` — attention, inbox, email, my-work,
 collaboration, workflow, learning catalog — plus `apps/app/app/buyers/buyers-data.ts`
 and `apps/app/app/requirements/requirements-data.ts`.
 
+## Labelling in production
+
+`workspaceProjectionKind()` decides what is actually behind the workspace on
+screen. It reports `illustrative` whenever `customer-postgres-persistence` is
+not activated *in production mode* — synthetic mode counts as illustrative,
+because the capability working is not the same as the data being real. The
+workspace shell renders a non-dismissible notice for that case: a signed-in
+person looking at fabricated readiness scores, documents and deadlines must not
+be able to hide the only thing telling them so.
+
+Found on 2026-08-26 by signing in to the production deployment: a platform
+administrator resolves to the Managed tier and was shown the fixture dashboard —
+Export Health 82, 34 documents, third-party owners — with no indication it was
+not their business. Customers below that tier land on the Basic home instead.
+The notice closes that gap; Gate 3 removes the fixtures.
+
 ## Demo identity
 
 `EXPORTHQ_DEMO_MODE` selects a synthetic owner principal. `isDemoModeEnabled()`

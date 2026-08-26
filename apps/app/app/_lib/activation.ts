@@ -1,3 +1,4 @@
+import type { CustomerSession } from "@exporthq/auth";
 import {
   activationReport,
   enforceRateLimit,
@@ -46,4 +47,24 @@ export async function checkRateLimit(
 
 export function readActivationReport(): ReturnType<typeof activationReport> {
   return activationReport();
+}
+
+export type WorkspaceProjectionKind = "demo-identity" | "illustrative" | "customer-records";
+
+/**
+ * Describes what is actually behind the workspace a person is looking at.
+ *
+ * Until `customer-postgres-persistence` is activated, every workspace above the
+ * Basic tier renders the curated domain projection rather than the reader's own
+ * records. Deriving this from the capability rather than from a flag means the
+ * notice disappears on its own when Gate 3 lands, and cannot be forgotten.
+ */
+export function workspaceProjectionKind(session: CustomerSession): WorkspaceProjectionKind {
+  if (session.isDemo) return "demo-identity";
+  if (!session.userId) return "customer-records";
+  /* `synthetic` mode means the capability runs but the data behind it is not
+     real, which is exactly the case the reader needs told. Only a capability
+     activated in production stands for the reader's own records. */
+  const persistence = resolveCapability("customer-postgres-persistence");
+  return persistence.enabled && persistence.mode === "production" ? "customer-records" : "illustrative";
 }

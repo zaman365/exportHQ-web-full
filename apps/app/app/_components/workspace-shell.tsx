@@ -19,8 +19,9 @@ import {
   type WorkspaceFeature
 } from "@exporthq/authorization";
 import type { CustomerSession } from "@exporthq/auth";
+import { workspaceProjectionKind } from "../_lib/activation";
 import { WorkspaceAccountControl } from "./account-controls";
-import { DemoBanner } from "./demo-banner";
+import { ProjectionNotice } from "./demo-banner";
 import { MobileNavigation } from "./workspace-mobile-navigation";
 import { describeWorkspaceEntitlement, type WorkspaceAccessIndicator } from "./workspace-entitlements";
 import {
@@ -30,6 +31,15 @@ import {
   workspaceHref,
   type WorkspaceDestination
 } from "./workspace-navigation";
+
+/* A signed-in person must always be able to tell whether the numbers on screen
+   are their own. The notice is derived from the activated capability, so it
+   clears itself once tenant records back the workspace. */
+function WorkspaceProjectionNotice({ session }: { session: CustomerSession }) {
+  const projection = workspaceProjectionKind(session);
+  if (projection === "customer-records") return null;
+  return <ProjectionNotice variant={projection} />;
+}
 
 export const workspaceWebsiteUrl =
   process.env.EXPORTHQ_WEB_URL ??
@@ -177,7 +187,7 @@ export function WorkspaceShell({
         <div className="content" id={contentId}><WorkspaceEntitlementNotice active={active} session={session} />{children}</div>
         <footer className="legal-footer"><span>Export HQ · {session.userId ? "Private workspace" : "Public sample · no customer data"}</span><span><ShieldCheck size={14} /> Evidence-aware compliance · Last data review 8 Aug 2026</span></footer>
       </main>
-      {session.isDemo && <DemoBanner />}
+      <WorkspaceProjectionNotice session={session} />
     </div>
   );
 }

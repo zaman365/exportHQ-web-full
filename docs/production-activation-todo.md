@@ -59,6 +59,10 @@ Gate 5: one real pilot Export Lane and controlled launch
       secrets, webhooks and external provider applications.
 - [x] Inventory every browser-local, fixture-backed and Clerk-metadata persistence adapter.
 - [x] Confirm production cannot enable `EXPORTHQ_DEMO_MODE` or render protected fixture data.
+      <br>Demo identity is impossible in production and asserted by test. Fixture-backed
+      projections still render for signed-in users above the Basic tier, so they now carry a
+      non-dismissible "Illustrative data" notice derived from the activation state; the notice
+      clears itself when Gate 3 activates tenant records. Removing the fixtures is Gate 3.
 - [x] Add a production feature flag that refuses document upload and mailbox connection until
       the relevant activation gates are recorded as passed.
 - [ ] Approve data classification, retention, legal-hold and telemetry-redaction policies.
