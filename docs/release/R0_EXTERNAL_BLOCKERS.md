@@ -23,9 +23,12 @@ start until the remaining R0 evidence is created in the systems that own it.
   finalize LOGIN credentials through the protected bootstrap, then connect the
   application role to Cloudflare Hyperdrive without exposing the connection
   string. See [`evidence/r0-neon-2026-08-29/`](evidence/r0-neon-2026-08-29/).
-- Register the Clerk webhook endpoint/secret, production callbacks, methods,
-  role mapping, staff allowlist and MFA; approve billing before recording the
-  self-service billing activation evidence.
+- The Clerk domain, ExportPanel paths, email/password and email-code methods,
+  and reviewed webhook endpoint are configured. A named human must transfer the
+  webhook signing secret directly into Cloudflare and prove a live delivery.
+  Phone/SMS, MFA, richer roles and Billing remain plan/payment-gated; staff
+  allowlist and recovery-policy evidence also remain open. See
+  [`evidence/r0-clerk-2026-08-29/`](evidence/r0-clerk-2026-08-29/).
 - Provision private EU R2 quarantine/clean storage and scanning for R1.
 - Configure Cloudflare production secrets, custom route, uptime checks and
   release annotations; run the attested artifact workflow from protected main.
