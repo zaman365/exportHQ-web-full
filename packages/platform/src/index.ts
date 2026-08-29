@@ -73,10 +73,12 @@ export {
   rateLimitRules,
   RateLimitedError,
   type RateLimitCounter,
+  type RateLimitConsumeRequest,
   type RateLimitDecision,
   type RateLimitInput,
   type RateLimitRule,
   type RateLimitStore,
+  type RateLimitStoreDecision,
   type RateLimitedAction
 } from "./rate-limit";
 
@@ -105,3 +107,25 @@ export {
   type WebhookVerificationInput,
   type WebhookVerificationResult
 } from "./webhook-signature";
+
+export {
+  parseClerkEvent,
+  type ClerkProjectionCommand,
+  type ParsedClerkEvent
+} from "./clerk-events";
+
+export {
+  assertSafeOutboxPayload,
+  type OutboxEventInput,
+  type OutboxEventState
+} from "./outbox/index";
+
+export {
+  platformCleanupSchedule,
+  type CleanupJobSchedule
+} from "./jobs/retention";
+
+export {
+  structuredLogLine,
+  type StructuredLogFields
+} from "./observability";

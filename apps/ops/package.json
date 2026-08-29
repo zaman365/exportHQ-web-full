@@ -7,11 +7,12 @@
     "build": "next build --webpack",
     "lint": "eslint . --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
   },
   "dependencies": {
     "@exporthq/auth": "workspace:*",
     "@exporthq/authorization": "workspace:*",
+    "@exporthq/db": "workspace:*",
     "@exporthq/domain": "workspace:*",
     "@exporthq/platform": "workspace:*",
     "@exporthq/ui": "workspace:*",

@@ -9,6 +9,7 @@ import {
   type RateLimitedAction
 } from "@exporthq/platform";
 import { getRateLimitStore } from "./platform-runtime";
+import { DurablePlatformStoreUnavailableError } from "./platform-runtime";
 
 /**
  * Server-side capability and abuse checks for actions and route handlers.
@@ -41,6 +42,7 @@ export async function checkRateLimit(
     return { ok: true };
   } catch (error) {
     if (error instanceof RateLimitedError) return { ok: false, message: error.userFacingMessage };
+    if (error instanceof DurablePlatformStoreUnavailableError) return { ok: false, message: error.userFacingMessage };
     throw error;
   }
 }

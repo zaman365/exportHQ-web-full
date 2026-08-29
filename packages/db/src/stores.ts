@@ -1,6 +1,13 @@
-import { and, eq, lt, sql } from "drizzle-orm";
-import { idempotencyKeys, webhookDeliveries } from "./schema";
-import type { IdempotencyRecord, IdempotencyState, IdempotencyStore } from "@exporthq/platform";
+import { and, eq, inArray, lt, or, sql } from "drizzle-orm";
+import { idempotencyKeys, rateLimitCounters, webhookDeliveries } from "./schema";
+import type {
+  IdempotencyRecord,
+  IdempotencyState,
+  IdempotencyStore,
+  RateLimitConsumeRequest,
+  RateLimitStore,
+  RateLimitStoreDecision
+} from "@exporthq/platform";
 import type { ExportHqDatabase } from "./index";
 
 /**
@@ -12,6 +19,58 @@ import type { ExportHqDatabase } from "./index";
  */
 
 const defaultRetentionHours = 72;
+
+export class PostgresRateLimitStore implements RateLimitStore {
+  constructor(private readonly database: ExportHqDatabase) {}
+
+  async consume(key: string, request: RateLimitConsumeRequest): Promise<RateLimitStoreDecision> {
+    const now = new Date(request.now);
+    const resetAt = new Date(request.resetAt);
+    // Raw `sql` fragments do not inherit Drizzle's timestamp column encoder,
+    // so pass ISO text with an explicit PostgreSQL cast rather than a Date
+    // object. This keeps the single-statement atomic upsert portable across
+    // the postgres-js and Worker adapters.
+    const nowIso = now.toISOString();
+    const resetAtIso = resetAt.toISOString();
+    const rows = (await this.database.execute(sql`
+      insert into rate_limit_counters (key, count, reset_at, updated_at)
+      values (${key}, 1, ${resetAtIso}::timestamptz, ${nowIso}::timestamptz)
+      on conflict (key) do update set
+        count = case
+          when rate_limit_counters.reset_at <= ${nowIso}::timestamptz then 1
+          else rate_limit_counters.count + 1
+        end,
+        reset_at = case
+          when rate_limit_counters.reset_at <= ${nowIso}::timestamptz then ${resetAtIso}::timestamptz
+          else rate_limit_counters.reset_at
+        end,
+        updated_at = ${nowIso}::timestamptz
+      where rate_limit_counters.reset_at <= ${nowIso}::timestamptz
+         or rate_limit_counters.count < ${request.ceiling}
+      returning count, reset_at
+    `)) as unknown as Array<{ count: number; reset_at: Date }>;
+
+    const consumed = rows[0];
+    if (consumed) {
+      return { allowed: true, count: consumed.count, resetAt: new Date(consumed.reset_at).getTime() };
+    }
+
+    const [current] = await this.database
+      .select({ count: rateLimitCounters.count, resetAt: rateLimitCounters.resetAt })
+      .from(rateLimitCounters)
+      .where(eq(rateLimitCounters.key, key))
+      .limit(1);
+    return {
+      allowed: false,
+      count: current?.count ?? request.ceiling,
+      resetAt: current?.resetAt.getTime() ?? request.resetAt
+    };
+  }
+
+  async purgeExpired(now = new Date()): Promise<void> {
+    await this.database.delete(rateLimitCounters).where(lt(rateLimitCounters.resetAt, now));
+  }
+}
 
 function toRecord(row: {
   key: string;
@@ -124,6 +183,7 @@ export async function recordWebhookDelivery(
     readonly eventId: string;
     readonly eventType: string;
     readonly payloadHash: string;
+    readonly payload: Record<string, unknown>;
     readonly outcome: WebhookDeliveryOutcome;
     readonly failureReason?: string | undefined;
   }
@@ -136,6 +196,7 @@ export async function recordWebhookDelivery(
       eventId: input.eventId,
       eventType: input.eventType,
       payloadHash: input.payloadHash,
+      payload: input.payload,
       state: input.outcome,
       failureReason: input.failureReason ?? null,
       receivedAt: now,
@@ -147,6 +208,7 @@ export async function recordWebhookDelivery(
         state: input.outcome,
         attempts: sql`${webhookDeliveries.attempts} + 1`,
         failureReason: input.failureReason ?? null,
+        lastAttemptAt: now,
         processedAt: input.outcome === "processed" || input.outcome === "ignored" ? now : null
       }
     });
@@ -158,4 +220,28 @@ export async function countDeadLetteredDeliveries(database: ExportHqDatabase, pr
     .from(webhookDeliveries)
     .where(and(eq(webhookDeliveries.provider, provider), eq(webhookDeliveries.state, "dead_letter")));
   return row?.total ?? 0;
+}
+
+/**
+ * Provider payloads are retry evidence, not permanent customer storage.
+ * Processed/ignored deliveries expire after the short operational window;
+ * dead letters remain longer for incident analysis, then expire as well.
+ */
+export async function purgeRetainedWebhookDeliveries(
+  database: ExportHqDatabase,
+  input: {
+    readonly processedBefore: Date;
+    readonly deadLetterBefore: Date;
+  }
+): Promise<void> {
+  await database.delete(webhookDeliveries).where(or(
+    and(
+      inArray(webhookDeliveries.state, ["processed", "ignored"]),
+      lt(webhookDeliveries.lastAttemptAt, input.processedBefore)
+    ),
+    and(
+      eq(webhookDeliveries.state, "dead_letter"),
+      lt(webhookDeliveries.lastAttemptAt, input.deadLetterBefore)
+    )
+  ));
 }

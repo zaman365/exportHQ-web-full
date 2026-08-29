@@ -1,5 +1,5 @@
 import { createClerkClient } from "@clerk/backend";
-import { isDemoModeEnabled } from "@exporthq/platform";
+import { isDemoModeEnabled, isProductionRuntime } from "@exporthq/platform";
 import {
   featuresForTier,
   permissionsForOrganizationRole,
@@ -83,6 +83,23 @@ export function isPlatformAdministratorEmail(email: string | null | undefined): 
     .map(normalizedEmail)
     .filter(Boolean) ?? [];
   return administrators.includes(normalizedEmail(email));
+}
+
+export function isApprovedStaffEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  if (isPlatformAdministratorEmail(email)) return true;
+  const staff = process.env.EXPORTHQ_STAFF_EMAILS
+    ?.split(",")
+    .map(normalizedEmail)
+    .filter(Boolean) ?? [];
+  return staff.includes(normalizedEmail(email));
+}
+
+function hasStrongStaffAuthentication(claims: unknown): boolean {
+  if (typeof claims !== "object" || claims === null) return false;
+  const record = claims as Record<string, unknown>;
+  if (record.mfa_verified === true || record.acr === "aal2") return true;
+  return Array.isArray(record.amr) && record.amr.some((method) => method === "mfa" || method === "otp");
 }
 
 function clerkConfiguration() {
@@ -285,7 +302,16 @@ export async function getStaffPrincipal(request?: Request): Promise<StaffPrincip
   if (!state.isAuthenticated) throw new Error("Staff authentication is required.");
   const session = state.toAuth();
   const user = await client.users.getUser(session.userId);
-  const isPlatformAdmin = isPlatformAdministratorEmail(user.primaryEmailAddress?.emailAddress);
+  const email = user.primaryEmailAddress?.emailAddress;
+  const isPlatformAdmin = isPlatformAdministratorEmail(email);
+  if (!isApprovedStaffEmail(email)) throw new Error("Staff authentication is required.");
+  if (
+    isProductionRuntime()
+    && process.env.EXPORTHQ_OPS_REQUIRE_MFA !== "false"
+    && !hasStrongStaffAuthentication(session.sessionClaims)
+  ) {
+    throw new Error("Strong authentication is required for operations access.");
+  }
   return {
     kind: "staff",
     userId: session.userId,

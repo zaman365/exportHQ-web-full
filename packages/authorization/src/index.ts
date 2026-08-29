@@ -78,6 +78,7 @@ export interface SubscriptionDefinition {
   id: SubscriptionTier;
   name: string;
   summary: string;
+  availabilityStatus: "Live" | "Pilot" | "Preview" | "Planned";
   features: readonly WorkspaceFeature[];
 }
 
@@ -149,30 +150,35 @@ export const subscriptionCatalog: Readonly<Record<SubscriptionTier, Subscription
     id: "preview",
     name: "Preview",
     summary: "A safe, read-only tour of ExportPanel's operating model.",
+    availabilityStatus: "Live",
     features: previewFeatures
   },
   explore: {
     id: "explore",
     name: "Basic",
     summary: "A signed-in starting point for one Export Lane, readiness, economics, and onboarding.",
+    availabilityStatus: "Pilot",
     features: exploreFeatures
   },
   launch: {
     id: "launch",
     name: "Launch",
     summary: "Core readiness, evidence, decisions, and personal execution for a first market.",
+    availabilityStatus: "Preview",
     features: launchFeatures
   },
   scale: {
     id: "scale",
     name: "Scale",
     summary: "Cross-project attention, reusable workflows, team coordination, and portfolio controls.",
+    availabilityStatus: "Preview",
     features: scaleFeatures
   },
   managed: {
     id: "managed",
     name: "Managed",
     summary: "The complete workspace plus accountable Export HQ specialist execution.",
+    availabilityStatus: "Planned",
     features: [...scaleFeatures, "managed-services"]
   }
 };
@@ -359,10 +365,15 @@ export interface StaffPrincipal {
   userId: string;
   globalPermissions: ReadonlySet<"customers:view" | "customers:manage" | "platform:admin">;
   grants: ReadonlyArray<{
+    grantId?: string;
     organizationId: string;
     permissions: ReadonlySet<Permission>;
+    caseReference?: string;
+    reason?: string;
+    startsAt?: Date;
     expiresAt: Date;
     revokedAt?: Date;
+    breakGlass?: boolean;
   }>;
 }
 
@@ -385,11 +396,11 @@ export function canAccessOrganization(
     return principal.organizationId === organizationId && principal.permissions.has(permission);
   }
 
-  if (principal.globalPermissions.has("platform:admin")) return true;
   const grant = principal.grants.find(
     (candidate) =>
       candidate.organizationId === organizationId &&
       !candidate.revokedAt &&
+      (!candidate.startsAt || candidate.startsAt.getTime() <= now.getTime()) &&
       candidate.expiresAt.getTime() > now.getTime()
   );
   return Boolean(grant?.permissions.has(permission));

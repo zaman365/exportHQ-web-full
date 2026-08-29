@@ -1,0 +1,23 @@
+# Default review ownership. Protected paths below require the named code owner
+# in addition to normal branch review once the repository ruleset is enabled.
+* @zaman365
+
+# Identity, authorization, tenant boundaries and secrets
+/packages/auth/ @zaman365
+/packages/authorization/ @zaman365
+/apps/app/app/api/webhooks/ @zaman365
+
+# Database structure, migrations, RLS and durable repositories
+/packages/db/ @zaman365
+
+# Activation, idempotency, abuse controls and release safety
+/packages/platform/ @zaman365
+/docs/release/ @zaman365
+/.github/workflows/ @zaman365
+
+# Billing, public claims and operations access
+/apps/app/app/plans/ @zaman365
+/apps/web/ @zaman365
+/apps/ops/ @zaman365
+/docs/BUSINESS_LOGIC.md @zaman365
+/docs/implementation-status.md @zaman365

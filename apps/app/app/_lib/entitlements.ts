@@ -1,7 +1,13 @@
 import "server-only";
 import type { CustomerSession } from "@exporthq/auth";
 import { featuresForTier, permissionsForOrganizationRole } from "@exporthq/authorization";
-import { readOrganizationTier, resolveOrganizationId, withTenantTransaction, withPlatformTransaction } from "@exporthq/db";
+import {
+  readCompanyProfile,
+  readOrganizationTier,
+  resolveOrganizationId,
+  withTenantTransaction,
+  withPlatformTransaction
+} from "@exporthq/db";
 import { getDatabase } from "./database";
 
 /**
@@ -70,4 +76,35 @@ export async function applyOrganizationEntitlement(session: CustomerSession): Pr
   );
 
   return withTier(session, tier);
+}
+
+/** Once Gate 1 is active, onboarding and verification state come from the
+ * tenant database even when stale Clerk metadata says otherwise. */
+export async function applyOrganizationState(session: CustomerSession): Promise<CustomerSession> {
+  if (session.isPlatformAdmin || session.isDemo) return session;
+  if (!session.organizationId || !session.principal) return session;
+  const database = getDatabase();
+  if (!database) return session;
+
+  const organizationId = await withPlatformTransaction(
+    database,
+    { actorId: session.userId ?? "system", actorType: "system" },
+    (tx) => resolveOrganizationId(tx, session.organizationId as string)
+  );
+  if (!organizationId) return { ...session, status: "needs-onboarding", businessVerification: "unverified" };
+
+  const profile = await withTenantTransaction(
+    database,
+    { organizationId, actorId: session.userId ?? "system", actorType: "customer" },
+    (tx, context) => readCompanyProfile(tx, context)
+  );
+  return {
+    ...session,
+    status: profile?.onboardingComplete ? "active" : "needs-onboarding",
+    businessVerification: profile?.verificationStatus === "verified"
+      ? "verified"
+      : profile?.verificationStatus === "pending"
+        ? "pending"
+        : "unverified"
+  };
 }

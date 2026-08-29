@@ -107,26 +107,29 @@ Gate 5: one real pilot Export Lane and controlled launch
 
 ### Neon PostgreSQL and RLS
 
-> **Built 2026-08-26, unverified against a live database.** Transaction-scoped
+> **Built and locally verified 2026-08-29 against isolated PostgreSQL 17.** Transaction-scoped
 > tenant context (`set_config(..., true)`, discarded on commit), transactional
 > append-only audit, database-held plan entitlements replacing the identity
 > provider's billing product, the identity bridge as `SECURITY DEFINER`
 > functions, durable idempotency, and the organization/company-profile
-> repositories. Onboarding and profile saves now write to PostgreSQL when the
-> capability is activated. The cross-tenant isolation suite is written but
-> **skipped**: it needs `EXPORTHQ_TEST_DATABASE_URL`, and a mocked row-level
-> security test would prove nothing, since the behaviour under test lives in
-> the database. No box below is closed on unverified behaviour.
+> repositories. Onboarding is PostgreSQL-authoritative when the capability is
+> activated. The non-owner application-role suite passes 29 tests, including
+> tenant isolation, durable-control concurrency and webhook projection; clean
+> migrate, backup and separate-database restore also pass locally. Neon,
+> protected-branch CI and provider evidence remain open, so this does not close
+> Gate 1.
 
 - [ ] Provision separate development, staging and production Neon projects.
 - [ ] Place production in the approved Frankfurt/EU region and record the vendor/security review.
 - [x] Generate and review the structural Drizzle migration before applying the checked-in RLS
       envelope.
-      <br>`0005_production_persistence.sql` is structural, `0006_production_persistence_rls.sql`
-      is the envelope, `0007_database_roles.sql` is the roles. Apply in that order.
+      <br>`migrations-v2/0000_reproducible_baseline.sql` is the clean baseline,
+      `0001_security_envelope.sql` is the RLS/identity bridge, the checksum
+      manifest prevents mutation, and `roles/bootstrap.sql` applies separated roles.
 - [ ] Create separate migration, application and read-only support roles.
 - [ ] Ensure the application role is non-owner and does not have `BYPASSRLS`.
-- [ ] Set organization context transactionally for every tenant request and reset it safely.
+- [x] Set organization context transactionally for every tenant request and reset it safely.
+      <br>The application role tests prove transaction-local context is discarded on commit.
 - [ ] Implement PostgreSQL repositories for every currently modeled command and query.
 - [ ] Replace Clerk organization metadata as storage for onboarding, readiness and profile state.
 - [ ] Make privileged changes, membership changes, evidence state changes and business decisions
@@ -136,7 +139,9 @@ Gate 5: one real pilot Export Lane and controlled launch
       recording every inbound delivery including ignored ones.
 - [ ] Prove migrations on a production-shaped staging database with rollback/forward-fix steps.
 - [ ] Configure automated backups, point-in-time recovery and an independent encrypted export.
-- [ ] Perform and document a restore drill.
+- [x] Perform and document a synthetic local restore drill.
+      <br>R0 local evidence records restored row counts and RLS behavior; production
+      PITR and CI workflow evidence remain required.
 
 ### Gate 1 isolation tests
 
@@ -229,7 +234,9 @@ Gate 5: one real pilot Export Lane and controlled launch
 - [ ] Test preview pages for server-side redaction and mutation denial.
 - [ ] Test desktop, mobile, keyboard and critical accessibility journeys.
 - [ ] Run `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm build` in CI.
-- [ ] Run the Vinext/Cloudflare production build and deployment smoke tests.
+- [x] Run the Vinext/Cloudflare production build and deployment smoke tests.
+      <br>Vinext build, Wrangler dry-run and local emitted-Worker smoke pass;
+      protected-branch artifact attestation and deployment remain required.
 
 **Gate 3 exit evidence**
 
@@ -292,8 +299,11 @@ Gate 5: one real pilot Export Lane and controlled launch
 
 ### Production protection
 
-- [ ] Add edge/application rate limits and abuse controls for authentication, upload, search,
+- [x] Add application rate limits and abuse controls for authentication, upload, search,
       invitations, exports and webhooks.
+      <br>Production selects the atomic PostgreSQL store or fails closed; the
+      shared ceiling passes a 40-way concurrency test. Cloudflare account-level
+      edge rules remain an external configuration item.
 - [ ] Deploy a restrictive production CSP tested with Clerk and R2 flows.
 - [ ] Add CSRF-safe mutations, secure headers and dependency/secret scanning.
 - [ ] Configure Sentry scrubbing and a PostHog metadata allowlist; prove confidential evidence,

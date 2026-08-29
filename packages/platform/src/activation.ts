@@ -76,6 +76,7 @@ export const productionCapabilities = [
   "mailbox-send",
   "provider-referral",
   "live-external-adapter",
+  "self-service-billing",
   "real-exporter-onboarding",
   "broad-launch"
 ] as const;
@@ -91,6 +92,7 @@ const capabilityRequirements: Readonly<Record<ProductionCapability, ActivationGa
   "mailbox-send": "gate-4-trust-and-integrations",
   "provider-referral": "gate-4-trust-and-integrations",
   "live-external-adapter": "gate-4-trust-and-integrations",
+  "self-service-billing": "gate-5-pilot-and-launch",
   "real-exporter-onboarding": "gate-3-production-persistence",
   "broad-launch": "gate-5-pilot-and-launch"
 };
@@ -160,6 +162,7 @@ export interface CapabilityDecision {
   readonly mode: CapabilityMode;
   readonly requiredGate: ActivationGateId;
   readonly missingGates: readonly ActivationGateId[];
+  readonly missingEvidence: readonly string[];
   /** Safe to show a customer: never names infrastructure or internal state. */
   readonly userFacingReason: string | null;
 }
@@ -181,6 +184,9 @@ export function resolveCapability(
   const state = resolveActivationState(source);
   const required = activationGateIds.slice(0, gateIndex(requiredGate) + 1);
   const missingGates = required.filter((gate) => !state.effective.includes(gate));
+  const missingEvidence = capability === "self-service-billing" && !source.EXPORTHQ_BILLING_ACTIVATION_EVIDENCE?.trim()
+    ? ["billing-activation-evidence"]
+    : [];
 
   if (!isProductionRuntime(source)) {
     return {
@@ -189,17 +195,19 @@ export function resolveCapability(
       mode: "synthetic",
       requiredGate,
       missingGates,
+      missingEvidence: [],
       userFacingReason: null
     };
   }
 
-  const enabled = missingGates.length === 0;
+  const enabled = missingGates.length === 0 && missingEvidence.length === 0;
   return {
     capability,
     enabled,
     mode: "production",
     requiredGate,
     missingGates,
+    missingEvidence,
     userFacingReason: enabled ? null : disabledReason
   };
 }
@@ -210,7 +218,10 @@ export class CapabilityNotActivatedError extends Error {
   readonly userFacingMessage: string;
 
   constructor(decision: CapabilityDecision) {
-    super(`Capability "${decision.capability}" requires ${decision.missingGates.join(", ") || "activation"}.`);
+    super(`Capability "${decision.capability}" requires ${[
+      ...decision.missingGates,
+      ...decision.missingEvidence
+    ].join(", ") || "activation"}.`);
     this.name = "CapabilityNotActivatedError";
     this.capability = decision.capability;
     this.missingGates = decision.missingGates;

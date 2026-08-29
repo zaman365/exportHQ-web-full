@@ -1,10 +1,11 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 import { sql } from "drizzle-orm";
 import { createDatabase, type ExportHqDatabase } from "./index";
 import { readTenantContext, withPlatformTransaction, withTenantTransaction } from "./tenant";
 import { recordAuditEvent } from "./audit";
 import { grantOrganizationEntitlement, readOrganizationTier } from "./entitlements";
 import { saveCompanyProfile, readCompanyProfile } from "./repositories/company-profile";
+import { PostgresIdempotencyStore, PostgresRateLimitStore } from "./stores";
 
 /**
  * Cross-tenant isolation, proved against a real PostgreSQL with the migrations
@@ -26,18 +27,12 @@ describeWithDatabase("tenant isolation", () => {
 
   beforeAll(async () => {
     database = createDatabase(databaseUrl as string);
-    await database.execute(sql`
-      insert into organizations (id, clerk_organization_id, slug, legal_name, trading_name)
-      values
-        (${tenantA}::uuid, 'org_isolationtestaaaa', 'tenant-a', 'Tenant A Ltd', 'Tenant A'),
-        (${tenantB}::uuid, 'org_isolationtestbbbb', 'tenant-b', 'Tenant B Ltd', 'Tenant B')
-      on conflict (clerk_organization_id) do nothing`);
-  });
-
-  afterAll(async () => {
-    await database.execute(
-      sql`delete from organizations where id in (${tenantA}::uuid, ${tenantB}::uuid)`
-    );
+    const rows = (await database.execute(sql`
+      select
+        app_resolve_organization('org_syntheticaaaaa') as tenant_a,
+        app_resolve_organization('org_syntheticbbbbb') as tenant_b
+    `)) as unknown as Array<{ tenant_a: string; tenant_b: string }>;
+    expect(rows[0]).toEqual({ tenant_a: tenantA, tenant_b: tenantB });
   });
 
   function context(organizationId: string) {
@@ -90,6 +85,27 @@ describeWithDatabase("tenant isolation", () => {
     expect((rows as unknown as Array<{ total: number }>)[0]?.total).toBe(0);
   });
 
+  it("does not expose organization rows without their tenant context", async () => {
+    const unscoped = await withPlatformTransaction(
+      database,
+      { actorId: "system", actorType: "system" },
+      (tx) => tx.execute(sql`select count(*)::int as total from organizations`)
+    );
+    expect((unscoped as unknown as Array<{ total: number }>)[0]?.total).toBe(0);
+
+    const scoped = await withTenantTransaction(database, context(tenantA), (tx) =>
+      tx.execute(sql`select id from organizations`)
+    );
+    expect(scoped).toEqual([{ id: tenantA }]);
+  });
+
+  it("refuses direct identity-projection writes from the application role", async () => {
+    await expect(database.execute(sql`
+      insert into organizations (clerk_organization_id, slug, legal_name, trading_name)
+      values ('org_directwriteblocked', 'blocked', 'Blocked Ltd', 'Blocked')
+    `)).rejects.toThrow();
+  });
+
   it("writes an audit event in the same transaction as the change", async () => {
     await expect(
       withTenantTransaction(database, context(tenantA), async (tx, scoped) => {
@@ -134,5 +150,29 @@ describeWithDatabase("tenant isolation", () => {
       readOrganizationTier(tx, scoped)
     );
     expect(otherTier).toBe("explore");
+  });
+
+  it("atomically enforces a shared rate-limit ceiling under concurrency", async () => {
+    const store = new PostgresRateLimitStore(database);
+    const now = Date.now();
+    const decisions = await Promise.all(Array.from({ length: 40 }, () => store.consume(
+      `integration-rate-${now}`,
+      { now, resetAt: now + 60_000, ceiling: 7 }
+    )));
+
+    expect(decisions.filter((decision) => decision.allowed)).toHaveLength(7);
+    expect(decisions.filter((decision) => !decision.allowed)).toHaveLength(33);
+    expect(Math.max(...decisions.map((decision) => decision.count))).toBe(7);
+  });
+
+  it("lets exactly one concurrent caller claim an idempotency key", async () => {
+    const store = new PostgresIdempotencyStore(database, "integration");
+    const key = `claim-${Date.now()}`;
+    const claims = await Promise.all(Array.from({ length: 30 }, () =>
+      store.claim(key, "request-hash", new Date())
+    ));
+
+    expect(claims.filter(Boolean)).toHaveLength(1);
+    expect((await store.read(key))?.attempts).toBe(1);
   });
 });

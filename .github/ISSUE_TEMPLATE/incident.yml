@@ -1,0 +1,36 @@
+name: Incident follow-up
+description: Record the redacted follow-up from an operational or security incident.
+title: "[INCIDENT] "
+labels: [incident]
+body:
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      options: [P0, P1, P2, P3]
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Redacted impact and affected capability
+    validations:
+      required: true
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Evidence-preserving timeline
+    validations:
+      required: true
+  - type: textarea
+    id: followup
+    attributes:
+      label: Corrective actions, tests and detection gaps
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: Incident owner and reviewer
+    validations:
+      required: true

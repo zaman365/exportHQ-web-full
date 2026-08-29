@@ -1,0 +1,94 @@
+name: release
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Successful cloudflare-build workflow run ID
+        required: true
+        type: string
+      source_sha:
+        description: Exact tested commit SHA
+        required: true
+        type: string
+      release_tag:
+        description: Signed SemVer tag pointing to source_sha
+        required: true
+        type: string
+      deploy:
+        description: Promote the downloaded artifact to Cloudflare
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+  actions: read
+  id-token: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag }}
+          fetch-depth: 0
+      - name: Verify tag, SemVer and immutable source SHA
+        env:
+          EXPECTED_SHA: ${{ inputs.source_sha }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          echo "$RELEASE_TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$'
+          git verify-tag "$RELEASE_TAG"
+      - name: Verify source workflow and conclusion
+        uses: actions/github-script@v8
+        env:
+          EXPECTED_SHA: ${{ inputs.source_sha }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+        with:
+          script: |
+            const run = await github.rest.actions.getWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: Number(process.env.SOURCE_RUN_ID)
+            });
+            if (run.data.name !== "cloudflare-build") {
+              core.setFailed(`Expected cloudflare-build, received ${run.data.name}`);
+            }
+            if (run.data.conclusion !== "success") {
+              core.setFailed(`Source run conclusion is ${run.data.conclusion}`);
+            }
+            if (run.data.head_sha !== process.env.EXPECTED_SHA) {
+              core.setFailed(`Source run SHA ${run.data.head_sha} does not match the signed tag SHA`);
+            }
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.22.0 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: actions/download-artifact@v4
+        with:
+          name: exporthq-worker-${{ inputs.source_sha }}
+          path: release-artifact
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ inputs.source_run_id }}
+      - name: Verify tested artifact checksum
+        working-directory: release-artifact
+        run: sha256sum --check exporthq-worker-${{ inputs.source_sha }}.sha256
+      - name: Extract without rebuilding
+        working-directory: release-artifact
+        run: tar -xzf exporthq-worker-${{ inputs.source_sha }}.tgz
+      - name: Promote tested artifact
+        if: inputs.deploy
+        working-directory: release-artifact
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: pnpm dlx wrangler@4.127.1 deploy --config dist/server/wrangler.json
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.release_tag }}
+          files: release-artifact/*
+          fail_on_unmatched_files: true

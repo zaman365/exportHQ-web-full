@@ -1,5 +1,6 @@
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { sql } from "drizzle-orm";
 import * as schema from "./schema";
 
 export type ExportHqDatabase = ReturnType<typeof createDatabase>;
@@ -7,6 +8,10 @@ export type ExportHqDatabase = ReturnType<typeof createDatabase>;
 export function createDatabase(databaseUrl: string) {
   const client = postgres(databaseUrl, { prepare: false, max: 8 });
   return drizzle(client, { schema });
+}
+
+export async function checkDatabaseHealth(database: ExportHqDatabase): Promise<void> {
+  await database.execute(sql`select 1 as healthy`);
 }
 
 export { schema };
@@ -48,11 +53,20 @@ export {
 export {
   countDeadLetteredDeliveries,
   PostgresIdempotencyStore,
+  PostgresRateLimitStore,
+  purgeRetainedWebhookDeliveries,
   recordWebhookDelivery,
   type WebhookDeliveryOutcome
 } from "./stores";
 
 export {
+  enqueueOutboxEvent,
+  markOutboxPublished,
+  purgePublishedOutbox
+} from "./outbox";
+
+export {
+  deactivateOrganization,
   projectMembership,
   provisionOrganization,
   resolveOrganizationId,
@@ -61,9 +75,18 @@ export {
 } from "./repositories/organizations";
 
 export {
+  processClerkWebhookDelivery,
+  requestClerkWebhookReplay,
+  WebhookPayloadConflictError,
+  type ClerkWebhookProcessResult
+} from "./webhooks/clerk";
+
+export {
   completeOnboarding,
   readCompanyProfile,
   saveCompanyProfile,
   type CompanyProfileInput,
   type CompanyProfileRecord
 } from "./repositories/company-profile";
+
+export { readStaffAccess } from "./repositories/staff-access";

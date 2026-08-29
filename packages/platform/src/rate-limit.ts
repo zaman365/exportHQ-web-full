@@ -45,25 +45,45 @@ export interface RateLimitCounter {
   resetAt: number;
 }
 
+export interface RateLimitConsumeRequest {
+  readonly now: number;
+  readonly resetAt: number;
+  readonly ceiling: number;
+}
+
+export interface RateLimitStoreDecision extends RateLimitCounter {
+  readonly allowed: boolean;
+}
+
 /**
- * The store is deliberately small so it can be backed by an in-memory map in
- * tests, Workers KV or a Durable Object in production without the call sites
- * changing.
+ * Consumption is one atomic store operation. A read-then-write interface is
+ * unsafe across Worker isolates: two requests can observe the same counter and
+ * both increment it. Durable adapters must perform the conditional increment
+ * in their storage engine.
  */
 export interface RateLimitStore {
-  read(key: string): Promise<RateLimitCounter | null> | RateLimitCounter | null;
-  write(key: string, counter: RateLimitCounter): Promise<void> | void;
+  consume(
+    key: string,
+    request: RateLimitConsumeRequest
+  ): Promise<RateLimitStoreDecision> | RateLimitStoreDecision;
 }
 
 export class MemoryRateLimitStore implements RateLimitStore {
   private readonly counters = new Map<string, RateLimitCounter>();
 
-  read(key: string): RateLimitCounter | null {
-    return this.counters.get(key) ?? null;
-  }
+  consume(key: string, request: RateLimitConsumeRequest): RateLimitStoreDecision {
+    const existing = this.counters.get(key);
+    const counter = existing && existing.resetAt > request.now
+      ? { ...existing }
+      : { count: 0, resetAt: request.resetAt };
 
-  write(key: string, counter: RateLimitCounter): void {
-    this.counters.set(key, { ...counter });
+    if (counter.count >= request.ceiling) {
+      return { ...counter, allowed: false };
+    }
+
+    counter.count += 1;
+    this.counters.set(key, counter);
+    return { ...counter, allowed: true };
   }
 
   clear(): void {
@@ -99,13 +119,13 @@ export async function consumeRateLimit(input: RateLimitInput): Promise<RateLimit
   const key = rateLimitKey(input.action, input.subject);
   const ceiling = rule.limit + rule.burst;
 
-  const existing = await input.store.read(key);
-  const counter: RateLimitCounter =
-    existing && existing.resetAt > now
-      ? { count: existing.count, resetAt: existing.resetAt }
-      : { count: 0, resetAt: now + rule.windowSeconds * 1000 };
+  const counter = await input.store.consume(key, {
+    now,
+    resetAt: now + rule.windowSeconds * 1000,
+    ceiling
+  });
 
-  if (counter.count >= ceiling) {
+  if (!counter.allowed) {
     return {
       allowed: false,
       remaining: 0,
@@ -115,8 +135,6 @@ export async function consumeRateLimit(input: RateLimitInput): Promise<RateLimit
     };
   }
 
-  counter.count += 1;
-  await input.store.write(key, counter);
   return {
     allowed: true,
     remaining: ceiling - counter.count,

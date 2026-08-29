@@ -1,10 +1,17 @@
 import {
   MemoryIdempotencyStore,
   MemoryRateLimitStore,
-  capabilityIsEnabled,
+  isProductionRuntime,
+  runtimeEnvironment,
   type IdempotencyStore,
   type RateLimitStore
 } from "@exporthq/platform";
+import {
+  checkDatabaseHealth,
+  PostgresIdempotencyStore,
+  PostgresRateLimitStore
+} from "@exporthq/db";
+import { getPlatformDatabase } from "./database";
 
 /**
  * Process-local stores.
@@ -14,15 +21,50 @@ import {
  * `customer-postgres-persistence` is activated and the PostgreSQL-backed
  * stores replace them — see Gate 1 in docs/production-activation-todo.md.
  */
-const rateLimitStore: RateLimitStore = new MemoryRateLimitStore();
-const idempotencyStore: IdempotencyStore = new MemoryIdempotencyStore();
+const memoryRateLimitStore: RateLimitStore = new MemoryRateLimitStore();
+const memoryIdempotencyStore: IdempotencyStore = new MemoryIdempotencyStore();
+let postgresRateLimitStore: RateLimitStore | null = null;
+let postgresIdempotencyStore: IdempotencyStore | null = null;
+
+export type PlatformStoreAdapter = "memory" | "postgres" | "unavailable";
+
+export class DurablePlatformStoreUnavailableError extends Error {
+  readonly userFacingMessage = "This operation is temporarily unavailable because its durable safety controls are not active.";
+
+  constructor() {
+    super("Production requires PostgreSQL-backed rate-limit and idempotency stores.");
+    this.name = "DurablePlatformStoreUnavailableError";
+  }
+}
+
+export function selectedPlatformStoreAdapter(
+  env: Readonly<Record<string, string | undefined>> = process.env
+): PlatformStoreAdapter {
+  if (isProductionRuntime(env)) return env.DATABASE_URL ? "postgres" : "unavailable";
+  if (env.EXPORTHQ_PLATFORM_STORE === "postgres") return env.DATABASE_URL ? "postgres" : "unavailable";
+  return "memory";
+}
+
+function postgresStores(): { rateLimit: RateLimitStore; idempotency: IdempotencyStore } {
+  const database = getPlatformDatabase();
+  if (!database) throw new DurablePlatformStoreUnavailableError();
+  postgresRateLimitStore ??= new PostgresRateLimitStore(database);
+  postgresIdempotencyStore ??= new PostgresIdempotencyStore(database, "exportpanel");
+  return { rateLimit: postgresRateLimitStore, idempotency: postgresIdempotencyStore };
+}
 
 export function getRateLimitStore(): RateLimitStore {
-  return rateLimitStore;
+  const adapter = selectedPlatformStoreAdapter();
+  if (adapter === "memory") return memoryRateLimitStore;
+  if (adapter === "postgres") return postgresStores().rateLimit;
+  throw new DurablePlatformStoreUnavailableError();
 }
 
 export function getIdempotencyStore(): IdempotencyStore {
-  return idempotencyStore;
+  const adapter = selectedPlatformStoreAdapter();
+  if (adapter === "memory") return memoryIdempotencyStore;
+  if (adapter === "postgres") return postgresStores().idempotency;
+  throw new DurablePlatformStoreUnavailableError();
 }
 
 /**
@@ -31,7 +73,23 @@ export function getIdempotencyStore(): IdempotencyStore {
  * honestly rather than implying durability they do not have.
  */
 export function durableStoresActivated(): boolean {
-  return capabilityIsEnabled("customer-postgres-persistence") && Boolean(process.env.DATABASE_URL);
+  return selectedPlatformStoreAdapter() === "postgres";
+}
+
+export async function assertPlatformStoresHealthy(): Promise<void> {
+  if (selectedPlatformStoreAdapter() !== "postgres") throw new DurablePlatformStoreUnavailableError();
+  const database = getPlatformDatabase();
+  if (!database) throw new DurablePlatformStoreUnavailableError();
+  await checkDatabaseHealth(database);
+}
+
+export function platformStoreStatus(): {
+  readonly environment: ReturnType<typeof runtimeEnvironment>;
+  readonly adapter: PlatformStoreAdapter;
+  readonly durable: boolean;
+} {
+  const adapter = selectedPlatformStoreAdapter();
+  return { environment: runtimeEnvironment(), adapter, durable: adapter === "postgres" };
 }
 
 /**

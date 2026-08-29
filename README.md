@@ -4,6 +4,16 @@ Export HQ is a managed export operating system: one shared workspace where expor
 
 The canonical system-wide business logic is maintained in [`docs/BUSINESS_LOGIC.md`](docs/BUSINESS_LOGIC.md). Read it before changing journeys, access rules, onboarding, monetization, or product behavior.
 
+## Canonical repository and deployment source
+
+- Canonical repository: `https://github.com/zaman365/exportHQ-web-full`
+- Protected release branch: `main`
+- Customer deployment: `https://export-hq.com/ExportPanel`
+- Public website: `https://export-hq.com`
+- Release authority and current baseline: [`docs/release/CURRENT_RELEASE.md`](docs/release/CURRENT_RELEASE.md)
+
+The previously referenced `exportHQ-web-full1` name is not a deployment source and must not be used in CI, release evidence, or operational runbooks.
+
 ## Workspace
 
 - `apps/web` — public cross-industry Export HQ website
@@ -36,3 +46,5 @@ Demo mode is intentionally limited to local development. Production must provide
 
 Production activation work is tracked in
 [`docs/production-activation-todo.md`](docs/production-activation-todo.md).
+
+Release gates, rollback ownership, capability truth, and evidence locations live under [`docs/release/`](docs/release/). A date or deployed interface never overrides those gates.

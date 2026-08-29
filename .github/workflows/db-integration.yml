@@ -1,0 +1,104 @@
+name: db-integration
+
+on:
+  pull_request:
+    paths:
+      - "packages/db/**"
+      - "packages/auth/**"
+      - "packages/authorization/**"
+      - ".github/workflows/db-integration.yml"
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: exporthq_test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d exporthq_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGPASSWORD: postgres
+      EXPORTHQ_ALLOW_TEST_RESET: "1"
+      EXPORTHQ_TEST_MIGRATION_DATABASE_URL: postgres://exporthq_migration:migration_test@127.0.0.1:5432/exporthq_test
+      EXPORTHQ_TEST_DATABASE_URL: postgres://exporthq_app:application_test@127.0.0.1:5432/exporthq_test
+      EXPORTHQ_TEST_BACKUP_DATABASE_URL: postgres://exporthq_backup:backup_test@127.0.0.1:5432/exporthq_test
+      EXPORTHQ_TEST_RESTORE_DATABASE_URL: postgres://exporthq_migration:migration_test@127.0.0.1:5432/exporthq_restore_test
+      EXPORTHQ_TEST_BACKUP_PATH: /tmp/exporthq-test.backup
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.22.0 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:checksum
+      - name: Create separated database roles
+        run: |
+          psql -h 127.0.0.1 -U postgres -d postgres -v ON_ERROR_STOP=1 <<'SQL'
+          create role exporthq_migration login password 'migration_test' nobypassrls nosuperuser nocreatedb nocreaterole;
+          create role exporthq_app login password 'application_test' nobypassrls nosuperuser nocreatedb nocreaterole;
+          create role exporthq_support login password 'support_test' nobypassrls nosuperuser nocreatedb nocreaterole;
+          create role exporthq_backup login password 'backup_test' bypassrls nosuperuser nocreatedb nocreaterole;
+          alter database exporthq_test owner to exporthq_migration;
+          create database exporthq_restore_test owner exporthq_migration;
+          SQL
+      - run: pnpm db:reset:test
+      - run: pnpm db:migrate:test
+      - name: Apply least-privilege grants
+        run: >-
+          psql -h 127.0.0.1 -U postgres -d exporthq_test -v ON_ERROR_STOP=1
+          -v migration_password=migration_test -v application_password=application_test
+          -v support_password=support_test -v backup_password=backup_test
+          -f packages/db/roles/bootstrap.sql
+      - run: pnpm db:seed:test
+      - name: Prove application-role RLS with zero skipped tests
+        run: pnpm --filter @exporthq/db test
+      - run: pnpm db:backup:test
+      - run: pnpm db:restore:test
+      - name: Verify restored schema, data and RLS
+        run: >-
+          psql "$EXPORTHQ_TEST_RESTORE_DATABASE_URL" -v ON_ERROR_STOP=1 -c
+          "select (select count(*) from organizations) >= 2 as data_restored,
+          not exists (select 1 from pg_tables where schemaname='public'
+          and (tablename='organizations' or tablename in
+          (select table_name from information_schema.columns where table_schema='public' and column_name='organization_id'))
+          and rowsecurity=false) as rls_complete;"
+      - name: Verify restored non-owner isolation
+        env:
+          PGPASSWORD: application_test
+        run: |
+          test "$(psql -h 127.0.0.1 -U exporthq_app -d exporthq_restore_test -Atc 'select count(*) from organizations')" = "0"
+          psql -h 127.0.0.1 -U exporthq_app -d exporthq_restore_test -v ON_ERROR_STOP=1 <<'SQL'
+          begin;
+          set local app.organization_id = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+          set local app.actor_id = 'restore-check';
+          set local app.actor_type = 'customer';
+          select count(*) = 1 as scoped_tenant from organizations \gset
+          \if :scoped_tenant
+          \else
+            \quit 1
+          \endif
+          select count(*) = 0 as cross_tenant_denied
+            from company_profiles
+           where organization_id = '6ba7b810-9dad-41d1-80b4-00c04fd430c8' \gset
+          \if :cross_tenant_denied
+          \else
+            \quit 1
+          \endif
+          commit;
+          SQL

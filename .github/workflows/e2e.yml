@@ -1,0 +1,41 @@
+name: e2e
+
+on:
+  pull_request:
+    paths:
+      - "apps/app/**"
+      - "packages/**"
+      - "e2e/**"
+      - "playwright.config.ts"
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  browser:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SITE_URL: https://export-hq.com
+      NEXT_PUBLIC_APP_URL: https://export-hq.com/ExportPanel
+      EXPORTHQ_ENVIRONMENT: production
+      EXPORTHQ_DEMO_MODE: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.22.0 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm --filter @exporthq/app build
+      - run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore

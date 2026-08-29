@@ -12,12 +12,15 @@ remaining production components.
 - Phase 1 domain model, weighted Export Health calculation, and critical journey invariant.
 - Customer membership and explicit staff-grant authorization policy.
 - Production Clerk session verification, organization selection/creation, real sign-in/sign-up routes, account controls, and sign-out.
-- Onboarding-gated workspaces with server-side organization metadata updates.
+- Onboarding-gated workspaces with PostgreSQL-authoritative completion,
+  same-transaction audit/outbox state and a post-commit Clerk metadata mirror.
 - Preview, Explore, Launch, Scale, and Managed subscription entitlements with route-level enforcement and filtered navigation.
 - Persistent premium and verified-business entitlement signage across desktop/mobile navigation, page chrome, and premium Settings sections, including the active plan or trust state that supplies access.
 - A public, read-only ExportPanel preview and plan selection surface; protected data is never rendered into the preview.
 - A Home workspace that contains the dashboard, with feature-aware navigation across desktop and mobile.
-- Drizzle PostgreSQL schema for Phase 0 and the vertical slice, plus tenant RLS policies.
+- A reproducible Drizzle PostgreSQL 17 baseline with immutable checksums,
+  exhaustive tenant RLS, identity bridge functions and separated migration,
+  non-owner application, read-only support and read-only backup roles.
 - Zod contracts for company, product, task, and document upload intent.
 - Customer command center with action ownership, product-market readiness, sourced requirements, documents, managed work, and accountable team.
 - Guided company → product → market → evidence → readiness experience.
@@ -29,15 +32,21 @@ remaining production components.
 - A primary Email Inbox beside the retained Actionable Inbox, with export-aware categories, related-record context, private drafts, email-to-follow-up conversion, provider setup guidance, plan/role gates, and tenant-scoped mail persistence contracts.
 - A versioned, transactional market catalog publisher and incremental PostgreSQL migration for country, product, opportunity, evidence, verification, and shortlist records.
 - Internal customer portfolio and scoped operator workspace over the same domain projection.
-- Unit, journey, and cross-tenant isolation tests; CI runs lint, typecheck, tests, and production builds.
+- Unit and journey tests; 29 real-PostgreSQL integration tests covering
+  cross-tenant isolation, direct projection-write denial, webhook projection,
+  dead-lettering and concurrent durable controls; desktop/mobile Playwright;
+  and CI definitions for quality, database, Worker artifact, E2E, security and
+  immutable release promotion.
 - A production activation spine (`@exporthq/platform`): recorded activation gates that make document
   upload, mailbox connection, provider referral and live adapters fail closed until their evidence is
   recorded; a single authority for what "production" means; telemetry redaction and a PostHog metadata
-  allowlist; a generated Content Security Policy and security headers; per-capability rate limits;
-  idempotency with bounded retries and a dead-letter threshold; Clerk webhook signature verification
-  with replay protection.
-- A Clerk webhook endpoint that verifies signatures, refuses replays, deduplicates deliveries, and
-  reports honestly that it persists nothing while tenant persistence is unactivated.
+  allowlist; a generated Content Security Policy and security headers; atomic durable
+  per-capability rate limits; idempotency with bounded retries and a dead-letter threshold;
+  Clerk webhook signature verification and payload-hash replay protection.
+- A Clerk webhook endpoint that fails closed without its secret, durable store or
+  database, then commits delivery, reviewed organization/membership projection,
+  append-only audit and outbox state atomically. Subscription events only enqueue
+  reconciliation and cannot directly grant a plan.
 - A platform-admin-only activation report at `/ExportPanel/api/activation` so deployment state can be
   checked against this document rather than trusted.
 
@@ -48,12 +57,12 @@ deployment's own gate state is readable at `/ExportPanel/api/activation`.
 
 | Gate | State | What is blocking |
 | --- | --- | --- |
-| Gate 0 — ownership and freeze | In progress | Owner rows unnamed; policies drafted, not approved |
-| Gate 1 — identity and PostgreSQL | In progress | Persistence layer built; Neon not provisioned, so isolation tests are skipped |
+| Gate 0 — ownership and freeze | In progress | Repository governance and risk/evidence templates exist; named owners, approvals and GitHub enforcement are absent |
+| Gate 1 — identity and PostgreSQL | In progress | Clean local PostgreSQL/RLS/backup/restore proof passes; Neon, Clerk provider configuration and CI evidence are absent |
 | Gate 2 — evidence vault | Not started | R2 not provisioned; uploads fail closed |
 | Gate 3 — production persistence | Not started | Preview adapters still back customer workflows |
 | Gate 4 — trust and integrations | Not started | No reviewed provider or mail applications |
-| Gate 5 — pilot and launch | In progress | CSP, rate limits and redaction shipped; CSP is report-only until exercised |
+| Gate 5 — pilot and launch | In progress | Builds, Worker smoke, Playwright, rate limits, redaction and sampled telemetry config pass locally; CSP enforcement, external monitoring/review and pilot evidence remain |
 
 No capability in this table may be described as live before its gate records evidence.
 
@@ -78,13 +87,13 @@ Clerk production credentials are provisioned separately as Cloudflare Worker sec
 
 Before accepting real customer data:
 
-1. provision Frankfurt Neon and generate/apply the structural Drizzle migration before the checked-in RLS envelope;
-2. create a non-owner, non-`BYPASSRLS` application database role and transaction-scoped tenant context;
-3. configure Clerk webhook synchronization, invitations, role templates, and MFA policy;
-4. implement PostgreSQL repositories and transactional audit writes for the modeled commands;
+1. provision Frankfurt Neon and apply the checksum-protected `migrations-v2` chain with the migration role;
+2. apply `packages/db/roles/bootstrap.sql`, store each role credential separately, and record production RLS evidence;
+3. register the Clerk webhook secret/endpoint and configure invitations, role templates, staff allowlists and MFA policy;
+4. continue replacing the remaining preview-backed modeled commands; onboarding and the reviewed identity projection are already database-authoritative;
 5. provision private EU R2, signed upload intents, quarantine, malware scanning, checksums, and authorized download logging;
-6. add Playwright browser tests against ephemeral Postgres, including object enumeration and signed-file isolation;
-7. add rate limits, production CSP tuned for Clerk/R2, Sentry scrubbing, PostHog metadata allowlists, backups, and restore drills.
+6. run the checked-in database, Playwright and Worker workflows in GitHub; add R2 object-enumeration and signed-file isolation once Gate 2 exists;
+7. enforce the production CSP after Clerk/R2 exercise; connect external error monitoring if approved; retain the existing redaction/analytics allowlist and execute scheduled backup/restore drills.
 8. apply the market intelligence migration, publish the reviewed starter catalog, and connect verification approval to the trusted operations workflow.
 9. replace Export Studio preview persistence with tenant-scoped PostgreSQL repositories and audited commands;
 10. activate reviewed adapters for buyer data, provider credentialing, banks, laboratories, freight, shipment events, policy sources, and proceeds reconciliation before representing any of them as live.
