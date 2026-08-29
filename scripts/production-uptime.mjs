@@ -65,6 +65,12 @@ await check(
 const report = {
   checkedAt: new Date().toISOString(),
   origin,
+  sourceSha: process.env.EXPORTHQ_OBSERVED_SOURCE_SHA ?? null,
+  releaseTag: process.env.EXPORTHQ_OBSERVED_RELEASE_TAG ?? null,
+  deploymentReference: process.env.EXPORTHQ_DEPLOYMENT_REFERENCE ?? null,
+  observationDay: process.env.EXPORTHQ_OBSERVATION_DAY
+    ? Number(process.env.EXPORTHQ_OBSERVATION_DAY)
+    : null,
   passed: checks.every((item) => item.passed),
   checks,
 };

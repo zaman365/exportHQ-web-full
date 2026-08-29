@@ -1,6 +1,7 @@
 import type { CustomerSession } from "@exporthq/auth";
 import {
   activationReport,
+  postGaActivationReport,
   enforceRateLimit,
   RateLimitedError,
   resolveCapability,
@@ -47,8 +48,10 @@ export async function checkRateLimit(
   }
 }
 
-export function readActivationReport(): ReturnType<typeof activationReport> {
-  return activationReport();
+export function readActivationReport(): ReturnType<typeof activationReport> & {
+  postGaCapabilities: ReturnType<typeof postGaActivationReport>;
+} {
+  return { ...activationReport(), postGaCapabilities: postGaActivationReport() };
 }
 
 export type WorkspaceProjectionKind = "demo-identity" | "illustrative" | "customer-records";

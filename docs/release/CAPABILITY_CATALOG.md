@@ -19,6 +19,14 @@ Status language is centrally constrained to `Live`, `Pilot`, `Preview` and `Plan
 | Governed provider cases | Preview | Verification expiry, disclosure, acceptance, exact evidence sharing, complaint/dispute and outcome contracts exist; no production provider is active | Gate 4 provider approval and R4 outcomes |
 | External guests, API and customer webhooks | Preview | Exact-resource expiring guests, narrow read scopes, managed secret references, signing/replay and operations-only delivery controls pass locally | Deployed endpoints, rotation/recovery and R4 reliability evidence |
 | Operations console | Preview | Illustrative projection only; real customer access prohibited until scoped grants pass | R0-07 / Gate 1 |
-| Broad external launch | Planned | R0 baseline release verdict is No-Go | Gate 5 and later release gates |
+| Broad external launch | Planned | R0 baseline release verdict is No-Go | Gate 6 and a passing immutable GA manifest |
+| General Availability promotion | Planned | Signed-artifact promotion now requires a passing, SHA-bound R5 manifest; the example manifest intentionally fails | Gate 6, seven-day RC soak, independent assurance, recovery and real outcome floor |
+| Institution and cluster dashboards | Planned | Programme-scoped aggregate/consent and minimum-cohort contracts exist; no institution surface or identifiable programme data is active | Passing GA record plus capability-specific R6 evidence |
+| Sector and market expansion | Planned | Must continue through the versioned publisher and reviewed-source controls | Passing GA record plus capability-specific R6 evidence |
+| Provider network and buyer-data partnerships | Planned | Rights-holder, licensed-use, expiry, correction and opt-out boundaries exist; no partner feed is active | Passing GA record, capability evidence and current rights review |
+| API ecosystem | Planned | Current API clients remain narrow R4 previews; no broad ecosystem is active | Passing GA record plus capability-specific R6 evidence |
+| Shipment autopsy and repeat-order automation | Planned | Tenant-local learning and reviewable-draft contracts exist; automatic send/order is prohibited | Passing GA record plus capability-specific R6 evidence |
+| Consented aggregate benchmarks | Planned | Aggregate-only programme access requires consented metrics and a cohort of at least five | Passing GA record plus capability-specific R6 evidence |
+| Native mobile | Planned | No native client exists; PWA usage-gap and product-decision evidence are mandatory | Passing GA record, capability evidence and PWA-need evidence |
 
 Customer-facing plan and capability copy must derive from the shared catalogs in `packages/authorization` and `packages/platform`; this document records release evidence, not a second entitlement policy.

@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "status": "pending",
+  "founderName": "Mohammed Maniruzzaman",
+  "generatedAt": "2026-08-29T00:00:00.000Z",
+  "sourceSha": "0000000000000000000000000000000000000000",
+  "releaseTag": "v1.0.0",
+  "releaseCandidate": {
+    "startedAt": "2026-08-29T00:00:00.000Z",
+    "endedAt": "2026-08-29T00:00:00.000Z",
+    "productionLike": false,
+    "sameRuntime": false,
+    "sameBindings": false,
+    "sameMigrations": false,
+    "sameIntegrations": false,
+    "loadPassed": false,
+    "syntheticMonitoringPassed": false,
+    "materialChangesRestartedWindow": false,
+    "observationReferences": [
+      "pending/day-1", "pending/day-2", "pending/day-3", "pending/day-4",
+      "pending/day-5", "pending/day-6", "pending/day-7"
+    ]
+  },
+  "independentApprovals": {
+    "security": { "reviewerName": "pending", "reviewerOrganization": "pending", "independent": false, "signedAt": "", "evidenceReference": "pending" },
+    "privacy_legal": { "reviewerName": "pending", "reviewerOrganization": "pending", "independent": false, "signedAt": "", "evidenceReference": "pending" },
+    "business": { "reviewerName": "pending", "reviewerOrganization": "pending", "independent": false, "signedAt": "", "evidenceReference": "pending" },
+    "recovery": { "reviewerName": "pending", "reviewerOrganization": "pending", "independent": false, "signedAt": "", "evidenceReference": "pending" },
+    "rollback": { "reviewerName": "pending", "reviewerOrganization": "pending", "independent": false, "signedAt": "", "evidenceReference": "pending" }
+  },
+  "assuranceEvidence": {
+    "application_security": "pending",
+    "api_security": "pending",
+    "tenant_isolation": "pending",
+    "privacy_legal": "pending",
+    "incident_tabletop": "pending",
+    "business_continuity": "pending",
+    "billing": "pending",
+    "refund": "pending",
+    "cancellation": "pending",
+    "data_export": "pending",
+    "data_deletion": "pending"
+  },
+  "recovery": {
+    "observedRpoMinutes": 999,
+    "observedRtoMinutes": 999,
+    "backupReference": "pending",
+    "pitrReference": "pending",
+    "independentExportReference": "pending",
+    "restoreReference": "pending",
+    "rlsVerificationReference": "pending"
+  },
+  "releaseEvidence": {
+    "tag_signature": "pending",
+    "artifact": "pending",
+    "sbom": "pending",
+    "provenance": "pending",
+    "migration_report": "pending",
+    "backfill_report": "pending",
+    "capability_status": "pending",
+    "test_report": "pending",
+    "security_report": "pending",
+    "recovery_report": "pending",
+    "release_notes": "pending",
+    "accepted_risks": "pending",
+    "rollback_artifact": "pending",
+    "rollback_commands": "pending",
+    "artifactSha256": "",
+    "rollbackOwner": "pending"
+  },
+  "outcomes": {
+    "completedLanes": 0,
+    "exportersWithMatchedRealizedProceeds": 0,
+    "handledExceptionsOrDiscrepancies": 0,
+    "repeatUsesOrOrders": 0,
+    "crossTenantExposureCount": 0,
+    "unresolvedCriticalOrHighVulnerabilities": 0,
+    "sustainableSupportAndManagedWorkEconomics": false,
+    "evidenceReference": "pending"
+  }
+}
