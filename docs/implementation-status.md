@@ -54,18 +54,32 @@ remaining production components.
   projection that excludes stale, inactive, unreviewed and superseded material;
   plus immutable AI extraction proposals with provider/model/prompt/rule
   provenance, confidence, source spans, append-only human decisions and
-  downstream-usage links. Only synthetic registry fixtures exist today.
+  downstream-usage links. The reviewed registry contains only synthetic
+  fixtures; official Bangladesh/EU/UN URLs exist only in a runtime-read-only,
+  explicitly pending discovery queue that cannot drive guidance.
+- A PostgreSQL-authoritative R3 Private Beta operating model covering
+  rights-documented buyer/contact provenance, correction and opt-out history;
+  opportunities and RFQs; immutable quote versions with minor-unit arithmetic,
+  exact-output approval, consent and idempotent delivery; explicitly confirmed
+  sales-order conversion and change orders; source-traced trade-document sets;
+  reviewed mailbox-provider boundaries; production, shipment, exception,
+  invoicing, allocation, proceeds and lane-outcome ledgers; preparation-only
+  companion workflows; and a migration-owned manual billing catalog with
+  owner cancellation requests. External provider activation and real outcomes
+  remain separate gates.
 - Dedicated Buyers and Requirements routes: a searchable, stage-aware illustrative buyer-development pipeline and a source-aware conditional control register linked back to opportunities, readiness, learning, evidence, and qualified-help paths.
 - A public opportunity-to-payment acquisition story, a limited ExportPanel Export Studio preview, and plan language aligned to the Basic → verified/paid → Scale/Managed trust ladder.
 - A dedicated Export operations Learning Center category with contextual hints for lanes, economics, deals, buyer trust, provider matching, finance, shipment, policy, and clusters.
 - A primary Email Inbox beside the retained Actionable Inbox, with export-aware categories, related-record context, private drafts, email-to-follow-up conversion, provider setup guidance, plan/role gates, and tenant-scoped mail persistence contracts.
 - A versioned, transactional market catalog publisher and incremental PostgreSQL migration for country, product, opportunity, evidence, verification, and shortlist records.
 - Internal customer portfolio and scoped operator workspace over the same domain projection.
-- Unit and journey tests; 37 database-package tests, including 23
+- Unit and journey tests; 40 database-package tests, including 26
   real-PostgreSQL integration scenarios covering cross-tenant isolation,
   direct projection-write denial, webhook projection,
   regulatory freshness and publisher-write denial, human-gated AI provenance,
-  dead-lettering and concurrent durable controls; desktop/mobile Playwright;
+  buyer human-review authority, exact quote delivery, customer billing-ledger
+  denial, owner cancellation, dead-lettering and concurrent durable controls;
+  desktop/mobile Playwright;
   and CI definitions for quality, database, Worker artifact, E2E, security and
   immutable release promotion.
 - A production activation spine (`@exporthq/platform`): recorded activation gates that make document

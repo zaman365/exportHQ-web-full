@@ -6,6 +6,10 @@ export * from "./email-integration";
 export * from "./legal-documents";
 export * from "./i18n";
 export * from "./pilot";
+export * from "./commercial";
+export * from "./document-consistency";
+export * from "./billing-catalog";
+export * from "./companion-workflows";
 export * from "./money/index";
 export * from "./workflows/export-lane";
 export type TaskStatus =

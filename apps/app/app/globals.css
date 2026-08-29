@@ -3413,3 +3413,13 @@ html.low-data img:not([data-low-data-essential="true"]) { content-visibility: au
   .alpha-pass__facts { grid-template-columns: repeat(5, minmax(0, 1fr)); }
   .alpha-agreement, .alpha-pass, .alpha-support, .alpha-scope-card { break-inside: avoid; box-shadow: none !important; }
 }
+.buyer-tenant-register { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.buyer-tenant-card { display: grid; gap: 16px; }
+.buyer-tenant-card > header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.buyer-tenant-card h2 { margin: 3px 0; }
+.buyer-tenant-card dl { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.buyer-tenant-card dl > div { border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+.buyer-tenant-card dt { color: var(--fg-2); font-size: .76rem; }
+.buyer-tenant-card dd { margin: 4px 0 0; }
+.buyer-opt-out { display: flex; gap: 8px; align-items: center; color: var(--amber); }
+@media (max-width: 760px) { .buyer-tenant-register { grid-template-columns: 1fr; } }

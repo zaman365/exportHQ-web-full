@@ -43,7 +43,7 @@ GRANT SELECT ON ALL SEQUENCES IN SCHEMA drizzle TO exporthq_backup;
 
 REVOKE UPDATE, DELETE ON audit_events FROM exporthq_app, exporthq_support;
 REVOKE ALL ON idempotency_keys, rate_limit_counters, webhook_deliveries FROM exporthq_support;
-REVOKE INSERT, UPDATE, DELETE ON regulatory_publishers, regulatory_sources, regulatory_rules FROM exporthq_app, exporthq_support;
+REVOKE INSERT, UPDATE, DELETE ON regulatory_publishers, regulatory_source_candidates, regulatory_sources, regulatory_rules FROM exporthq_app, exporthq_support;
 REVOKE DELETE ON regulatory_rule_lane_impacts, ai_extraction_runs FROM exporthq_app, exporthq_support;
 REVOKE UPDATE, DELETE ON ai_extraction_fields, ai_extraction_source_spans,
   ai_extraction_field_decisions, ai_extraction_usages FROM exporthq_app, exporthq_support;
@@ -56,6 +56,29 @@ REVOKE UPDATE ON pilot_participations FROM exporthq_app;
 GRANT UPDATE (status, agreement_accepted_by, agreement_accepted_at,
   support_owner_actor_id, started_at, ended_at, updated_at)
   ON pilot_participations TO exporthq_app;
+REVOKE INSERT, UPDATE, DELETE ON billing_plan_catalog_versions, billing_plan_prices FROM exporthq_app, exporthq_support;
+REVOKE DELETE ON
+  buyer_accounts, buyer_contacts, buyer_provenance_records, buyer_outreach_consents, buyer_communication_audit,
+  sales_opportunities, buyer_rfqs, buyer_rfq_lines, buyer_rfq_requirements, buyer_rfq_attachments,
+  quotations, quotation_versions, quotation_lines, quotation_approvals, quotation_deliveries,
+  sales_orders, sales_order_versions, generated_document_sets, generated_documents, generated_document_fields, document_consistency_issues,
+  email_thread_mappings, outbound_email_drafts, outbound_email_approvals, outbound_email_deliveries, email_connection_deletion_requests,
+  production_batches, production_milestones, production_inspections, shipments, shipment_packages, shipment_checkpoints, shipment_exceptions,
+  trade_invoices, invoice_payment_schedules, payment_receipts, payment_allocations, financial_discrepancies, realized_proceeds, lane_outcome_metrics,
+  companion_workflow_cases, companion_workflow_items, companion_workflow_evidence,
+  billing_accounts, billing_subscriptions, billing_subscription_history, customer_billing_invoices, customer_billing_credits,
+  customer_billing_refunds, billing_transactions, billing_provider_events, usage_ledger_entries,
+  billing_entitlement_transitions, billing_reconciliation_results
+FROM exporthq_app, exporthq_support;
+REVOKE DELETE ON billing_cancellation_requests FROM exporthq_app, exporthq_support;
+REVOKE UPDATE ON
+  buyer_provenance_records, buyer_outreach_consents, buyer_communication_audit,
+  quotation_versions, quotation_lines, quotation_approvals, sales_order_versions,
+  generated_document_fields, outbound_email_approvals, shipment_checkpoints,
+  payment_allocations, realized_proceeds, lane_outcome_metrics, companion_workflow_evidence,
+  billing_subscription_history, customer_billing_credits, billing_provider_events,
+  usage_ledger_entries, billing_entitlement_transitions, billing_reconciliation_results
+FROM exporthq_app, exporthq_support;
 
 GRANT EXECUTE ON FUNCTION app_resolve_organization(text) TO exporthq_app;
 GRANT EXECUTE ON FUNCTION app_upsert_organization(text, text, text, text) TO exporthq_app;

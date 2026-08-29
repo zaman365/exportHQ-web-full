@@ -206,6 +206,91 @@ export {
 } from "./repositories/pilot";
 
 export {
+  addBuyerContact,
+  correctBuyerAccount,
+  createBuyerAccount,
+  createBuyerRfq,
+  createSalesOpportunity,
+  listBuyerPipeline,
+  recordBuyerOutreachConsent,
+  transitionBuyerRfq,
+  transitionSalesOpportunity,
+  updateBuyerVerification,
+  type BuyerPipelineRecord
+} from "./repositories/buyers";
+
+export {
+  acceptQuotation,
+  convertAcceptedQuotationToSalesOrder,
+  createQuotation,
+  createQuotationVersion,
+  createSalesOrderChange,
+  decideQuotationApproval,
+  queueQuotationDelivery,
+  recordQuotationDelivered,
+  type QuoteVersionInput
+} from "./repositories/commercial";
+
+export {
+  approveTradeDocumentSet,
+  generateTradeDocumentSet,
+  resolveDocumentConsistencyIssue,
+  type GeneratedDocumentInput,
+  type GeneratedFieldInput
+} from "./repositories/document-generation";
+
+export {
+  confirmMailboxThreadMapping,
+  createOutboundMailboxDraft,
+  decideOutboundMailboxDraft,
+  ingestMailboxMessageMetadata,
+  queueApprovedMailboxDraft,
+  registerReviewedMailboxConnection,
+  requestMailboxDisconnectAndDeletion
+} from "./repositories/mailbox";
+
+export {
+  allocatePaymentReceipt,
+  confirmRealizedProceeds,
+  createOverdueFinancialDiscrepancy,
+  createProductionBatch,
+  createShipment,
+  issueTradeInvoice,
+  recordPaymentReceipt,
+  recordShipmentException,
+  releaseProductionBatch,
+  resolveShipmentException,
+  transitionShipment
+} from "./repositories/shipment-finance";
+
+export {
+  addCompanionWorkflowEvidence,
+  completeCompanionWorkflowItem,
+  createCompanionWorkflow,
+  enqueueStaleRegulatorySourceAlerts,
+  recordExternalCompanionSubmission
+} from "./repositories/companion-workflows";
+
+export {
+  createBillingAccount,
+  createManualSubscriptionGrant,
+  issueCustomerBillingInvoice,
+  listCustomerBillingInvoices,
+  processSubscriptionCancellation,
+  readBillingCatalog,
+  recordBillingReconciliation,
+  recordVerifiedBillingProviderEvent,
+  requestSubscriptionCancellation,
+  transitionManualSubscription,
+  type BillingCatalogPriceRecord
+} from "./repositories/billing";
+
+export {
+  readPrivateBetaCockpit,
+  type PrivateBetaCockpit
+} from "./read-models/private-beta";
+
+export {
   readTenantExportLane,
   readWorkspaceDashboard,
   type TenantExportLaneReadModel,

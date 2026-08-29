@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { cookies } from "next/headers";
 import { readPilotWorkspace } from "@exporthq/db";
 import { firstShipmentPassHypothesis, privateAlphaAgreement, resolveLocale, translate } from "@exporthq/domain";
@@ -77,6 +78,7 @@ export default async function PrivateAlphaPage() {
       <p>{translate(locale, "pilot.no_checkout")}</p>
       <div className="alpha-pass__facts"><div><small>{translate(locale, "pilot.price_hypothesis")}</small><strong>৳{(firstShipmentPassHypothesis.priceMinor / 100).toLocaleString("en-BD")}</strong></div><div><small>Duration</small><strong>{firstShipmentPassHypothesis.durationDays} days</strong></div><div><small>Active lanes</small><strong>{pass?.laneLimit ?? firstShipmentPassHypothesis.activeLaneLimit}</strong></div><div><small>Editors</small><strong>{pass?.editorLimit ?? firstShipmentPassHypothesis.editorLimit}</strong></div><div><small>Annual Launch credit</small><strong>{(pass?.launchCreditBps ?? firstShipmentPassHypothesis.annualLaunchCreditBps) / 100}%</strong></div></div>
       {pass ? <p className="alpha-pass__window">Recorded {formatDate(pass.startsAt, locale)} → {formatDate(pass.expiresAt, locale)} · {pass.extensionCount} extension(s)</p> : <p className="alpha-pending">No pass has been granted. Operations may grant it only after participation is active.</p>}
+      {participation.status === "active" && <p><Link href="/beta">Open the Private Beta cockpit →</Link></p>}
     </section>
 
     <section className="alpha-support">
