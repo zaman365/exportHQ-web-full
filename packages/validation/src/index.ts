@@ -65,9 +65,8 @@ export const businessVerificationSchema = z.object({
   originCountry: z.string().trim().length(2),
   website: z.url(),
   businessEmail: z.email(),
-  evidenceUrl: z.url(),
   declaration: z.literal("accepted")
-});
+}).strict();
 
 export const taskUpdateSchema = z.object({
   id: z.string().min(1),
@@ -84,12 +83,14 @@ export const taskUpdateSchema = z.object({
 });
 
 export const documentIntentSchema = z.object({
-  organizationId: z.string().min(1),
+  organizationId: z.uuid(),
   fileName: z.string().trim().min(1).max(240),
   mimeType: z.enum(["application/pdf", "image/jpeg", "image/png"]),
   byteSize: z.number().int().positive().max(25 * 1024 * 1024),
+  checksumSha256: z.string().regex(/^[a-f0-9]{64}$/),
   category: z.enum(["company", "product", "compliance", "certification", "other"]),
-  linkedEntityId: z.string().min(1)
+  linkedEntityType: z.string().trim().min(1).max(80),
+  linkedEntityId: z.uuid()
 });
 
 export const readinessProgressSchema = z.object({

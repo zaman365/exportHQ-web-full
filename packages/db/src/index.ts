@@ -103,3 +103,21 @@ export {
   type ExportLanePage,
   type ExportLaneRecord
 } from "./repositories/export-lanes";
+
+export {
+  authorizeEvidenceDownload,
+  consumeEvidenceUploadIntent,
+  createEvidenceUploadIntent,
+  linkCleanEvidence,
+  recordEvidenceScanResult,
+  type EvidenceUploadIntentRecord
+} from "./repositories/evidence-vault";
+
+export {
+  addBusinessVerificationEvidence,
+  createBusinessVerificationCase,
+  readBusinessVerificationCase,
+  transitionBusinessVerificationCase,
+  type BusinessVerificationCaseRecord,
+  type BusinessVerificationCaseStatus
+} from "./repositories/business-verification";

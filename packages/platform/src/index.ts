@@ -129,3 +129,22 @@ export {
   structuredLogLine,
   type StructuredLogFields
 } from "./observability";
+
+export {
+  assertEvidenceMagicBytes,
+  assertTenantEvidenceObjectKey,
+  buildEvidenceObjectKey,
+  EvidenceVault,
+  issueEvidenceCapability,
+  maximumEvidenceBytes,
+  validateEvidenceUpload,
+  verifyEvidenceCapability,
+  type ApprovedEvidenceType,
+  type EvidenceCapabilityAction,
+  type EvidenceCapabilityClaims,
+  type EvidenceObjectBody,
+  type EvidenceObjectMetadata,
+  type EvidenceVaultBuckets,
+  type PrivateEvidenceBucket,
+  type StagedEvidenceObject
+} from "./evidence-vault/index";
