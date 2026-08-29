@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNull, lte } from "drizzle-orm";
+import { and, desc, eq, gt, inArray, isNull, lte } from "drizzle-orm";
 import {
   transitionExportLane,
   type ExportIncoterm,
@@ -12,9 +12,11 @@ import {
   exportLaneParticipants,
   exportLanes,
   exportLaneStageEvents,
+  pilotPassGrants,
   staffAccessGrants
 } from "../schema";
 import type { ExportHqTransaction, TenantContext } from "../tenant";
+import { recordPilotMilestoneEvent } from "./pilot";
 
 export interface ExportLaneRecord {
   readonly id: string;
@@ -71,6 +73,21 @@ export async function createExportLane(
   input: CreateExportLaneInput
 ): Promise<ExportLaneRecord> {
   const normalized = normalizeCreateInput(input);
+  const now = new Date();
+  const [pilotPass] = await tx.select({ laneLimit: pilotPassGrants.laneLimit }).from(pilotPassGrants).where(and(
+    eq(pilotPassGrants.organizationId, context.organizationId),
+    inArray(pilotPassGrants.status, ["active", "extended"]),
+    gt(pilotPassGrants.expiresAt, now)
+  )).limit(1);
+  if (pilotPass) {
+    const activeLanes = await tx.select({ id: exportLanes.id }).from(exportLanes).where(and(
+      eq(exportLanes.organizationId, context.organizationId),
+      inArray(exportLanes.status, ["draft", "active", "on_hold"])
+    )).limit(pilotPass.laneLimit);
+    if (activeLanes.length >= pilotPass.laneLimit) {
+      throw new Error(`First Shipment Pass permits ${pilotPass.laneLimit} active Export Lane.`);
+    }
+  }
   const [created] = await tx
     .insert(exportLanes)
     .values({ organizationId: context.organizationId, ...normalized })
@@ -96,6 +113,14 @@ export async function createExportLane(
     aggregateId: created.id,
     dedupeKey: `export-lane:${created.id}:v${created.version}`,
     payload: { version: created.version, stage: created.stage, status: created.status }
+  });
+  await recordPilotMilestoneEvent(tx, context, {
+    eventName: "lane_created",
+    exportLaneId: created.id,
+    success: true,
+    measureFromParticipationStart: true,
+    dedupeKey: `lane-created:${created.id}`,
+    occurredAt: now
   });
   return created;
 }

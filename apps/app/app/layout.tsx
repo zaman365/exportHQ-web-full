@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Geist_Mono, Manrope } from "next/font/google";
 import { tenantTheme } from "@exporthq/ui";
+import { resolveLocale } from "@exporthq/domain";
+import { cookies } from "next/headers";
 import { AuthProvider } from "./_components/auth-provider";
 import "./globals.css";
 
@@ -37,14 +39,17 @@ export const viewport: Viewport = {
   colorScheme: "light"
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   /* The only route a customer colour takes into the DOM. tenantTheme() emits
      exactly four custom properties and clamps them for contrast, so a tenant
      can never reach Export HQ chrome, actions or status colour. */
   const tenant = tenantTheme();
+  const store = await cookies();
+  const locale = resolveLocale(store.get("exporthq_locale")?.value);
+  const lowData = store.get("exporthq_low_data")?.value === "true";
 
   return (
-    <html lang="en" className={`${sans.variable} ${mono.variable} ${display.variable}`}>
+    <html lang={locale} className={`${sans.variable} ${mono.variable} ${display.variable}${lowData ? " low-data" : ""}`}>
       <body style={tenant}>
         <AuthProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
           {children}

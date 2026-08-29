@@ -1,5 +1,5 @@
 import { and, eq, isNull, or, gt } from "drizzle-orm";
-import { organizationEntitlements } from "./schema";
+import { organizationEntitlements, pilotPassEditors, pilotPassGrants } from "./schema";
 import { recordAuditEvent } from "./audit";
 import type { ExportHqTransaction, TenantContext } from "./tenant";
 
@@ -62,6 +62,7 @@ export async function readOrganizationEntitlements(
 ): Promise<EntitlementRecord[]> {
   const rows = await tx
     .select({
+      id: organizationEntitlements.id,
       tier: organizationEntitlements.tier,
       source: organizationEntitlements.source,
       effectiveFrom: organizationEntitlements.effectiveFrom,
@@ -76,7 +77,34 @@ export async function readOrganizationEntitlements(
         or(isNull(organizationEntitlements.effectiveTo), gt(organizationEntitlements.effectiveTo, now))
       )
     );
-  return rows;
+  if (context.actorType !== "customer") return rows;
+
+  /* A general pilot grant remains organization-wide. A First Shipment Pass is
+     different: its Launch ceiling belongs only to the at-most-three explicitly
+     assigned editors. The pass remains visible to the tenant, but cannot widen
+     an unassigned member's authorization. */
+  const passEntitlements = await tx.select({
+    entitlementId: pilotPassGrants.entitlementId
+  }).from(pilotPassGrants).where(eq(pilotPassGrants.organizationId, context.organizationId));
+  const linkedEntitlementIds = new Set(passEntitlements.map((row) => row.entitlementId));
+  if (!linkedEntitlementIds.size) return rows;
+  const assignments = await tx.select({
+    entitlementId: pilotPassGrants.entitlementId
+  }).from(pilotPassEditors).innerJoin(
+    pilotPassGrants,
+    and(
+      eq(pilotPassGrants.id, pilotPassEditors.pilotPassGrantId),
+      eq(pilotPassGrants.organizationId, pilotPassEditors.organizationId)
+    )
+  ).where(and(
+    eq(pilotPassEditors.organizationId, context.organizationId),
+    eq(pilotPassEditors.actorId, context.actorId),
+    isNull(pilotPassEditors.revokedAt)
+  ));
+  const assignedEntitlementIds = new Set(assignments.map((row) => row.entitlementId));
+  return rows.filter((row) => row.source !== "pilot"
+    || !linkedEntitlementIds.has(row.id)
+    || assignedEntitlementIds.has(row.id));
 }
 
 export async function readOrganizationTier(

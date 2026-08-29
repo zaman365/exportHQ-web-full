@@ -46,6 +46,7 @@ export async function saveOrganizationProfile(payload: string): Promise<Organiza
       supportEmail: profile.supportEmail,
       defaultCurrency: profile.defaultCurrency,
       defaultTimezone: profile.timezone,
+      defaultLocale: profile.language,
       exportStage: marketStrategy.currentExportStage || null,
       primarySalesChannel: marketStrategy.primarySalesChannel || null,
       marketStrategy

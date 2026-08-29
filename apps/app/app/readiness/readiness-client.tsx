@@ -37,6 +37,8 @@ import type { BusinessVerificationStatus, ReadinessAccess } from "@exporthq/auth
 import type { ReadinessProgressInput } from "@exporthq/validation";
 import { HintButton } from "../_components/hint-button";
 import { exportPanelPath } from "../_lib/export-panel-paths";
+import { prepareLowDataEvidenceFile } from "../_lib/evidence-preparation";
+import { useSafeAutosave } from "../_lib/safe-autosave";
 import { requestReadinessProviderMatch, saveReadinessProgress } from "./actions";
 
 type EvidenceItem = ReadinessProgressInput["evidence"][number];
@@ -276,6 +278,7 @@ export default function ReadinessClient({
   const reviewCount = evidence.filter((item) => item.status === "under_review" || item.status === "staged").length;
   const isPublic = access === "public";
   const learningHref = (topic: string) => `/learn?topic=${topic}${isPublic ? "&access=public" : ""}`;
+  const autosaveKey = useMemo(() => JSON.stringify({ currentSection, responses, notes, evidence }), [currentSection, evidence, notes, responses]);
 
   useEffect(() => {
     if (persistenceMode !== "preview") {
@@ -314,23 +317,34 @@ export default function ReadinessClient({
     setResponses((current) => ({ ...current, [requirementId]: value }));
   }
 
+  async function persistAssessment(automatic = false): Promise<boolean> {
+    const result = await saveReadinessProgress(JSON.stringify({
+      version: 1,
+      ...(assessmentId ? { assessmentId } : {}),
+      ...(assessmentVersion ? { assessmentVersion } : {}),
+      ...(selectedLaneId ? { exportLaneId: selectedLaneId } : {}),
+      currentSection,
+      profile,
+      responses,
+      notes,
+      evidence
+    }));
+    setSaveMessage(automatic && result.ok ? "Changes autosaved to the protected workspace." : result.message);
+    setSavedAt(result.savedAt);
+    if (result.assessmentId) setAssessmentId(result.assessmentId);
+    if (result.assessmentVersion) setAssessmentVersion(result.assessmentVersion);
+    return result.ok;
+  }
+
+  useSafeAutosave({
+    enabled: loaded && persistenceMode === "tenant" && Boolean(selectedLaneId),
+    changeKey: autosaveKey,
+    save: () => persistAssessment(true)
+  });
+
   function saveAssessment() {
     startSaving(async () => {
-      const result = await saveReadinessProgress(JSON.stringify({
-        version: 1,
-        ...(assessmentId ? { assessmentId } : {}),
-        ...(assessmentVersion ? { assessmentVersion } : {}),
-        ...(selectedLaneId ? { exportLaneId: selectedLaneId } : {}),
-        currentSection,
-        profile,
-        responses,
-        notes,
-        evidence
-      }));
-      setSaveMessage(result.message);
-      setSavedAt(result.savedAt);
-      if (result.assessmentId) setAssessmentId(result.assessmentId);
-      if (result.assessmentVersion) setAssessmentVersion(result.assessmentVersion);
+      await persistAssessment(false);
     });
   }
 
@@ -344,26 +358,30 @@ export default function ReadinessClient({
       setSaveMessage("Use a PDF, JPEG or PNG file.");
       return;
     }
-    if (file.size > 25 * 1024 * 1024) {
+    const prepared = await prepareLowDataEvidenceFile(file, document.documentElement.classList.contains("low-data"));
+    const uploadFile = prepared.file;
+    if (uploadFile.size > 25 * 1024 * 1024) {
       setSaveMessage("Evidence files must be 25 MB or smaller.");
       return;
     }
     const id = `ev_${crypto.randomUUID()}`;
     try {
-      await putEvidenceFile(id, file);
+      await putEvidenceFile(id, uploadFile);
       const item: EvidenceItem = {
         id,
         requirementId: selected.id,
-        fileName: file.name,
-        mimeType: file.type as EvidenceItem["mimeType"],
-        byteSize: file.size,
+        fileName: uploadFile.name,
+        mimeType: uploadFile.type as EvidenceItem["mimeType"],
+        byteSize: uploadFile.size,
         status: "under_review",
         feedback: "Format and file integrity check passed. Issuer, entity-name match, scope, dates and validity still require review.",
         addedAt: new Date().toISOString()
       };
       setEvidence((current) => [...current, item]);
       updateStatus(selected.id, "evidence_added");
-      setSaveMessage("Evidence staged and queued for review. Save the assessment to sync its review record.");
+      setSaveMessage(prepared.savedBytes > 0
+        ? `Low-data preparation saved ${Math.max(1, Math.round(prepared.savedBytes / 1024))} KB. Evidence is staged locally; save the assessment to sync its review record.`
+        : "Evidence staged and queued for review. Save the assessment to sync its review record.");
     } catch {
       setSaveMessage("This browser could not stage the file. Check storage permissions and try again.");
     }

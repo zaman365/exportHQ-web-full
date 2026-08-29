@@ -50,6 +50,12 @@ REVOKE UPDATE, DELETE ON ai_extraction_fields, ai_extraction_source_spans,
 REVOKE UPDATE, DELETE ON task_status_history FROM exporthq_app, exporthq_support;
 REVOKE INSERT, UPDATE, DELETE ON legal_documents FROM exporthq_app, exporthq_support;
 REVOKE UPDATE, DELETE ON organization_legal_acceptances FROM exporthq_app, exporthq_support;
+REVOKE DELETE ON pilot_participations, pilot_pass_grants, pilot_pass_editors, pilot_support_cases FROM exporthq_app, exporthq_support;
+REVOKE UPDATE, DELETE ON pilot_work_logs, pilot_observations, pilot_metric_events FROM exporthq_app, exporthq_support;
+REVOKE UPDATE ON pilot_participations FROM exporthq_app;
+GRANT UPDATE (status, agreement_accepted_by, agreement_accepted_at,
+  support_owner_actor_id, started_at, ended_at, updated_at)
+  ON pilot_participations TO exporthq_app;
 
 GRANT EXECUTE ON FUNCTION app_resolve_organization(text) TO exporthq_app;
 GRANT EXECUTE ON FUNCTION app_upsert_organization(text, text, text, text) TO exporthq_app;

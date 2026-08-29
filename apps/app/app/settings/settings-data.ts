@@ -38,6 +38,7 @@ export interface OrganizationSettings {
   website: string;
   country: string;
   timezone: string;
+  language: "bn" | "en";
   defaultCurrency: string;
   supportEmail: string;
 }
@@ -215,6 +216,7 @@ export const initialWorkspaceSettings: WorkspaceSettingsState = {
     website: "https://abctextiles.example",
     country: "Bangladesh",
     timezone: "Asia/Dhaka",
+    language: "en",
     defaultCurrency: "USD",
     supportEmail: "export@abctextiles.com"
   },

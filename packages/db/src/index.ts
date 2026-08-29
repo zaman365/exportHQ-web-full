@@ -85,6 +85,7 @@ export {
   completeOnboarding,
   readCompanyProfile,
   saveCompanyProfile,
+  updateCompanyPreferences,
   type CompanyProfileInput,
   type CompanyProfileRecord
 } from "./repositories/company-profile";
@@ -163,6 +164,7 @@ export {
 } from "./repositories/products";
 
 export {
+  recordOverduePilotTasks,
   TaskVersionConflictError,
   transitionTaskStatus
 } from "./repositories/tasks";
@@ -174,6 +176,34 @@ export {
   type EffectiveLegalDocumentRecord,
   type LegalAcceptanceRecord
 } from "./repositories/legal";
+
+export {
+  acceptPilotAgreement,
+  activatePilotParticipation,
+  assignFirstShipmentPassEditor,
+  convertFirstShipmentPass,
+  createPilotSupportCase,
+  extendFirstShipmentPass,
+  grantFirstShipmentPass,
+  invitePilotOrganization,
+  readActivePilotPassLimits,
+  readPilotParticipation,
+  readPilotOutcomeMetrics,
+  readPilotWorkspace,
+  recordPilotMetricEvent,
+  recordPilotMilestoneEvent,
+  recordPilotObservation,
+  recordPilotSupportWork,
+  revokeFirstShipmentPassEditor,
+  type ActivePilotPassLimits,
+  type PilotExporterStage,
+  type PilotMetricName,
+  type PilotOutcomeMetrics,
+  type PilotParticipationRecord,
+  type PilotPassRecord,
+  type PilotSupportCaseRecord,
+  type PilotWorkspaceReadModel
+} from "./repositories/pilot";
 
 export {
   readTenantExportLane,

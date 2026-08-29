@@ -1,5 +1,5 @@
 import { authorizeOrganization, featuresForTier, permissionsForTier } from "@exporthq/authorization";
-import { readWorkspaceDashboard, type WorkspaceTaskStatus } from "@exporthq/db";
+import { readPilotWorkspace, readWorkspaceDashboard, type WorkspaceTaskStatus } from "@exporthq/db";
 import { ArrowRight, Clock3, FileText, Package, Plus, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { Badge, Card, Progress } from "@exporthq/ui";
@@ -57,7 +57,10 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
   authorizeOrganization(session.principal, session.principal.organizationId, "company:view");
   const persisted = session.isDemo
     ? { ran: false as const }
-    : await runTenantCommand(session, (tx, context) => readWorkspaceDashboard(tx, context));
+    : await runTenantCommand(session, async (tx, context) => ({
+      dashboard: await readWorkspaceDashboard(tx, context),
+      pilot: await readPilotWorkspace(tx, context)
+    }));
 
   if (!persisted.ran) {
     return <WorkspaceShell active="dashboard" session={session}>
@@ -66,7 +69,7 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
     </WorkspaceShell>;
   }
 
-  const dashboard = persisted.value;
+  const { dashboard, pilot } = persisted.value;
   const customerTasks = dashboard.tasks.filter((task) => task.responsibility === "customer");
   const exportHqTasks = dashboard.tasks.filter((task) => task.responsibility === "export_hq");
   const thirdPartyTasks = dashboard.tasks.filter((task) => task.responsibility === "third_party");
@@ -76,6 +79,8 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
       <div><p>HOME / DASHBOARD</p><h1>Good morning, {session.userName?.split(" ")[0] ?? "there"}. <HintButton topic="dashboard-overview" /></h1><span>Current tenant records for {dashboard.organization.tradingName}.</span></div>
       <div className="welcome__actions"><Link href="/settings?section=organization#primary-offer" className="button button--secondary"><Plus size={16} /> Add product</Link><Link href="/readiness" className="button button--primary">Open action plan <ArrowRight size={16} /></Link></div>
     </section>
+
+    {pilot && <section className="alpha-dashboard-callout"><div><small>INVITATION-ONLY PRIVATE ALPHA</small><strong>{pilot.participation.status === "invited" ? "Review the exact participation agreement" : pilot.participation.status === "accepted" ? "Participation accepted; activation is pending" : "Your bounded Alpha record is active"}</strong><p>View First Shipment Pass limits, named support scope and the printable action pack.</p></div><Link href="/alpha">Open Private Alpha <ArrowRight size={15} /></Link></section>}
 
     <section className="score-grid" aria-label="Export health summary">
       <Card className="health-card">

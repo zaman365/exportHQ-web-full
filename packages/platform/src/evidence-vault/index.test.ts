@@ -3,10 +3,16 @@ import { describe, expect, it } from "vitest";
 import {
   buildEvidenceObjectKey,
   EvidenceVault,
+  expectedEvidencePartBytes,
   issueEvidenceCapability,
+  minimumEvidenceMultipartPartBytes,
+  planEvidenceUpload,
   verifyEvidenceCapability,
+  type EvidenceUploadedPart,
+  type MultipartPrivateEvidenceBucket,
   type EvidenceObjectBody,
   type EvidenceObjectMetadata,
+  type PrivateEvidenceMultipartUpload,
   type PrivateEvidenceBucket
 } from "./index";
 
@@ -42,6 +48,55 @@ class MemoryBucket implements PrivateEvidenceBucket {
   }
 }
 
+class MultipartMemoryBucket extends MemoryBucket implements MultipartPrivateEvidenceBucket {
+  readonly uploads = new Map<string, { key: string; parts: Map<number, ArrayBuffer> }>();
+
+  async createMultipartUpload(key: string): Promise<PrivateEvidenceMultipartUpload> {
+    const uploadId = crypto.randomUUID();
+    this.uploads.set(uploadId, { key, parts: new Map() });
+    return this.multipart(key, uploadId);
+  }
+
+  resumeMultipartUpload(key: string, uploadId: string): PrivateEvidenceMultipartUpload {
+    return this.multipart(key, uploadId);
+  }
+
+  private multipart(key: string, uploadId: string): PrivateEvidenceMultipartUpload {
+    return {
+      key,
+      uploadId,
+      uploadPart: async (partNumber, value) => {
+        const upload = this.uploads.get(uploadId);
+        if (!upload || upload.key !== key) throw new Error("NoSuchUpload");
+        upload.parts.set(partNumber, value.slice(0));
+        return { partNumber, etag: sha256(value) };
+      },
+      abort: async () => {
+        if (!this.uploads.delete(uploadId)) throw new Error("NoSuchUpload");
+      },
+      complete: async (parts: readonly EvidenceUploadedPart[]) => {
+        const upload = this.uploads.get(uploadId);
+        if (!upload || upload.key !== key) throw new Error("NoSuchUpload");
+        const values = [...parts].sort((a, b) => a.partNumber - b.partNumber).map((part) => {
+          const value = upload.parts.get(part.partNumber);
+          if (!value || sha256(value) !== part.etag) throw new Error("InvalidPart");
+          return new Uint8Array(value);
+        });
+        const bytes = new Uint8Array(values.reduce((total, value) => total + value.byteLength, 0));
+        let offset = 0;
+        for (const value of values) {
+          bytes.set(value, offset);
+          offset += value.byteLength;
+        }
+        this.uploads.delete(uploadId);
+        const object = await this.put(key, bytes.buffer);
+        if (!object) throw new Error("Multipart completion failed");
+        return object;
+      }
+    };
+  }
+}
+
 function pdfBytes(): ArrayBuffer {
   return new TextEncoder().encode("%PDF-1.7\nsynthetic evidence").buffer;
 }
@@ -51,6 +106,25 @@ function sha256(bytes: ArrayBuffer): string {
 }
 
 describe("evidence vault", () => {
+  it("plans low-data image preparation and fixed-size resumable parts", () => {
+    const plan = planEvidenceUpload({
+      mimeType: "image/jpeg",
+      byteSize: minimumEvidenceMultipartPartBytes + 123,
+      sha256: "a".repeat(64),
+      lowDataMode: true
+    });
+    expect(plan).toEqual({
+      strategy: "multipart",
+      byteSize: minimumEvidenceMultipartPartBytes + 123,
+      partSize: minimumEvidenceMultipartPartBytes,
+      partCount: 2,
+      clientPreparation: "reencode-image-if-smaller"
+    });
+    expect(expectedEvidencePartBytes(plan, 1)).toBe(minimumEvidenceMultipartPartBytes);
+    expect(expectedEvidencePartBytes(plan, 2)).toBe(123);
+    expect(() => expectedEvidencePartBytes(plan, 0)).toThrow("outside the upload plan");
+  });
+
   it("issues operation-, tenant- and object-scoped short-lived capabilities", async () => {
     const objectKey = buildEvidenceObjectKey({ organizationId, documentId, documentVersionId });
     const token = await issueEvidenceCapability({
@@ -109,6 +183,71 @@ describe("evidence vault", () => {
     await vault.promoteClean({ organizationId, objectKey, mimeType: "application/pdf", sha256: checksum });
     expect(await quarantine.head(objectKey)).toBeNull();
     expect(await clean.head(objectKey)).not.toBeNull();
+  });
+
+  it("resumes multipart quarantine staging and verifies the complete object", async () => {
+    const quarantine = new MultipartMemoryBucket();
+    const vault = new EvidenceVault({ quarantine, clean: new MemoryBucket(), rejected: new MemoryBucket() });
+    const objectKey = buildEvidenceObjectKey({ organizationId, documentId, documentVersionId });
+    const bytes = new Uint8Array(minimumEvidenceMultipartPartBytes + 23);
+    bytes.set(new TextEncoder().encode("%PDF-1.7\n"), 0);
+    const checksum = sha256(bytes.buffer);
+    const session = await vault.beginResumableQuarantine({
+      organizationId,
+      documentVersionId,
+      objectKey,
+      mimeType: "application/pdf",
+      byteSize: bytes.byteLength,
+      sha256: checksum,
+      lowDataMode: true
+    });
+    const first = await vault.uploadResumableQuarantinePart({
+      session,
+      partNumber: 1,
+      bytes: bytes.slice(0, session.partSize).buffer
+    });
+    const second = await vault.uploadResumableQuarantinePart({
+      session,
+      partNumber: 2,
+      bytes: bytes.slice(session.partSize).buffer
+    });
+    await expect(vault.completeResumableQuarantine({
+      organizationId,
+      documentVersionId,
+      mimeType: "application/pdf",
+      sha256: checksum,
+      session,
+      parts: [second, first]
+    })).resolves.toMatchObject({ sha256: checksum, object: { key: objectKey, size: bytes.byteLength } });
+  });
+
+  it("rejects malformed resumable parts and deletes a checksum-mismatched completion", async () => {
+    const quarantine = new MultipartMemoryBucket();
+    const vault = new EvidenceVault({ quarantine, clean: new MemoryBucket(), rejected: new MemoryBucket() });
+    const objectKey = buildEvidenceObjectKey({ organizationId, documentId, documentVersionId });
+    const bytes = new Uint8Array(minimumEvidenceMultipartPartBytes + 1);
+    bytes.set(new TextEncoder().encode("%PDF-1.7\n"), 0);
+    const session = await vault.beginResumableQuarantine({
+      organizationId,
+      documentVersionId,
+      objectKey,
+      mimeType: "application/pdf",
+      byteSize: bytes.byteLength,
+      sha256: "0".repeat(64)
+    });
+    await expect(vault.uploadResumableQuarantinePart({ session, partNumber: 1, bytes: new ArrayBuffer(1) }))
+      .rejects.toThrow("exactly");
+    const first = await vault.uploadResumableQuarantinePart({ session, partNumber: 1, bytes: bytes.slice(0, session.partSize).buffer });
+    const second = await vault.uploadResumableQuarantinePart({ session, partNumber: 2, bytes: bytes.slice(session.partSize).buffer });
+    await expect(vault.completeResumableQuarantine({
+      organizationId,
+      documentVersionId,
+      mimeType: "application/pdf",
+      sha256: "0".repeat(64),
+      session,
+      parts: [first, second]
+    })).rejects.toThrow("completed resumable upload");
+    expect(await quarantine.head(objectKey)).toBeNull();
   });
 
   it("rejects spoofed media types and checksum mismatches", async () => {

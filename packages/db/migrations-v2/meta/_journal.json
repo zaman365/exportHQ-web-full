@@ -78,6 +78,27 @@
       "when": 1788028139828,
       "tag": "0010_r1_legal_acceptances",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788029005754,
+      "tag": "0011_r2_private_alpha_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788029639777,
+      "tag": "0012_r2_pilot_editor_assignments",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1788029674972,
+      "tag": "0013_r2_pilot_editor_tenant_key",
+      "breakpoints": true
     }
   ]
 }

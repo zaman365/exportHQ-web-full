@@ -12,6 +12,7 @@ import {
   tasks
 } from "../schema";
 import type { ExportHqTransaction, TenantContext } from "../tenant";
+import { recordPilotMilestoneEvent } from "./pilot";
 
 export interface ExtractionSourceSpanInput {
   readonly pageNumber?: number;
@@ -165,7 +166,8 @@ export async function reviewExtractionField(
 ): Promise<string> {
   const [field] = await tx.select({
     id: aiExtractionFields.id,
-    runId: aiExtractionFields.extractionRunId
+    runId: aiExtractionFields.extractionRunId,
+    fieldPath: aiExtractionFields.fieldPath
   }).from(aiExtractionFields).where(and(
     eq(aiExtractionFields.organizationId, context.organizationId),
     eq(aiExtractionFields.id, input.extractionFieldId)
@@ -243,6 +245,14 @@ export async function reviewExtractionField(
     aggregateId: field.runId,
     dedupeKey: `ai-extraction-decision:${decision.id}`,
     payload: { fieldId: field.id, decisionId: decision.id, decision: input.decision }
+  });
+  if (input.decision === "corrected") await recordPilotMilestoneEvent(tx, context, {
+    eventName: "extraction_corrected",
+    quantity: 1,
+    success: true,
+    fieldType: field.fieldPath,
+    dedupeKey: `extraction-corrected:${decision.id}`,
+    occurredAt: now
   });
   return decision.id;
 }

@@ -1,5 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { and, eq, sql } from "drizzle-orm";
+import { privateAlphaAgreement } from "@exporthq/domain";
 import { createDatabase, type ExportHqDatabase } from "./index";
 import { readTenantContext, withPlatformTransaction, withTenantTransaction } from "./tenant";
 import { recordAuditEvent } from "./audit";
@@ -12,6 +13,23 @@ import {
   listActorLegalAcceptances,
   listEffectiveLegalDocuments
 } from "./repositories/legal";
+import {
+  acceptPilotAgreement,
+  activatePilotParticipation,
+  assignFirstShipmentPassEditor,
+  convertFirstShipmentPass,
+  createPilotSupportCase,
+  extendFirstShipmentPass,
+  grantFirstShipmentPass,
+  invitePilotOrganization,
+  readActivePilotPassLimits,
+  readPilotOutcomeMetrics,
+  readPilotParticipation,
+  recordPilotMetricEvent,
+  recordPilotObservation,
+  recordPilotSupportWork,
+  revokeFirstShipmentPassEditor
+} from "./repositories/pilot";
 import { readTenantExportLane, readWorkspaceDashboard } from "./read-models/workspace";
 import { PostgresIdempotencyStore, PostgresRateLimitStore } from "./stores";
 import { createExportLane, listExportLanes, transitionStoredExportLane } from "./repositories/export-lanes";
@@ -59,6 +77,11 @@ import {
   legalDocuments,
   organizationLegalAcceptances,
   organizationMemberships,
+  pilotMetricEvents,
+  pilotObservations,
+  pilotPassGrants,
+  pilotSupportCases,
+  pilotWorkLogs,
   products,
   regulatoryPublishers,
   regulatoryRuleLaneImpacts,
@@ -934,6 +957,221 @@ describeWithDatabase("tenant isolation", () => {
       readOrganizationTier(tx, scoped)
     );
     expect(otherTier).toBe("explore");
+  });
+
+  it("runs the invitation-only First Shipment Pass with enforced limits and measurable support", async () => {
+    const agreementHash = privateAlphaAgreement.contentHashSha256;
+    const actorHash = "8".repeat(64);
+    const operations = { organizationId: tenantB, actorId: "system_pilot_ops", actorType: "system" as const };
+    const participationId = await withTenantTransaction(database, operations, (tx, scoped) =>
+      invitePilotOrganization(tx, scoped, {
+        cohortCode: "alpha-01",
+        exporterStage: "first_shipment",
+        sectors: ["jute"],
+        destinationCountryCodes: ["GB"],
+        agreementVersion: privateAlphaAgreement.version,
+        agreementHashSha256: agreementHash,
+        dataHandlingVersion: "synthetic-data-v1",
+        supportHours: "Sunday–Thursday 09:00–17:00 Asia/Dhaka"
+      })
+    );
+    await expect(withTenantTransaction(database, context(tenantB), (tx, scoped) =>
+      acceptPilotAgreement(tx, scoped, { agreementVersion: privateAlphaAgreement.version, agreementHashSha256: "0".repeat(64) })
+    )).rejects.toThrow("does not match");
+    await withTenantTransaction(database, context(tenantB), (tx, scoped) =>
+      acceptPilotAgreement(tx, scoped, { agreementVersion: privateAlphaAgreement.version, agreementHashSha256: agreementHash })
+    );
+    await withTenantTransaction(database, operations, (tx, scoped) =>
+      activatePilotParticipation(tx, scoped, { supportOwnerActorId: "staff_alpha_owner" })
+    );
+    const grantId = await withTenantTransaction(database, operations, (tx, scoped) =>
+      grantFirstShipmentPass(tx, scoped, { editorActorIds: ["user_test"] })
+    );
+    const limits = await withTenantTransaction(database, context(tenantB), (tx, scoped) =>
+      readActivePilotPassLimits(tx, scoped)
+    );
+    expect(limits).toMatchObject({ id: grantId, laneLimit: 1, editorLimit: 3, launchCreditBps: 10000 });
+    await expect(withTenantTransaction(database, { ...context(tenantB), actorId: "user_not_assigned" }, (tx, scoped) =>
+      readOrganizationTier(tx, scoped)
+    )).resolves.toBe("explore");
+    await expect(withTenantTransaction(database, context(tenantB), (tx, scoped) =>
+      readOrganizationTier(tx, scoped)
+    )).resolves.toBe("launch");
+    await withTenantTransaction(database, operations, (tx, scoped) =>
+      assignFirstShipmentPassEditor(tx, scoped, { grantId, actorId: "user_alpha_editor_2" })
+    );
+    await withTenantTransaction(database, operations, (tx, scoped) =>
+      assignFirstShipmentPassEditor(tx, scoped, { grantId, actorId: "user_alpha_editor_3" })
+    );
+    await expect(withTenantTransaction(database, operations, (tx, scoped) =>
+      assignFirstShipmentPassEditor(tx, scoped, { grantId, actorId: "user_alpha_editor_4" })
+    )).rejects.toThrow("permits 3 editors");
+    await withTenantTransaction(database, operations, (tx, scoped) =>
+      revokeFirstShipmentPassEditor(tx, scoped, { grantId, actorId: "user_alpha_editor_2", reason: "Synthetic seat reassignment" })
+    );
+    await withTenantTransaction(database, operations, (tx, scoped) =>
+      assignFirstShipmentPassEditor(tx, scoped, { grantId, actorId: "user_alpha_editor_4" })
+    );
+    await expect(withTenantTransaction(database, { ...context(tenantB), actorId: "user_alpha_editor_2" }, (tx, scoped) =>
+      readOrganizationTier(tx, scoped)
+    )).resolves.toBe("explore");
+
+    const suffix = crypto.randomUUID().slice(0, 8);
+    const lane = await withTenantTransaction(database, context(tenantB), async (tx, scoped) => {
+      const [membership] = await tx.insert(organizationMemberships).values({
+        organizationId: tenantB,
+        clerkUserId: `user_alpha_${suffix}`,
+        role: "org:admin"
+      }).returning({ id: organizationMemberships.id });
+      const [product] = await tx.insert(products).values({
+        organizationId: tenantB,
+        sku: `ALPHA-${suffix}`,
+        name: "Synthetic Alpha jute product",
+        category: "jute",
+        countryOfOrigin: "BD",
+        currency: "BDT"
+      }).returning({ id: products.id });
+      if (!membership || !product) throw new Error("Synthetic Alpha prerequisites were not created.");
+      return createExportLane(tx, scoped, {
+        productId: product.id,
+        originCountryCode: "BD",
+        destinationCountryCode: "GB",
+        salesChannel: "wholesale",
+        buyerSegment: "synthetic importer",
+        route: "Chattogram-Felixstowe",
+        incoterm: "FOB",
+        targetMarginBps: 1500,
+        currency: "BDT",
+        ownerMembershipId: membership.id
+      });
+    });
+    await expect(withTenantTransaction(database, context(tenantB), async (tx, scoped) => {
+      const [product] = await tx.select({ id: products.id }).from(products).where(eq(products.organizationId, tenantB)).limit(1);
+      const [membership] = await tx.select({ id: organizationMemberships.id }).from(organizationMemberships).where(eq(organizationMemberships.organizationId, tenantB)).limit(1);
+      if (!product || !membership) throw new Error("Synthetic Alpha prerequisites disappeared.");
+      return createExportLane(tx, scoped, {
+        productId: product.id,
+        originCountryCode: "BD",
+        destinationCountryCode: "DE",
+        salesChannel: "wholesale",
+        buyerSegment: "second synthetic importer",
+        route: "Chattogram-Hamburg",
+        incoterm: "FOB",
+        targetMarginBps: 1500,
+        currency: "BDT",
+        ownerMembershipId: membership.id
+      });
+    })).rejects.toThrow("permits 1 active Export Lane");
+
+    await expect(withTenantTransaction(database, context(tenantB), (tx, scoped) =>
+      createPilotSupportCase(tx, scoped, {
+        exportLaneId: lane.id,
+        title: "Unauthorized customer-created support case",
+        scope: "Synthetic",
+        responsibility: "export_hq",
+        ownerActorId: "staff_alpha_owner",
+        slaResponseMinutes: 240
+      })
+    )).rejects.toThrow("reviewed operations");
+    const supportCaseId = await withTenantTransaction(database, operations, (tx, scoped) =>
+      createPilotSupportCase(tx, scoped, {
+        exportLaneId: lane.id,
+        title: "Prepare synthetic first-shipment action pack",
+        scope: "One reviewed action pack; no unlimited specialist commitment",
+        responsibility: "export_hq",
+        ownerActorId: "staff_alpha_owner",
+        slaResponseMinutes: 240,
+        resolutionDueAt: new Date(Date.now() + 3 * 24 * 60 * 60_000)
+      })
+    );
+    await withTenantTransaction(database, operations, (tx, scoped) =>
+      recordPilotSupportWork(tx, scoped, {
+        supportCaseId,
+        supportMinutes: 45,
+        specialistCostMinor: 60000,
+        automationUnits: 2,
+        correctionCount: 1,
+        outcomeCode: "action_pack_prepared",
+        occurredAt: new Date()
+      })
+    );
+    await withTenantTransaction(database, operations, (tx, scoped) =>
+      recordPilotObservation(tx, scoped, {
+        observationType: "burden_replacement",
+        summary: "Synthetic participant replaced one spreadsheet and WhatsApp follow-up list.",
+        replacedBurden: "multiple",
+        trustScore: 4,
+        willingnessToPayMinor: 750000,
+        observedAt: new Date()
+      })
+    );
+    const metricId = await withTenantTransaction(database, context(tenantB), (tx, scoped) =>
+      recordPilotMetricEvent(tx, scoped, {
+        participationId,
+        exportLaneId: lane.id,
+        eventName: "action_plan_ready",
+        actorHashSha256: actorHash,
+        durationSeconds: 1200,
+        success: true,
+        dedupeKey: `synthetic-action-plan-${suffix}`,
+        occurredAt: new Date()
+      })
+    );
+    const replayedMetricId = await withTenantTransaction(database, context(tenantB), (tx, scoped) =>
+      recordPilotMetricEvent(tx, scoped, {
+        participationId,
+        exportLaneId: lane.id,
+        eventName: "action_plan_ready",
+        actorHashSha256: actorHash,
+        durationSeconds: 1200,
+        success: true,
+        dedupeKey: `synthetic-action-plan-${suffix}`,
+        occurredAt: new Date()
+      })
+    );
+    expect(replayedMetricId).toBe(metricId);
+    const evidence = await withTenantTransaction(database, operations, async (tx) => ({
+      supportCases: await tx.select().from(pilotSupportCases).where(eq(pilotSupportCases.id, supportCaseId)),
+      workLogs: await tx.select().from(pilotWorkLogs).where(eq(pilotWorkLogs.supportCaseId, supportCaseId)),
+      observations: await tx.select().from(pilotObservations).where(eq(pilotObservations.participationId, participationId)),
+      metrics: await tx.select().from(pilotMetricEvents).where(eq(pilotMetricEvents.id, metricId))
+    }));
+    expect(evidence.supportCases).toHaveLength(1);
+    expect(evidence.workLogs).toHaveLength(1);
+    expect(evidence.observations).toHaveLength(1);
+    expect(evidence.metrics).toHaveLength(1);
+    const outcomes = await withTenantTransaction(database, operations, (tx, scoped) => readPilotOutcomeMetrics(tx, scoped));
+    expect(outcomes).toMatchObject({
+      firstValueSeconds: 1200,
+      createdLaneOrActionPlan: true,
+      supportMinutes: 45,
+      specialistCostMinor: 60000,
+      automationUnits: 2,
+      correctionCount: 1,
+      trustResponses: 1,
+      willingnessToPayResponses: 1,
+      burdenReplacementConfirmed: true
+    });
+    const invisibleFromA = await withTenantTransaction(database, context(tenantA), (tx, scoped) => readPilotParticipation(tx, scoped));
+    expect(invisibleFromA).toBeNull();
+    const deniedPassUpdate = await withTenantTransaction(database, context(tenantB), (tx) =>
+      tx.update(pilotPassGrants).set({ status: "revoked" }).where(eq(pilotPassGrants.id, grantId))
+        .returning({ id: pilotPassGrants.id })
+    );
+    expect(deniedPassUpdate).toEqual([]);
+    await expect(withTenantTransaction(database, context(tenantB), (tx, scoped) =>
+      readActivePilotPassLimits(tx, scoped)
+    )).resolves.toMatchObject({ id: grantId });
+    await withTenantTransaction(database, operations, (tx, scoped) =>
+      extendFirstShipmentPass(tx, scoped, { grantId, additionalDays: 7, reason: "Synthetic observation window" })
+    );
+    await withTenantTransaction(database, operations, (tx, scoped) =>
+      convertFirstShipmentPass(tx, scoped, { grantId, annualLaunchReference: "synthetic-annual-launch.invalid" })
+    );
+    const noLongerActive = await withTenantTransaction(database, context(tenantB), (tx, scoped) =>
+      readActivePilotPassLimits(tx, scoped)
+    );
+    expect(noLongerActive).toBeNull();
   });
 
   it("atomically enforces a shared rate-limit ceiling under concurrency", async () => {

@@ -1,8 +1,9 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, lte } from "drizzle-orm";
 import { recordAuditEvent } from "../audit";
 import { enqueueOutboxEvent } from "../outbox";
 import { taskStatusHistory, tasks } from "../schema";
 import type { ExportHqTransaction, TenantContext } from "../tenant";
+import { recordPilotMilestoneEvent } from "./pilot";
 
 export class TaskVersionConflictError extends Error {
   constructor(readonly expectedVersion: number, readonly actualVersion: number) {
@@ -70,7 +71,42 @@ export async function transitionTaskStatus(
     dedupeKey: `task:${current.id}:v${nextVersion}`,
     payload: { fromStatus: current.status, toStatus: input.status, version: nextVersion }
   });
+  if (input.status === "completed") await recordPilotMilestoneEvent(tx, context, {
+    eventName: "task_completed",
+    exportLaneId: current.exportLaneId,
+    success: true,
+    outcomeCode: current.responsibility,
+    dedupeKey: `task-completed:${current.id}:v${nextVersion}`,
+    occurredAt: now
+  });
   return updated;
+}
+
+export async function recordOverduePilotTasks(
+  tx: ExportHqTransaction,
+  context: TenantContext,
+  now = new Date()
+): Promise<number> {
+  if (context.actorType === "customer") throw new Error("Only reviewed operations may run overdue task measurement.");
+  const overdue = await tx.select({
+    id: tasks.id,
+    exportLaneId: tasks.exportLaneId,
+    responsibility: tasks.responsibility,
+    dueAt: tasks.dueAt
+  }).from(tasks).where(and(
+    eq(tasks.organizationId, context.organizationId),
+    inArray(tasks.status, ["todo", "in_progress", "waiting_customer", "waiting_export_hq", "waiting_third_party", "blocked"]),
+    lte(tasks.dueAt, now)
+  ));
+  for (const task of overdue) await recordPilotMilestoneEvent(tx, context, {
+    eventName: "task_overdue",
+    exportLaneId: task.exportLaneId,
+    success: false,
+    outcomeCode: task.responsibility,
+    dedupeKey: `task-overdue:${task.id}:${task.dueAt?.toISOString() ?? "no-due-date"}`,
+    occurredAt: now
+  });
+  return overdue.length;
 }
 
 function allowedTransition(current: typeof tasks.$inferSelect.status, next: "todo" | "in_progress" | "completed" | "blocked"): boolean {

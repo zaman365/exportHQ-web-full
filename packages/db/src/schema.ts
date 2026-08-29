@@ -70,6 +70,16 @@ export const aiExtractionRunState = pgEnum("ai_extraction_run_state", ["proposed
 export const aiExtractionDecision = pgEnum("ai_extraction_decision", ["accepted", "rejected", "corrected"]);
 export const passportFactStatus = pgEnum("passport_fact_status", ["declared", "evidence_added", "under_review", "verified", "rejected", "expired"]);
 export const legalDocumentStatus = pgEnum("legal_document_status", ["draft", "published", "retired"]);
+export const pilotParticipationStatus = pgEnum("pilot_participation_status", ["invited", "accepted", "active", "paused", "completed", "withdrawn"]);
+export const pilotPassStatus = pgEnum("pilot_pass_status", ["active", "extended", "converted", "expired", "revoked"]);
+export const pilotSupportStatus = pgEnum("pilot_support_status", ["open", "in_progress", "waiting_customer", "resolved", "closed"]);
+export const pilotMetricEventName = pgEnum("pilot_metric_event_name", [
+  "invite_sent", "organization_created", "passport_started", "passport_completed",
+  "lane_created", "action_plan_ready", "canonical_field_reused", "canonical_field_reentered",
+  "upload_requested", "scan_completed", "scan_failed", "review_completed", "review_failed",
+  "task_completed", "task_overdue", "support_intervention", "extraction_corrected",
+  "trust_surveyed", "willingness_to_pay_recorded", "coordination_burden_replaced"
+]);
 
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -357,6 +367,8 @@ export const companyProfiles = pgTable("company_profiles", {
   supportEmail: text("support_email"),
   defaultCurrency: text("default_currency").notNull().default("USD"),
   defaultTimezone: text("default_timezone").notNull().default("Asia/Dhaka"),
+  defaultLocale: text("default_locale").notNull().default("bn"),
+  lowDataMode: boolean("low_data_mode").notNull().default(false),
   exportStage: text("export_stage"),
   primarySalesChannel: text("primary_sales_channel"),
   marketStrategy: jsonb("market_strategy").$type<Record<string, unknown>>().notNull().default({}),
@@ -1278,6 +1290,179 @@ export const organizationEntitlements = pgTable("organization_entitlements", {
 }, (table) => [
   index("organization_entitlements_org_effective_idx").on(table.organizationId, table.effectiveFrom),
   check("organization_entitlements_window_check", sql`${table.effectiveTo} is null or ${table.effectiveTo} > ${table.effectiveFrom}`)
+]);
+
+/** Invitation-only Alpha enrollment. The agreement fields are deliberately
+ * explicit so a generic entitlement can never be mistaken for pilot consent. */
+export const pilotParticipations = pgTable("pilot_participations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  cohortCode: text("cohort_code").notNull(),
+  exporterStage: text("exporter_stage").notNull(),
+  sectors: text("sectors").array().notNull(),
+  destinationCountryCodes: text("destination_country_codes").array().notNull(),
+  status: pilotParticipationStatus("status").notNull().default("invited"),
+  agreementVersion: text("agreement_version"),
+  agreementHashSha256: text("agreement_hash_sha256"),
+  agreementAcceptedBy: text("agreement_accepted_by"),
+  agreementAcceptedAt: timestamp("agreement_accepted_at", { withTimezone: true }),
+  dataHandlingVersion: text("data_handling_version").notNull(),
+  supportOwnerActorId: text("support_owner_actor_id"),
+  supportHours: text("support_hours").notNull(),
+  invitedBy: text("invited_by").notNull(),
+  invitedAt: timestamp("invited_at", { withTimezone: true }).notNull().defaultNow(),
+  startedAt: timestamp("started_at", { withTimezone: true }),
+  endedAt: timestamp("ended_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("pilot_participations_org_unique").on(table.organizationId),
+  index("pilot_participations_cohort_status_idx").on(table.cohortCode, table.status),
+  check("pilot_participations_stage_check", sql`${table.exporterStage} in ('established', 'first_shipment', 'second_shipment')`),
+  check("pilot_participations_sector_check", sql`cardinality(${table.sectors}) >= 1`),
+  check("pilot_participations_destination_check", sql`cardinality(${table.destinationCountryCodes}) >= 1`),
+  check("pilot_participations_agreement_hash_check", sql`${table.agreementHashSha256} is null or ${table.agreementHashSha256} ~ '^[a-f0-9]{64}$'`),
+  check("pilot_participations_acceptance_check", sql`${table.status} = 'invited' or num_nonnulls(${table.agreementVersion}, ${table.agreementHashSha256}, ${table.agreementAcceptedBy}, ${table.agreementAcceptedAt}) = 4`),
+  check("pilot_participations_active_owner_check", sql`${table.status} not in ('active', 'paused', 'completed') or (${table.supportOwnerActorId} is not null and ${table.startedAt} is not null)`),
+  check("pilot_participations_end_check", sql`${table.status} not in ('completed', 'withdrawn') or ${table.endedAt} is not null`)
+]);
+
+export const pilotPassGrants = pgTable("pilot_pass_grants", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  participationId: uuid("participation_id").notNull().references(() => pilotParticipations.id, { onDelete: "cascade" }),
+  entitlementId: uuid("entitlement_id").notNull().references(() => organizationEntitlements.id, { onDelete: "restrict" }),
+  productKey: text("product_key").notNull().default("first_shipment_pass"),
+  priceHypothesisMinor: integer("price_hypothesis_minor").notNull().default(750000),
+  currency: text("currency").notNull().default("BDT"),
+  laneLimit: integer("lane_limit").notNull().default(1),
+  editorLimit: integer("editor_limit").notNull().default(3),
+  launchCreditBps: integer("launch_credit_bps").notNull().default(10000),
+  status: pilotPassStatus("status").notNull().default("active"),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  extensionCount: integer("extension_count").notNull().default(0),
+  grantedBy: text("granted_by").notNull(),
+  convertedAt: timestamp("converted_at", { withTimezone: true }),
+  conversionReference: text("conversion_reference"),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("pilot_pass_grants_org_id_unique").on(table.organizationId, table.id),
+  uniqueIndex("pilot_pass_grants_entitlement_unique").on(table.entitlementId),
+  index("pilot_pass_grants_org_status_expiry_idx").on(table.organizationId, table.status, table.expiresAt),
+  check("pilot_pass_grants_product_check", sql`${table.productKey} = 'first_shipment_pass'`),
+  check("pilot_pass_grants_price_check", sql`${table.priceHypothesisMinor} = 750000 and ${table.currency} = 'BDT'`),
+  check("pilot_pass_grants_limits_check", sql`${table.laneLimit} = 1 and ${table.editorLimit} = 3 and ${table.launchCreditBps} = 10000`),
+  check("pilot_pass_grants_window_check", sql`${table.expiresAt} > ${table.startsAt}`),
+  check("pilot_pass_grants_extension_check", sql`${table.extensionCount} between 0 and 10`),
+  check("pilot_pass_grants_conversion_check", sql`(${table.status} = 'converted') = (${table.convertedAt} is not null and ${table.conversionReference} is not null)`)
+]);
+
+/** Pilot entitlements are organization records, but only explicitly assigned
+ * editors receive the Launch authorization ceiling. This keeps the advertised
+ * three-editor limit enforceable without treating identity-provider membership
+ * as a billing decision. */
+export const pilotPassEditors = pgTable("pilot_pass_editors", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  pilotPassGrantId: uuid("pilot_pass_grant_id").notNull().references(() => pilotPassGrants.id, { onDelete: "cascade" }),
+  actorId: text("actor_id").notNull(),
+  assignedBy: text("assigned_by").notNull(),
+  assignedAt: timestamp("assigned_at", { withTimezone: true }).notNull().defaultNow(),
+  revokedAt: timestamp("revoked_at", { withTimezone: true })
+}, (table) => [
+  uniqueIndex("pilot_pass_editors_grant_actor_unique").on(table.pilotPassGrantId, table.actorId),
+  index("pilot_pass_editors_org_actor_idx").on(table.organizationId, table.actorId),
+  check("pilot_pass_editors_actor_check", sql`length(btrim(${table.actorId})) > 0`)
+]);
+
+export const pilotSupportCases = pgTable("pilot_support_cases", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  participationId: uuid("participation_id").notNull().references(() => pilotParticipations.id, { onDelete: "cascade" }),
+  exportLaneId: uuid("export_lane_id").references(() => exportLanes.id, { onDelete: "set null" }),
+  title: text("title").notNull(),
+  scope: text("scope").notNull(),
+  responsibility: responsibility("responsibility").notNull(),
+  ownerActorId: text("owner_actor_id").notNull(),
+  slaResponseMinutes: integer("sla_response_minutes").notNull(),
+  responseDueAt: timestamp("response_due_at", { withTimezone: true }).notNull(),
+  resolutionDueAt: timestamp("resolution_due_at", { withTimezone: true }),
+  status: pilotSupportStatus("status").notNull().default("open"),
+  version: integer("version").notNull().default(1),
+  createdBy: text("created_by").notNull(),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("pilot_support_cases_org_id_unique").on(table.organizationId, table.id),
+  index("pilot_support_cases_org_status_due_idx").on(table.organizationId, table.status, table.responseDueAt),
+  check("pilot_support_cases_sla_check", sql`${table.slaResponseMinutes} between 15 and 10080`),
+  check("pilot_support_cases_version_check", sql`${table.version} >= 1`),
+  check("pilot_support_cases_resolution_check", sql`${table.status} not in ('resolved', 'closed') or ${table.resolvedAt} is not null`)
+]);
+
+export const pilotWorkLogs = pgTable("pilot_work_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  supportCaseId: uuid("support_case_id").notNull().references(() => pilotSupportCases.id, { onDelete: "cascade" }),
+  supportMinutes: integer("support_minutes").notNull(),
+  specialistCostMinor: integer("specialist_cost_minor").notNull().default(0),
+  currency: text("currency").notNull().default("BDT"),
+  automationUnits: integer("automation_units").notNull().default(0),
+  correctionCount: integer("correction_count").notNull().default(0),
+  outcomeCode: text("outcome_code").notNull(),
+  recordedBy: text("recorded_by").notNull(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("pilot_work_logs_org_case_time_idx").on(table.organizationId, table.supportCaseId, table.occurredAt),
+  check("pilot_work_logs_minutes_check", sql`${table.supportMinutes} between 1 and 1440`),
+  check("pilot_work_logs_cost_check", sql`${table.specialistCostMinor} >= 0 and ${table.currency} = 'BDT'`),
+  check("pilot_work_logs_usage_check", sql`${table.automationUnits} >= 0 and ${table.correctionCount} >= 0`)
+]);
+
+export const pilotObservations = pgTable("pilot_observations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  participationId: uuid("participation_id").notNull().references(() => pilotParticipations.id, { onDelete: "cascade" }),
+  observationType: text("observation_type").notNull(),
+  summary: text("summary").notNull(),
+  workaround: text("workaround"),
+  replacedBurden: text("replaced_burden").notNull().default("none"),
+  trustScore: integer("trust_score"),
+  willingnessToPayMinor: integer("willingness_to_pay_minor"),
+  currency: text("currency").notNull().default("BDT"),
+  observedBy: text("observed_by").notNull(),
+  observedAt: timestamp("observed_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("pilot_observations_org_participation_time_idx").on(table.organizationId, table.participationId, table.observedAt),
+  check("pilot_observations_type_check", sql`${table.observationType} in ('customer_observation', 'workaround', 'pricing', 'trust', 'burden_replacement', 'outcome')`),
+  check("pilot_observations_burden_check", sql`${table.replacedBurden} in ('none', 'spreadsheet', 'email', 'whatsapp', 'multiple')`),
+  check("pilot_observations_trust_check", sql`${table.trustScore} is null or ${table.trustScore} between 1 and 5`),
+  check("pilot_observations_wtp_check", sql`${table.willingnessToPayMinor} is null or (${table.willingnessToPayMinor} >= 0 and ${table.currency} = 'BDT')`)
+]);
+
+export const pilotMetricEvents = pgTable("pilot_metric_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  participationId: uuid("participation_id").references(() => pilotParticipations.id, { onDelete: "set null" }),
+  exportLaneId: uuid("export_lane_id").references(() => exportLanes.id, { onDelete: "set null" }),
+  eventName: pilotMetricEventName("event_name").notNull(),
+  actorHashSha256: text("actor_hash_sha256").notNull(),
+  durationSeconds: integer("duration_seconds"),
+  quantity: integer("quantity"),
+  success: boolean("success"),
+  fieldType: text("field_type"),
+  outcomeCode: text("outcome_code"),
+  dedupeKey: text("dedupe_key").notNull(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("pilot_metric_events_org_dedupe_unique").on(table.organizationId, table.dedupeKey),
+  index("pilot_metric_events_org_name_time_idx").on(table.organizationId, table.eventName, table.occurredAt),
+  check("pilot_metric_events_actor_hash_check", sql`${table.actorHashSha256} ~ '^[a-f0-9]{64}$'`),
+  check("pilot_metric_events_duration_check", sql`${table.durationSeconds} is null or ${table.durationSeconds} >= 0`),
+  check("pilot_metric_events_quantity_check", sql`${table.quantity} is null or ${table.quantity} >= 0`)
 ]);
 
 /**
