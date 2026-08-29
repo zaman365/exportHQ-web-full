@@ -5,6 +5,10 @@ This file is intentionally not a self-approval mechanism: the person accepting
 each decision records their own name, date, scope, decision and evidence link.
 An automated agent must not manufacture or sign an approval.
 
+The founder's 2026-08-29 solo-repository decision removes only the requirement
+for a second GitHub collaborator to approve a pull request. It does not approve
+any row below and does not waive qualified external review.
+
 | Decision                                                | Accountable owner     | Required independent reviewer    | Status  | Evidence                                                     |
 | ------------------------------------------------------- | --------------------- | -------------------------------- | ------- | ------------------------------------------------------------ |
 | Product scope, capability claims and R0 release         | Mohammed Maniruzzaman | Business/release reviewer        | Pending | PR #1 and protected-main artifact                            |

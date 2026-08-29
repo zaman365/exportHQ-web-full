@@ -24,8 +24,10 @@ The authoritative resource inventory is [`../production-inventory.md`](../produc
 
 Mohammed Maniruzzaman occupies all six roles in
 [`../production-ownership.md`](../production-ownership.md) for the single-founder
-R0 period. Role assignment does not satisfy the separate independent-review,
-security-review or legal-approval gates.
+R0 period. A documented solo-repository exception removes the second GitHub
+reviewer requirement while preserving pull requests and hosted checks. Role
+assignment and that exception do not satisfy security-review, privacy/legal or
+release-approval gates.
 
 ## Capability status
 
@@ -37,5 +39,5 @@ Evidence belongs under `docs/release/evidence/<version-or-gate>/` and must inclu
 
 Local repository evidence is recorded in
 [`evidence/r0-local-2026-08-29/README.md`](evidence/r0-local-2026-08-29/README.md).
-It does not close the provider, GitHub or human-approval items listed in
+It does not close the provider or human-approval items listed in
 [`R0_EXTERNAL_BLOCKERS.md`](R0_EXTERNAL_BLOCKERS.md), so R1 remains blocked.
