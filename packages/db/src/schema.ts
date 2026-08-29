@@ -65,6 +65,9 @@ export const evidenceStorageState = pgEnum("evidence_storage_state", ["quarantin
 export const evidenceScanState = pgEnum("evidence_scan_state", ["queued", "scanning", "clean", "rejected", "retryable_failure", "dead_letter"]);
 export const evidenceShareStatus = pgEnum("evidence_share_status", ["active", "revoked", "expired"]);
 export const verificationCaseStatus = pgEnum("verification_case_status", ["draft", "submitted", "under_review", "verified", "rejected", "withdrawn"]);
+export const regulatoryImpactState = pgEnum("regulatory_impact_state", ["pending", "acknowledged", "resolved", "superseded"]);
+export const aiExtractionRunState = pgEnum("ai_extraction_run_state", ["proposed", "under_review", "accepted", "rejected", "failed"]);
+export const aiExtractionDecision = pgEnum("ai_extraction_decision", ["accepted", "rejected", "corrected"]);
 export const passportFactStatus = pgEnum("passport_fact_status", ["declared", "evidence_added", "under_review", "verified", "rejected", "expired"]);
 
 export const organizations = pgTable("organizations", {
@@ -770,6 +773,186 @@ export const businessVerificationStatusHistory = pgTable("business_verification_
   uniqueIndex("business_verification_history_case_version_unique").on(table.caseId, table.caseVersion),
   index("business_verification_history_org_case_idx").on(table.organizationId, table.caseId),
   check("business_verification_history_version_check", sql`${table.caseVersion} >= 2`)
+]);
+
+/** Reviewed public/official content. The application role may read published
+ * records but cannot publish or edit the registry. */
+export const regulatoryPublishers = pgTable("regulatory_publishers", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  slug: text("slug").notNull().unique(),
+  name: text("name").notNull(),
+  publisherType: text("publisher_type").notNull(),
+  jurisdiction: text("jurisdiction").notNull(),
+  canonicalBaseUrl: text("canonical_base_url").notNull(),
+  active: boolean("active").notNull().default(true),
+  ...timestamps
+}, (table) => [
+  check("regulatory_publishers_type_check", sql`${table.publisherType} in ('official', 'intergovernmental', 'reviewed_commentary')`)
+]);
+
+export const regulatorySources = pgTable("regulatory_sources", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  publisherId: uuid("publisher_id").notNull().references(() => regulatoryPublishers.id, { onDelete: "restrict" }),
+  canonicalUrl: text("canonical_url").notNull().unique(),
+  title: text("title").notNull(),
+  jurisdiction: text("jurisdiction").notNull(),
+  sourceType: text("source_type").notNull(),
+  reference: text("reference").notNull(),
+  contentHashSha256: text("content_hash_sha256").notNull(),
+  effectiveFrom: timestamp("effective_from", { withTimezone: true }),
+  supersededAt: timestamp("superseded_at", { withTimezone: true }),
+  retrievedAt: timestamp("retrieved_at", { withTimezone: true }).notNull(),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }).notNull(),
+  reviewedBy: text("reviewed_by").notNull(),
+  confidence: text("confidence").notNull(),
+  methodVersion: text("method_version").notNull(),
+  freshnessSlaDays: integer("freshness_sla_days").notNull(),
+  nextReviewAt: timestamp("next_review_at", { withTimezone: true }).notNull(),
+  reviewState: reviewState("review_state").notNull().default("pending_review"),
+  ...timestamps
+}, (table) => [
+  index("regulatory_sources_publisher_review_idx").on(table.publisherId, table.reviewState, table.nextReviewAt),
+  check("regulatory_sources_hash_check", sql`${table.contentHashSha256} ~ '^[a-f0-9]{64}$'`),
+  check("regulatory_sources_confidence_check", sql`${table.confidence} in ('high', 'medium', 'low')`),
+  check("regulatory_sources_freshness_check", sql`${table.freshnessSlaDays} between 1 and 3650`),
+  check("regulatory_sources_review_window_check", sql`${table.nextReviewAt} > ${table.reviewedAt}`)
+]);
+
+export const regulatoryRules = pgTable("regulatory_rules", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sourceId: uuid("source_id").notNull().references(() => regulatorySources.id, { onDelete: "restrict" }),
+  stableKey: text("stable_key").notNull(),
+  version: integer("version").notNull(),
+  jurisdiction: text("jurisdiction").notNull(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  productCategories: text("product_categories").array().notNull().default([]),
+  hsCodes: text("hs_codes").array().notNull().default([]),
+  marketCountryCodes: text("market_country_codes").array().notNull().default([]),
+  effectiveFrom: timestamp("effective_from", { withTimezone: true }).notNull(),
+  supersededAt: timestamp("superseded_at", { withTimezone: true }),
+  confidence: text("confidence").notNull(),
+  methodVersion: text("method_version").notNull(),
+  ruleVersion: text("rule_version").notNull(),
+  reviewState: reviewState("review_state").notNull().default("pending_review"),
+  reviewedBy: text("reviewed_by").notNull(),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }).notNull(),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("regulatory_rules_key_version_unique").on(table.stableKey, table.version),
+  uniqueIndex("regulatory_rules_current_key_unique").on(table.stableKey).where(sql`${table.supersededAt} is null`),
+  index("regulatory_rules_source_review_idx").on(table.sourceId, table.reviewState),
+  check("regulatory_rules_version_check", sql`${table.version} >= 1`),
+  check("regulatory_rules_confidence_check", sql`${table.confidence} in ('high', 'medium', 'low')`)
+]);
+
+export const regulatoryRuleLaneImpacts = pgTable("regulatory_rule_lane_impacts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  regulatoryRuleId: uuid("regulatory_rule_id").notNull().references(() => regulatoryRules.id, { onDelete: "restrict" }),
+  exportLaneId: uuid("export_lane_id").notNull().references(() => exportLanes.id, { onDelete: "cascade" }),
+  state: regulatoryImpactState("state").notNull().default("pending"),
+  impactType: text("impact_type").notNull().default("review_required"),
+  assessmentMethodVersion: text("assessment_method_version").notNull(),
+  detectedAt: timestamp("detected_at", { withTimezone: true }).notNull().defaultNow(),
+  acknowledgedBy: text("acknowledged_by"),
+  acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
+  resolvedBy: text("resolved_by"),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("regulatory_lane_impacts_rule_lane_unique").on(table.organizationId, table.regulatoryRuleId, table.exportLaneId),
+  index("regulatory_lane_impacts_org_state_idx").on(table.organizationId, table.state, table.detectedAt),
+  check("regulatory_lane_impacts_ack_check", sql`(${table.state} <> 'acknowledged') or (${table.acknowledgedBy} is not null and ${table.acknowledgedAt} is not null)`),
+  check("regulatory_lane_impacts_resolve_check", sql`(${table.state} <> 'resolved') or (${table.resolvedBy} is not null and ${table.resolvedAt} is not null)`)
+]);
+
+/** AI/extraction outputs are immutable proposals. Accepted business state is
+ * linked only after an append-only human decision. */
+export const aiExtractionRuns = pgTable("ai_extraction_runs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  documentVersionId: uuid("document_version_id").notNull().references(() => documentVersions.id, { onDelete: "restrict" }),
+  state: aiExtractionRunState("state").notNull().default("proposed"),
+  provider: text("provider").notNull(),
+  model: text("model").notNull(),
+  modelVersion: text("model_version").notNull(),
+  extractionSchema: text("extraction_schema").notNull(),
+  extractionSchemaVersion: text("extraction_schema_version").notNull(),
+  promptVersion: text("prompt_version").notNull(),
+  ruleVersion: text("rule_version").notNull(),
+  createdBy: text("created_by").notNull(),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  failureCode: text("failure_code"),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("ai_extraction_runs_org_id_unique").on(table.organizationId, table.id),
+  index("ai_extraction_runs_org_document_idx").on(table.organizationId, table.documentVersionId, table.createdAt),
+  check("ai_extraction_runs_failure_check", sql`(${table.state} = 'failed') = (${table.failureCode} is not null)`)
+]);
+
+export const aiExtractionFields = pgTable("ai_extraction_fields", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  extractionRunId: uuid("extraction_run_id").notNull().references(() => aiExtractionRuns.id, { onDelete: "cascade" }),
+  fieldPath: text("field_path").notNull(),
+  proposedValue: jsonb("proposed_value").$type<unknown>().notNull(),
+  confidenceBps: integer("confidence_bps").notNull(),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("ai_extraction_fields_org_id_unique").on(table.organizationId, table.id),
+  uniqueIndex("ai_extraction_fields_run_path_unique").on(table.extractionRunId, table.fieldPath),
+  index("ai_extraction_fields_org_run_idx").on(table.organizationId, table.extractionRunId),
+  check("ai_extraction_fields_confidence_check", sql`${table.confidenceBps} between 0 and 10000`)
+]);
+
+export const aiExtractionSourceSpans = pgTable("ai_extraction_source_spans", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  extractionFieldId: uuid("extraction_field_id").notNull().references(() => aiExtractionFields.id, { onDelete: "cascade" }),
+  documentVersionId: uuid("document_version_id").notNull().references(() => documentVersions.id, { onDelete: "restrict" }),
+  pageNumber: integer("page_number"),
+  startOffset: integer("start_offset"),
+  endOffset: integer("end_offset"),
+  locator: text("locator").notNull(),
+  quoteHashSha256: text("quote_hash_sha256").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("ai_extraction_spans_org_field_idx").on(table.organizationId, table.extractionFieldId),
+  check("ai_extraction_spans_page_check", sql`${table.pageNumber} is null or ${table.pageNumber} >= 1`),
+  check("ai_extraction_spans_offset_check", sql`num_nonnulls(${table.startOffset}, ${table.endOffset}) in (0, 2) and (${table.startOffset} is null or (${table.startOffset} >= 0 and ${table.endOffset} > ${table.startOffset}))`),
+  check("ai_extraction_spans_hash_check", sql`${table.quoteHashSha256} ~ '^[a-f0-9]{64}$'`)
+]);
+
+export const aiExtractionFieldDecisions = pgTable("ai_extraction_field_decisions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  extractionFieldId: uuid("extraction_field_id").notNull().references(() => aiExtractionFields.id, { onDelete: "cascade" }),
+  decision: aiExtractionDecision("decision").notNull(),
+  acceptedValue: jsonb("accepted_value").$type<unknown>(),
+  rationale: text("rationale").notNull(),
+  reviewerId: text("reviewer_id").notNull(),
+  supersedesDecisionId: uuid("supersedes_decision_id"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("ai_extraction_decisions_org_id_unique").on(table.organizationId, table.id),
+  index("ai_extraction_decisions_org_field_idx").on(table.organizationId, table.extractionFieldId, table.createdAt),
+  check("ai_extraction_decisions_value_check", sql`(${table.decision} = 'rejected' and ${table.acceptedValue} is null) or (${table.decision} in ('accepted', 'corrected') and ${table.acceptedValue} is not null)`),
+  check("ai_extraction_decisions_rationale_check", sql`char_length(trim(${table.rationale})) > 0`)
+]);
+
+export const aiExtractionUsages = pgTable("ai_extraction_usages", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  extractionFieldId: uuid("extraction_field_id").notNull().references(() => aiExtractionFields.id, { onDelete: "restrict" }),
+  decisionId: uuid("decision_id").notNull().references(() => aiExtractionFieldDecisions.id, { onDelete: "restrict" }),
+  downstreamEntityType: text("downstream_entity_type").notNull(),
+  downstreamEntityId: uuid("downstream_entity_id").notNull(),
+  usedBy: text("used_by").notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("ai_extraction_usages_field_entity_unique").on(table.extractionFieldId, table.downstreamEntityType, table.downstreamEntityId),
+  index("ai_extraction_usages_org_entity_idx").on(table.organizationId, table.downstreamEntityType, table.downstreamEntityId)
 ]);
 
 /**

@@ -36,6 +36,20 @@
       "when": 1788025869476,
       "tag": "0004_r1_lane_readiness",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788026328350,
+      "tag": "0005_r1_regulatory_ai_provenance",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788026371449,
+      "tag": "0006_r1_provenance_tenant_keys",
+      "breakpoints": true
     }
   ]
 }

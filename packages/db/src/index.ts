@@ -133,3 +133,18 @@ export {
   type ReadinessEvidenceRecord,
   type ReadinessLaneOption
 } from "./repositories/readiness";
+
+export {
+  listLaneRegulatoryImpacts,
+  syncLaneRegulatoryImpacts,
+  transitionRegulatoryLaneImpact,
+  type RegulatoryLaneImpactRecord
+} from "./repositories/regulatory";
+
+export {
+  createExtractionProposal,
+  recordAcceptedExtractionUsage,
+  reviewExtractionField,
+  type ExtractionFieldProposalInput,
+  type ExtractionSourceSpanInput
+} from "./repositories/ai-extraction";

@@ -8,6 +8,8 @@ Status language is centrally constrained to `Live`, `Pilot`, `Preview` and `Plan
 | Clerk identity boundary | Pilot | Production instance exists; complete method/MFA/reconciliation evidence is pending | Gate 1 |
 | PostgreSQL customer persistence | Preview | Frankfurt Neon projects and tenant repositories exist; live application credentials, Hyperdrive and remaining Gate 1 evidence are not active | Gate 1 |
 | Export Lane and readiness records | Preview | Tenant-scoped repositories, optimistic versions, audit/outbox, derived tasks and non-owner RLS tests exist; production activation and one complete synthetic journey remain | Gate 3 |
+| Regulatory source and lane-impact records | Preview | Versioned registry, freshness/review enforcement and tenant lane impacts exist with synthetic fixtures only; no real publisher record is active | Gate 3 plus reviewed source publication |
+| AI-assisted evidence extraction | Preview | Immutable proposal, model/prompt/rule provenance, source spans and human decision/usage controls exist; no production AI provider or automatic authoritative mutation is active | Gate 2 and Gate 4 |
 | Export Studio projections | Preview | Commercial and operating projections still use labelled synthetic/local adapters | Gate 3 |
 | Evidence vault | Planned | Upload/download fail closed; no R2 quarantine/scanner | Gate 2 |
 | Business verification | Preview | Submission UX exists; trusted evidence review is not active | Gate 4 |
