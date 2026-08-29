@@ -8,18 +8,22 @@
       "outputs": [
         ".next/**",
         "!.next/cache/**",
-        "dist/**"
+        "dist/**",
+        "out/**"
       ],
       "env": [
         "DATABASE_URL",
         "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
+        "NEXT_PUBLIC_SITE_URL",
+        "NEXT_PUBLIC_APP_URL",
         "NEXT_PUBLIC_CLERK_FRONTEND_API_ORIGIN",
         "CLERK_SECRET_KEY",
         "EXPORTHQ_ENVIRONMENT",
         "EXPORTHQ_ACTIVATION_GATES_PASSED",
         "EXPORTHQ_CSP_MODE",
         "EXPORTHQ_CSP_REPORT_URI",
-        "EXPORTHQ_EVIDENCE_ORIGINS"
+        "EXPORTHQ_EVIDENCE_ORIGINS",
+        "EXPORTHQ_BILLING_ACTIVATION_EVIDENCE"
       ]
     },
     "lint": {

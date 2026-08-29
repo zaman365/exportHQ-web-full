@@ -1,0 +1,60 @@
+name: cloudflare-build
+
+on:
+  pull_request:
+    paths:
+      - "apps/app/**"
+      - "packages/**"
+      - "scripts/cloudflare-smoke.mjs"
+      - ".github/workflows/cloudflare-build.yml"
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+  attestations: write
+
+jobs:
+  worker-artifact:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_SITE_URL: https://export-hq.com
+      NEXT_PUBLIC_APP_URL: https://export-hq.com/ExportPanel
+      EXPORTHQ_ENVIRONMENT: production
+      EXPORTHQ_DEMO_MODE: "false"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.22.0 }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @exporthq/app types:cloudflare
+      - run: pnpm --filter @exporthq/app check:vinext
+      - run: pnpm --filter @exporthq/app build:vinext
+      - run: pnpm --filter @exporthq/app dry-run:cloudflare
+      - run: node scripts/cloudflare-smoke.mjs
+      - name: Create immutable artifact and checksum
+        run: |
+          tar -C apps/app -czf exporthq-worker-${GITHUB_SHA}.tgz dist
+          sha256sum exporthq-worker-${GITHUB_SHA}.tgz > exporthq-worker-${GITHUB_SHA}.sha256
+      - uses: anchore/sbom-action@v0
+        with:
+          path: apps/app/dist
+          format: spdx-json
+          output-file: exporthq-worker-${{ github.sha }}.spdx.json
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: exporthq-worker-${{ github.sha }}.tgz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exporthq-worker-${{ github.sha }}
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            exporthq-worker-${{ github.sha }}.tgz
+            exporthq-worker-${{ github.sha }}.sha256
+            exporthq-worker-${{ github.sha }}.spdx.json

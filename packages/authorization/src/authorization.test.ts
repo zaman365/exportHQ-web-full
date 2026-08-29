@@ -52,6 +52,16 @@ describe("tenant isolation", () => {
     expect(canAccessOrganization(staff, "org_b", "compliance:view", now)).toBe(false);
     expect(canAccessOrganization(staff, "org_a", "compliance:manage", now)).toBe(false);
   });
+
+  it("does not let a platform administrator bypass an organization grant", () => {
+    const administrator: StaffPrincipal = {
+      kind: "staff",
+      userId: "staff_admin",
+      globalPermissions: new Set(["customers:view", "customers:manage", "platform:admin"]),
+      grants: []
+    };
+    expect(canAccessOrganization(administrator, "org_a", "company:view")).toBe(false);
+  });
 });
 
 describe("subscription entitlements", () => {

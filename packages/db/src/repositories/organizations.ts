@@ -70,6 +70,25 @@ export async function provisionOrganization(
   return { organizationId: row.organization_id, created: row.created };
 }
 
+export async function deactivateOrganization(
+  tx: ExportHqTransaction,
+  clerkOrganizationId: string,
+  actor: { readonly actorId: string; readonly actorType: "staff" | "system" }
+): Promise<string | null> {
+  const rows = (await tx.execute(
+    sql`select app_deactivate_organization(${assertClerkOrganizationId(clerkOrganizationId)}) as id`
+  )) as unknown as Array<{ id: string | null }>;
+  const organizationId = rows[0]?.id ?? null;
+  if (!organizationId) return null;
+  await recordPlatformAuditEvent(tx, actor, {
+    action: "organization.deactivated",
+    entityType: "organization",
+    entityId: organizationId,
+    metadata: { clerkOrganizationId }
+  });
+  return organizationId;
+}
+
 export interface MembershipIdentity {
   readonly clerkUserId: string;
   readonly role: string;

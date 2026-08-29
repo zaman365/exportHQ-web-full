@@ -262,6 +262,11 @@ Required during initial activation:
 - organization/workspace creation or selection; and
 - owner/admin confirmation to activate the workspace.
 
+Once production persistence is activated, PostgreSQL is authoritative for
+onboarding completion. Clerk metadata is a best-effort identity mirror written
+after the tenant transaction commits; a mirror outage must not roll back or
+falsely report failure for an already-committed onboarding command.
+
 Not required during onboarding:
 
 - HS code;
@@ -512,6 +517,11 @@ The operations console should provide:
 
 Staff are never silently added as customer members. Elevated access records customer, staff user, scope, reason, approver, start, expiry, revocation, and audit events.
 
+A platform-administrator label is not a cross-organization data bypass. Reading
+or changing a customer's records in Operations requires an active explicit
+grant, a case reference, permitted scope and a same-transaction access audit.
+Production staff access also requires the approved staff allowlist and MFA.
+
 ## 16. Revenue architecture
 
 ### 16.1 Recurring software
@@ -660,7 +670,7 @@ Growth metrics must never reward hiding uncertainty, inflating scores, recommend
 
 Build the commercial spine before multiplying integrations.
 
-## 24. Implementation truth as of 26 August 2026
+## 24. Implementation truth as of 29 August 2026
 
 ### Implemented in code or verified local vertical slices
 
@@ -677,29 +687,51 @@ Build the commercial spine before multiplying integrations.
 - Team directory, position hierarchy, department creation, dedicated channels, direct and Export HQ conversations, role-gated mutations, and organization-scoped persistence contracts.
 - Primary Email Inbox and selectable Actionable Inbox UX, provider catalog, email-to-action conversion, tier/role policy, Learning Center guidance, and tenant-scoped persistence/validation contracts.
 - Clerk session boundary, organization-aware authorization, admin allowlist design, database schema, RLS envelope, and tests.
+- Reproducible PostgreSQL 17 baseline and checksum manifest; non-owner application,
+  read-only support, migration and read-only backup role bootstrap; exhaustive RLS;
+  durable rate-limit/idempotency/webhook/outbox records; and clean migrate,
+  concurrency, backup and restore proof against an isolated local PostgreSQL.
+- Signature-verified Clerk organization and membership projection with atomic
+  delivery, audit and outbox state, payload-conflict detection, bounded retry,
+  dead-letter and replay-request contracts. Billing events request reconciliation
+  and never directly widen an Export HQ entitlement.
+- PostgreSQL-authoritative onboarding with a post-commit Clerk mirror, plus a
+  production Operations boundary that shows no customer records without an
+  active explicit case grant.
+- Production Next.js builds, generated Cloudflare binding types, a Vinext Worker
+  build and Wrangler dry-run, local Worker smoke checks, and desktop/mobile
+  Playwright release-boundary tests.
 
 ### Preview adapters or incomplete production persistence
 
 - Several customer workflow records use realistic fixtures or browser-local state.
-- Clerk organization metadata temporarily stores selected onboarding/readiness/profile state.
+- Clerk organization metadata still stores selected readiness/profile state and
+  mirrors onboarding completion for session convenience; it is not onboarding
+  authority after the PostgreSQL capability is activated.
 - Export Studio draft interactions are local preview adapters.
 - Standalone Buyer records are a clearly labelled fictional operating dataset until a reviewed tenant repository and buyer-data source are activated.
 - Team conversations, department changes, and profile-role changes currently use a browser-local vertical-slice adapter while the organization-scoped message repository and realtime delivery service are activated.
 - Email threads, message bodies, provider connections, sending, and background synchronization currently use an explicitly labelled illustrative preview; no live mailbox or credential is connected.
-- Operations-console records are illustrative projections.
+- Operations-console records are illustrative only in explicit non-production
+  demo mode. Production renders a neutral staff/case-grant shell and no customer
+  projection until an active grant authorizes the request.
 
 ### Production activation still required
 
-- Provisioned PostgreSQL repositories and transactional audit writes.
-- Production RLS role and tenant-context verification.
+- Provisioned Frankfurt/EU Neon projects, production credentials, Hyperdrive or
+  an approved pooling exception, and recorded deployment evidence for the
+  checked-in repositories, roles, RLS and transactional audit controls.
 - Private EU R2 upload, scanning, signed-download, and audit pipeline.
-- Complete Clerk production methods, billing plans, webhooks, role templates, and MFA policy.
+- Complete Clerk production methods, registered webhook secret/endpoint, billing
+  plans, role templates, production staff allowlist and MFA policy.
 - Reviewed Google, Microsoft, Yahoo/AOL, Apple/iCloud, Zoho, and custom IMAP/SMTP mail adapters; encrypted token vault; Gmail Pub/Sub; Microsoft Graph subscriptions; IMAP sync workers; MIME/attachment pipeline; delivery monitoring; and mailbox security review.
 - Trusted business-verification review workflow.
 - Reviewed live market/readiness catalog publishing operations.
 - Qualified provider onboarding, agreements, disclosure, referral, feedback, and settlement operations.
 - Reviewed government, banking, buyer, laboratory, freight, shipment, insurance, and proceeds adapters.
-- End-to-end browser, cross-tenant, object-enumeration, backup, restore, rate-limit, and security testing.
+- CI/cloud evidence for the implemented browser, cross-tenant, backup, restore
+  and concurrency gates, plus remaining object-storage/enumeration and external
+  security review.
 
 Do not describe activation-backlog items as operational production capabilities.
 

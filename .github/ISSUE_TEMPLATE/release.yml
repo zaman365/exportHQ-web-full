@@ -1,0 +1,36 @@
+name: Release gate
+description: Track an immutable release candidate and its evidence.
+title: "[RELEASE] "
+labels: [release]
+body:
+  - type: input
+    id: version
+    attributes:
+      label: SemVer and commit SHA
+      placeholder: v0.1.0-rc.1 / abc123
+    validations:
+      required: true
+  - type: input
+    id: phase
+    attributes:
+      label: Release phase / milestone
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: CI, migration, RLS, security, recovery and capability evidence
+    validations:
+      required: true
+  - type: textarea
+    id: rollout
+    attributes:
+      label: Artifact promotion, monitoring and rollback reference
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: Release owner and approver
+    validations:
+      required: true

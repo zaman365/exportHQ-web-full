@@ -50,6 +50,7 @@ export const idempotencyState = pgEnum("idempotency_state", ["in_progress", "suc
 export const webhookDeliveryState = pgEnum("webhook_delivery_state", [
   "received", "processed", "ignored", "failed", "dead_letter"
 ]);
+export const outboxEventState = pgEnum("outbox_event_state", ["pending", "processing", "published", "dead_letter"]);
 
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -59,6 +60,8 @@ export const organizations = pgTable("organizations", {
   tradingName: text("trading_name").notNull(),
   defaultLocale: text("default_locale").notNull().default("en"),
   defaultTimezone: text("default_timezone").notNull().default("UTC"),
+  active: boolean("active").notNull().default(true),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
   ...timestamps
 });
 
@@ -94,12 +97,22 @@ export const staffAccessGrants = pgTable("staff_access_grants", {
   organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
   staffProfileId: uuid("staff_profile_id").notNull().references(() => staffProfiles.id, { onDelete: "cascade" }),
   permissions: text("permissions").array().notNull().default([]),
+  caseReference: text("case_reference").notNull().default("unspecified"),
   reason: text("reason").notNull(),
   approvedBy: text("approved_by").notNull(),
+  startsAt: timestamp("starts_at", { withTimezone: true }).notNull().defaultNow(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  breakGlass: boolean("break_glass").notNull().default(false),
+  secondApprovedBy: text("second_approved_by"),
+  alertedAt: timestamp("alerted_at", { withTimezone: true }),
   ...timestamps
-}, (table) => [index("staff_access_org_idx").on(table.organizationId)]);
+}, (table) => [
+  index("staff_access_org_idx").on(table.organizationId),
+  index("staff_access_staff_window_idx").on(table.staffProfileId, table.startsAt, table.expiresAt),
+  check("staff_access_window_check", sql`${table.expiresAt} > ${table.startsAt}`),
+  check("staff_access_break_glass_check", sql`not ${table.breakGlass} or (${table.secondApprovedBy} is not null and ${table.alertedAt} is not null)`)
+]);
 
 export const organizationTeams = pgTable("organization_teams", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -657,6 +670,15 @@ export const idempotencyKeys = pgTable("idempotency_keys", {
   ...timestamps
 }, (table) => [index("idempotency_keys_expiry_idx").on(table.expiresAt)]);
 
+/** Atomic, multi-isolate rate-limit counters. Values contain hashed/stable
+ * subjects only; raw client addresses are never stored. */
+export const rateLimitCounters = pgTable("rate_limit_counters", {
+  key: text("key").primaryKey(),
+  count: integer("count").notNull().default(0),
+  resetAt: timestamp("reset_at", { withTimezone: true }).notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [index("rate_limit_counters_expiry_idx").on(table.resetAt)]);
+
 /**
  * Every inbound provider delivery, including the ones this deployment ignores
  * by design. Retained so a missing projection can be distinguished from a
@@ -670,10 +692,36 @@ export const webhookDeliveries = pgTable("webhook_deliveries", {
   state: webhookDeliveryState("state").notNull().default("received"),
   attempts: integer("attempts").notNull().default(1),
   payloadHash: text("payload_hash").notNull(),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
   failureReason: text("failure_reason"),
   receivedAt: timestamp("received_at", { withTimezone: true }).notNull().defaultNow(),
+  lastAttemptAt: timestamp("last_attempt_at", { withTimezone: true }).notNull().defaultNow(),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
   processedAt: timestamp("processed_at", { withTimezone: true })
 }, (table) => [
   uniqueIndex("webhook_deliveries_provider_event_unique").on(table.provider, table.eventId),
   index("webhook_deliveries_state_idx").on(table.state, table.receivedAt)
+]);
+
+/** Durable work emitted in the same transaction as authoritative state. A
+ * publisher may retry safely by `dedupe_key`; customer-confidential content
+ * belongs in linked storage, never in this payload. */
+export const outboxEvents = pgTable("outbox_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").references(() => organizations.id, { onDelete: "cascade" }),
+  topic: text("topic").notNull(),
+  aggregateType: text("aggregate_type").notNull(),
+  aggregateId: text("aggregate_id").notNull(),
+  dedupeKey: text("dedupe_key").notNull().unique(),
+  payload: jsonb("payload").$type<Record<string, unknown>>().notNull().default({}),
+  state: outboxEventState("state").notNull().default("pending"),
+  attempts: integer("attempts").notNull().default(0),
+  availableAt: timestamp("available_at", { withTimezone: true }).notNull().defaultNow(),
+  lockedAt: timestamp("locked_at", { withTimezone: true }),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  failureCode: text("failure_code"),
+  ...timestamps
+}, (table) => [
+  index("outbox_events_dispatch_idx").on(table.state, table.availableAt),
+  index("outbox_events_org_created_idx").on(table.organizationId, table.createdAt)
 ]);

@@ -19,6 +19,16 @@ export function tenantPersistenceActivated(): boolean {
   return capabilityIsEnabled("customer-postgres-persistence") && Boolean(process.env.DATABASE_URL);
 }
 
+/** Platform bookkeeping (webhook deliveries, rate limits and idempotency)
+ * must be usable while Gate 1 evidence is still being collected. Customer
+ * repositories remain gated separately by `getDatabase`. */
+export function getPlatformDatabase(): ExportHqDatabase | null {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) return null;
+  handle ??= createDatabase(databaseUrl);
+  return handle;
+}
+
 /**
  * Returns the database only when tenant persistence is activated. Callers get
  * `null` rather than a throwing handle so they can choose a truthful degraded
@@ -26,10 +36,7 @@ export function tenantPersistenceActivated(): boolean {
  */
 export function getDatabase(): ExportHqDatabase | null {
   if (!tenantPersistenceActivated()) return null;
-  const databaseUrl = process.env.DATABASE_URL;
-  if (!databaseUrl) return null;
-  handle ??= createDatabase(databaseUrl);
-  return handle;
+  return getPlatformDatabase();
 }
 
 /** Throws where a command genuinely cannot proceed without durable storage. */

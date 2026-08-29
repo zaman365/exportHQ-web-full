@@ -2,19 +2,29 @@
   "name": "export-hq",
   "version": "0.1.0",
   "private": true,
-  "packageManager": "pnpm@11.19.0",
-  "engines": { "node": ">=22.0.0" },
+  "packageManager": "pnpm@11.22.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "dev": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
+    "test:e2e": "playwright test",
     "db:generate": "pnpm --filter @exporthq/db generate",
-    "db:migrate": "pnpm --filter @exporthq/db migrate"
+    "db:migrate": "pnpm --filter @exporthq/db migrate",
+    "db:checksum": "pnpm --filter @exporthq/db migration:checksum",
+    "db:reset:test": "pnpm --filter @exporthq/db db:reset:test",
+    "db:migrate:test": "pnpm --filter @exporthq/db db:migrate:test",
+    "db:seed:test": "pnpm --filter @exporthq/db db:seed:test",
+    "db:backup:test": "pnpm --filter @exporthq/db db:backup:test",
+    "db:restore:test": "pnpm --filter @exporthq/db db:restore:test"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
+    "@playwright/test": "1.55.1",
     "@types/node": "26.2.0",
     "eslint": "9.39.5",
     "eslint-config-next": "16.3.0",

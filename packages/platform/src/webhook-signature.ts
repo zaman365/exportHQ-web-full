@@ -106,9 +106,6 @@ export async function verifyWebhookSignature(input: WebhookVerificationInput): P
  * change application behaviour without a code change.
  */
 export const handledWebhookEventTypes = [
-  "user.created",
-  "user.updated",
-  "user.deleted",
   "organization.created",
   "organization.updated",
   "organization.deleted",

@@ -63,6 +63,19 @@ describe("capability activation", () => {
     expect(decision.mode).toBe("synthetic");
   });
 
+  it("requires billing-specific evidence in addition to the release gate", () => {
+    const gates = activationGateIds.map((gate, index) => `${gate}=REC-${index}`).join(",");
+    expect(resolveCapability("self-service-billing", {
+      ...production,
+      EXPORTHQ_ACTIVATION_GATES_PASSED: gates
+    }).enabled).toBe(false);
+    expect(resolveCapability("self-service-billing", {
+      ...production,
+      EXPORTHQ_ACTIVATION_GATES_PASSED: gates,
+      EXPORTHQ_BILLING_ACTIVATION_EVIDENCE: "billing/R4-evidence.json"
+    }).enabled).toBe(true);
+  });
+
   it("treats an unlabelled NODE_ENV=production build as production", () => {
     expect(resolveCapability("document-upload", { NODE_ENV: "production" }).enabled).toBe(false);
   });
@@ -81,7 +94,7 @@ describe("capability activation", () => {
 describe("activation report", () => {
   it("describes every capability for deployment smoke tests", () => {
     const report = activationReport(production);
-    expect(report.capabilities).toHaveLength(10);
+    expect(report.capabilities).toHaveLength(11);
     expect(report.capabilities.every((capability) => capability.enabled === false)).toBe(true);
     expect(report.state.environment).toBe("production");
   });

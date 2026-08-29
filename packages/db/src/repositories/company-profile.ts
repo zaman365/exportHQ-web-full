@@ -1,5 +1,6 @@
-import { eq } from "drizzle-orm";
+import { eq, lt } from "drizzle-orm";
 import { recordAuditEvent } from "../audit";
+import { enqueueOutboxEvent } from "../outbox";
 import { companyProfiles } from "../schema";
 import type { ExportHqTransaction, TenantContext } from "../tenant";
 
@@ -111,18 +112,36 @@ export async function completeOnboarding(
   tx: ExportHqTransaction,
   context: TenantContext,
   onboardingVersion: number
-): Promise<void> {
+): Promise<{ readonly changed: boolean; readonly mirrorEventId: string | null }> {
   const now = new Date();
-  await tx
-    .update(companyProfiles)
-    .set({
+  const [changed] = await tx
+    .insert(companyProfiles)
+    .values({
+      organizationId: context.organizationId,
+      originCountryCode: "BD",
+      industry: "Not specified",
       onboardingComplete: true,
       onboardingVersion,
+      onboardingPercent: 10,
+      defaultCurrency: "BDT",
       activatedBy: context.actorId,
       activatedAt: now,
       updatedAt: now
     })
-    .where(eq(companyProfiles.organizationId, context.organizationId));
+    .onConflictDoUpdate({
+      target: companyProfiles.organizationId,
+      set: {
+        onboardingComplete: true,
+        onboardingVersion,
+        activatedBy: context.actorId,
+        activatedAt: now,
+        updatedAt: now
+      },
+      setWhere: lt(companyProfiles.onboardingVersion, onboardingVersion)
+    })
+    .returning({ id: companyProfiles.id });
+
+  if (!changed) return { changed: false, mirrorEventId: null };
 
   await recordAuditEvent(tx, context, {
     action: "onboarding.completed",
@@ -130,4 +149,13 @@ export async function completeOnboarding(
     entityId: context.organizationId,
     metadata: { onboardingVersion }
   });
+
+  const mirrorEventId = await enqueueOutboxEvent(tx, context, {
+    topic: "identity.organization_metadata_sync_requested",
+    aggregateType: "company_profile",
+    aggregateId: context.organizationId,
+    dedupeKey: `onboarding-mirror:${context.organizationId}:${onboardingVersion}`,
+    payload: { onboardingVersion }
+  });
+  return { changed: true, mirrorEventId };
 }

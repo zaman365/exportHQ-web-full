@@ -10,11 +10,19 @@
   "scripts": {
     "generate": "drizzle-kit generate",
     "migrate": "drizzle-kit migrate",
+    "migration:checksum": "node ./scripts/migration-checksums.mjs validate",
+    "migration:checksum:update": "node ./scripts/migration-checksums.mjs update",
+    "db:reset:test": "node ./scripts/db-test.mjs reset",
+    "db:migrate:test": "node ./scripts/db-test.mjs migrate",
+    "db:seed:test": "node ./scripts/db-test.mjs seed",
+    "db:backup:test": "node ./scripts/db-test.mjs backup",
+    "db:restore:test": "node ./scripts/db-test.mjs restore",
     "lint": "eslint src drizzle.config.ts --max-warnings=0",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run"
   },
   "dependencies": {
+    "@exporthq/authorization": "workspace:*",
     "@exporthq/platform": "workspace:*",
     "drizzle-orm": "0.45.2",
     "postgres": "3.4.9"

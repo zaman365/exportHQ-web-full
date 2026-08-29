@@ -1,5 +1,6 @@
 import { readActivationReport } from "../../_lib/activation";
 import { getWorkspaceSession } from "../../_lib/session";
+import { platformStoreStatus } from "../../_lib/platform-runtime";
 
 /* Deployment smoke tests and the operations console read the activation state
    from the deployment itself rather than from a hand-maintained table, so the
@@ -24,12 +25,14 @@ export async function GET(): Promise<Response> {
       environment: report.state.environment,
       effectiveGates: report.state.effective,
       recordedGates: report.state.recorded.map((gate) => gate.gate),
+      platformStores: platformStoreStatus(),
       capabilities: report.capabilities.map((capability) => ({
         capability: capability.capability,
         enabled: capability.enabled,
         mode: capability.mode,
         requiredGate: capability.requiredGate,
-        missingGates: capability.missingGates
+        missingGates: capability.missingGates,
+        missingEvidence: capability.missingEvidence
       }))
     }),
     { headers: { "content-type": "application/json", "cache-control": "no-store" } }

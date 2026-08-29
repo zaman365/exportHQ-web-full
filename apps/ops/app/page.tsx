@@ -1,8 +1,8 @@
-import { getStaffPrincipal } from "@exporthq/auth";
 import { authorizeOrganization } from "@exporthq/authorization";
 import { demoSnapshot } from "@exporthq/domain";
 import { AlertTriangle, ArrowRight, Bell, Building2, CalendarClock, CheckCircle2, ChevronDown, ClipboardCheck, FileSearch, LayoutDashboard, ListTodo, Menu, MessageSquare, Search, ShieldAlert, Users } from "lucide-react";
 import { Avatar, Badge, Logo, Progress } from "@exporthq/ui";
+import { auditOpsCaseAccess, getOpsAccessContext } from "./_lib/session";
 
 const customers = [
   { name: "ABC Textiles", country: "Bangladesh", health: 82, state: "Healthy", tone: "success" as const, note: "Germany entry" },
@@ -13,8 +13,37 @@ const customers = [
 
 export const dynamic = "force-dynamic";
 
+async function ProductionOpsPage({ staff }: { staff: Awaited<ReturnType<typeof getOpsAccessContext>>["principal"] }) {
+  const visibleGrants = staff.grants.flatMap((grant) => {
+    const permission = [...grant.permissions].find((candidate) => candidate.endsWith(":view"));
+    return permission ? [{ grant, permission }] : [];
+  });
+  await Promise.all(visibleGrants.map(({ grant, permission }) => auditOpsCaseAccess(staff, grant, permission)));
+
+  return <div className="ops-shell">
+    <aside className="ops-nav">
+      <div className="ops-logo"><Logo /><Badge tone="info">OPS</Badge></div>
+      <nav><a className="active" href="#cases"><LayoutDashboard size={17} />Active cases</a><a href="#access"><ShieldAlert size={17} />Access scope</a></nav>
+      <div className="operator"><Avatar initials="OP" tone={1} /><span><strong>Authenticated operator</strong><small>Least-privileged workspace</small></span></div>
+    </aside>
+    <main>
+      <header className="ops-topbar"><span>Export HQ Operations</span><div><ShieldAlert size={18} /><span>Every case view is grant-scoped and audited</span></div></header>
+      <div className="ops-content" id="cases">
+        <section className="ops-heading"><div><p>PRODUCTION ACCESS</p><h1>Assigned customer cases</h1><span>Only active, time-bounded grants appear here. Platform administration does not bypass a customer boundary.</span></div></section>
+        <section className="ops-metrics"><div><span>ACTIVE CASE GRANTS</span><strong>{visibleGrants.length}</strong><small>Expired and revoked grants are excluded</small></div><div><span>BREAK-GLASS</span><strong>{visibleGrants.filter(({ grant }) => grant.breakGlass).length}</strong><small>Requires second approval and alert evidence</small></div></section>
+        <section className="customer-workspace" id="access">
+          <header><div><span><p>CASE ACCESS</p><h2>{visibleGrants.length ? "Authorized scopes" : "No active customer access"}</h2><small>{visibleGrants.length ? "Customer details load only inside the selected case transaction." : "Ask the operations owner for a reasoned, approved and expiring grant."}</small></span></div></header>
+          {visibleGrants.length > 0 && <div className="workspace-bottom"><section><div className="ops-section-head"><div><p>ACTIVE GRANTS</p><h2>Case references</h2></div></div>{visibleGrants.map(({ grant, permission }) => <article className="ops-task" key={grant.grantId ?? `${grant.organizationId}:${permission}`}><span className="task-circle"><ShieldAlert size={15} /></span><div><strong>{grant.caseReference ?? "Scoped customer case"}</strong><p>{grant.reason ?? "Approved operations access"}</p><small>{permission} · expires {grant.expiresAt.toISOString()}</small></div>{grant.breakGlass && <Badge tone="danger">Break glass</Badge>}</article>)}</section></div>}
+        </section>
+      </div>
+    </main>
+  </div>;
+}
+
 export default async function OpsPage() {
-  const staff = await getStaffPrincipal();
+  const access = await getOpsAccessContext();
+  const staff = access.principal;
+  if (!access.illustrative) return <ProductionOpsPage staff={staff} />;
   authorizeOrganization(staff, demoSnapshot.organization.id, "compliance:view");
 
   return <div className="ops-shell">

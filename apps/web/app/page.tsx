@@ -34,12 +34,9 @@ import { SiteHeader } from "./_components/site-header";
 import { Wordmark } from "./_components/brand";
 import { MarketSignalPreview } from "./_components/market-signal-preview";
 import { ExportSystemPreview } from "./_components/export-system-preview";
+import { exportPanelUrl } from "./_lib/deployment-urls";
 
-const appUrl =
-  process.env.NEXT_PUBLIC_APP_URL ??
-  (process.env.NODE_ENV === "production"
-    ? "https://export-hq.com/ExportPanel"
-    : "http://localhost:3001/ExportPanel");
+const appUrl = exportPanelUrl().toString().replace(/\/$/, "");
 
 const serviceRibbon = [
   "Export readiness",

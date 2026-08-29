@@ -1,0 +1,44 @@
+name: Bug
+description: Record a reproducible product or platform defect.
+title: "[BUG] "
+labels: [bug]
+body:
+  - type: textarea
+    id: impact
+    attributes:
+      label: Problem and impact
+      description: Include the affected customer outcome or security boundary.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Reproduction and evidence
+      description: Use synthetic identifiers and redact tenant/customer data.
+    validations:
+      required: true
+  - type: input
+    id: phase
+    attributes:
+      label: Phase / dependency ID
+      placeholder: R0-DB-01
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Target files, tables, routes and permissions
+    validations:
+      required: true
+  - type: textarea
+    id: done
+    attributes:
+      label: Tests, rollout, rollback and telemetry
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: Owner and reviewer
+    validations:
+      required: true

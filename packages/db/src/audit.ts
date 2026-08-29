@@ -13,6 +13,7 @@ import type { ExportHqTransaction, TenantContext } from "./tenant";
 export const auditableActions = [
   "organization.created",
   "organization.updated",
+  "organization.deactivated",
   "membership.created",
   "membership.role_changed",
   "membership.removed",
@@ -48,7 +49,8 @@ export const auditableActions = [
   "provider.referral_requested",
   "data_export.requested",
   "legal_hold.applied",
-  "legal_hold.released"
+  "legal_hold.released",
+  "identity.reconciliation_requested"
 ] as const;
 
 export type AuditableAction = (typeof auditableActions)[number];

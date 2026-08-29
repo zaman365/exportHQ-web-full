@@ -1,11 +1,14 @@
 {
+  "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "exporthq-app",
-  "compatibility_date": "2026-08-20",
+  "compatibility_date": "2026-08-29",
   // The PostgreSQL driver needs Node built-ins. Neon's pooled connection string
   // is required alongside this; `createDatabase` sets `prepare: false` so the
   // pooler cannot carry prepared statements across sessions.
   "compatibility_flags": ["nodejs_compat"],
   "main": "vinext/server/fetch-handler",
+  "workers_dev": false,
+  "preview_urls": false,
   "routes": [
     {
       "pattern": "export-hq.com/ExportPanel*",
@@ -18,11 +21,10 @@
     "binding": "ASSETS"
   },
   "cache": { "enabled": true },
-  "secrets": {
-    "required": [
-      "CLERK_SECRET_KEY",
-      "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"
-    ]
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "head_sampling_rate": 1 },
+    "traces": { "enabled": true, "head_sampling_rate": 0.05 }
   },
   "vars": {
     // The runtime authority for what "production" means. Preview adapters,
