@@ -62,6 +62,45 @@ async function seed(url) {
         ('3f2504e0-4f89-41d3-9a0c-0305e82c3301', 'org_syntheticaaaaa', 'synthetic-a', 'Synthetic A Ltd', 'Synthetic A', 'en', 'Asia/Dhaka'),
         ('6ba7b810-9dad-41d1-80b4-00c04fd430c8', 'org_syntheticbbbbb', 'synthetic-b', 'Synthetic B Ltd', 'Synthetic B', 'bn', 'Asia/Dhaka')
       on conflict (id) do nothing`;
+    await client`
+      insert into regulatory_publishers (
+        id, slug, name, publisher_type, jurisdiction, canonical_base_url
+      ) values (
+        '11111111-1111-4111-8111-111111111111',
+        'synthetic-eu-authority', 'Synthetic EU Authority', 'official', 'EU',
+        'https://authority.synthetic.invalid'
+      ) on conflict (id) do nothing`;
+    await client`
+      insert into regulatory_sources (
+        id, publisher_id, canonical_url, title, jurisdiction, source_type,
+        reference, content_hash_sha256, effective_from, retrieved_at,
+        reviewed_at, reviewed_by, confidence, method_version,
+        freshness_sla_days, next_review_at, review_state
+      ) values (
+        '22222222-2222-4222-8222-222222222222',
+        '11111111-1111-4111-8111-111111111111',
+        'https://authority.synthetic.invalid/rules/apparel',
+        'Synthetic EU apparel requirement', 'EU', 'official_guidance',
+        'Synthetic integration fixture; no real-world authority',
+        repeat('b', 64), '2026-08-01T00:00:00Z', '2026-08-01T00:00:00Z',
+        '2026-08-02T00:00:00Z', 'synthetic_reviewer', 'high',
+        'synthetic-method-v1', 60, '2026-10-01T00:00:00Z', 'human_reviewed'
+      ) on conflict (id) do nothing`;
+    await client`
+      insert into regulatory_rules (
+        id, source_id, stable_key, version, jurisdiction, title, summary,
+        product_categories, hs_codes, market_country_codes, effective_from,
+        confidence, method_version, rule_version, review_state, reviewed_by,
+        reviewed_at
+      ) values (
+        '33333333-3333-4333-8333-333333333333',
+        '22222222-2222-4222-8222-222222222222',
+        'synthetic.eu.apparel', 1, 'EU', 'Review synthetic EU apparel evidence',
+        'Synthetic integration-only rule requiring a reviewed lane impact.',
+        array['apparel'], array['62'], array['DE'], '2026-08-01T00:00:00Z',
+        'high', 'synthetic-method-v1', 'synthetic-rule-v1', 'human_reviewed',
+        'synthetic_reviewer', '2026-08-02T00:00:00Z'
+      ) on conflict (id) do nothing`;
   });
 }
 

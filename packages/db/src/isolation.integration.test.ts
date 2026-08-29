@@ -25,11 +25,26 @@ import {
   saveReadinessAssessment
 } from "./repositories/readiness";
 import {
+  listLaneRegulatoryImpacts,
+  syncLaneRegulatoryImpacts,
+  transitionRegulatoryLaneImpact
+} from "./repositories/regulatory";
+import {
+  createExtractionProposal,
+  recordAcceptedExtractionUsage,
+  reviewExtractionField
+} from "./repositories/ai-extraction";
+import {
+  aiExtractionFieldDecisions,
+  aiExtractionFields,
+  aiExtractionUsages,
   auditEvents,
   documentUploadIntents,
   exportLaneStageEvents,
   organizationMemberships,
   products,
+  regulatoryPublishers,
+  regulatoryRuleLaneImpacts,
   readinessProviderReferrals,
   readinessResponses,
   tasks
@@ -389,6 +404,202 @@ describeWithDatabase("tenant isolation", () => {
       readReadinessAssessment(tx, scoped, updated.assessmentId)
     );
     expect(otherTenant).toBeNull();
+  });
+
+  it("projects only reviewed regulatory rules into the applicable tenant lane", async () => {
+    const suffix = crypto.randomUUID().slice(0, 8);
+    const lane = await withTenantTransaction(database, context(tenantA), async (tx, scoped) => {
+      const [membership] = await tx.insert(organizationMemberships).values({
+        organizationId: tenantA,
+        clerkUserId: `user_regulatory_${suffix}`,
+        role: "org:member"
+      }).returning({ id: organizationMemberships.id });
+      const [product] = await tx.insert(products).values({
+        organizationId: tenantA,
+        sku: `REG-${suffix}`,
+        name: "Synthetic regulated apparel",
+        category: "apparel",
+        hsCode: "620520",
+        countryOfOrigin: "BD",
+        currency: "USD"
+      }).returning({ id: products.id });
+      if (!membership || !product) throw new Error("Synthetic regulatory prerequisites were not created.");
+      return createExportLane(tx, scoped, {
+        productId: product.id,
+        originCountryCode: "BD",
+        destinationCountryCode: "DE",
+        salesChannel: "wholesale",
+        buyerSegment: "synthetic importer",
+        route: "Chattogram-Hamburg",
+        incoterm: "FOB",
+        targetMarginBps: 1800,
+        currency: "USD",
+        ownerMembershipId: membership.id
+      });
+    });
+    const staleCreated = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      syncLaneRegulatoryImpacts(tx, scoped, lane.id, new Date("2026-11-01T00:00:00Z"))
+    );
+    expect(staleCreated).toBe(0);
+    const created = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      syncLaneRegulatoryImpacts(tx, scoped, lane.id)
+    );
+    expect(created).toBe(1);
+    const page = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      listLaneRegulatoryImpacts(tx, scoped, lane.id)
+    );
+    expect(page.items).toHaveLength(1);
+    expect(page.items[0]).toMatchObject({ state: "pending", ruleVersion: "synthetic-rule-v1" });
+
+    await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      transitionRegulatoryLaneImpact(tx, scoped, { impactId: page.items[0]!.id, state: "acknowledged" })
+    );
+    await expect(withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      transitionRegulatoryLaneImpact(tx, scoped, { impactId: page.items[0]!.id, state: "resolved" })
+    )).rejects.toThrow("reviewed operations workflow");
+    await withTenantTransaction(
+      database,
+      { organizationId: tenantA, actorId: "system_regulatory_reviewer", actorType: "system" },
+      (tx, scoped) => transitionRegulatoryLaneImpact(tx, scoped, { impactId: page.items[0]!.id, state: "resolved" })
+    );
+    const [resolved] = await withTenantTransaction(database, context(tenantA), (tx) =>
+      tx.select().from(regulatoryRuleLaneImpacts).where(eq(regulatoryRuleLaneImpacts.id, page.items[0]!.id))
+    );
+    expect(resolved?.state).toBe("resolved");
+    const otherTenant = await withTenantTransaction(database, context(tenantB), (tx) =>
+      tx.select().from(regulatoryRuleLaneImpacts).where(eq(regulatoryRuleLaneImpacts.id, page.items[0]!.id))
+    );
+    expect(otherTenant).toEqual([]);
+    await expect(withTenantTransaction(database, context(tenantA), (tx) =>
+      tx.insert(regulatoryPublishers).values({
+        slug: `forbidden-${suffix}`,
+        name: "Forbidden publisher",
+        publisherType: "official",
+        jurisdiction: "BD",
+        canonicalBaseUrl: "https://forbidden.synthetic.invalid"
+      })
+    )).rejects.toThrow();
+  });
+
+  it("retains AI extraction source spans and requires a human decision before downstream use", async () => {
+    const checksum = "d".repeat(64);
+    const intent = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      createEvidenceUploadIntent(tx, scoped, {
+        name: "Synthetic extraction source.pdf",
+        category: "company",
+        linkedEntityType: "organization",
+        linkedEntityId: tenantA,
+        mimeType: "application/pdf",
+        byteSize: 256,
+        checksumSha256: checksum,
+        expiresAt: new Date(Date.now() + 5 * 60_000)
+      })
+    );
+    await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      consumeEvidenceUploadIntent(tx, scoped, {
+        intentId: intent.id,
+        object: { key: intent.objectKey, size: intent.byteSize, etag: "synthetic-ai-etag", version: "quarantine-ai-v1" },
+        checksumSha256: checksum
+      })
+    );
+    await withTenantTransaction(
+      database,
+      { organizationId: tenantA, actorId: "system_scanner", actorType: "system" },
+      (tx, scoped) => recordEvidenceScanResult(tx, scoped, {
+        documentVersionId: intent.documentVersionId,
+        state: "clean",
+        attempt: 1,
+        scannerReference: "synthetic-ai-scan",
+        promotedObject: { key: intent.objectKey, size: intent.byteSize, etag: "synthetic-ai-clean", version: "clean-ai-v1" }
+      })
+    );
+    await expect(withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      createExtractionProposal(tx, scoped, {
+        documentVersionId: intent.documentVersionId,
+        provider: "synthetic-provider",
+        model: "synthetic-model",
+        modelVersion: "1",
+        extractionSchema: "company-registration",
+        extractionSchemaVersion: "1",
+        promptVersion: "1",
+        ruleVersion: "1",
+        fields: [{
+          fieldPath: "registration.number",
+          proposedValue: "SYN-123",
+          confidenceBps: 7200,
+          sourceSpans: [{ pageNumber: 1, locator: "page:1:block:1", quoteHashSha256: "e".repeat(64) }]
+        }]
+      })
+    )).rejects.toThrow("controlled extraction pipeline");
+
+    const runId = await withTenantTransaction(
+      database,
+      { organizationId: tenantA, actorId: "system_extractor", actorType: "system" },
+      (tx, scoped) => createExtractionProposal(tx, scoped, {
+        documentVersionId: intent.documentVersionId,
+        provider: "synthetic-provider",
+        model: "synthetic-model",
+        modelVersion: "1",
+        extractionSchema: "company-registration",
+        extractionSchemaVersion: "1",
+        promptVersion: "1",
+        ruleVersion: "1",
+        fields: [{
+          fieldPath: "registration.number",
+          proposedValue: "SYN-123",
+          confidenceBps: 7200,
+          sourceSpans: [{ pageNumber: 1, locator: "page:1:block:1", quoteHashSha256: "e".repeat(64) }]
+        }]
+      })
+    );
+    const [field] = await withTenantTransaction(database, context(tenantA), (tx) =>
+      tx.select().from(aiExtractionFields).where(eq(aiExtractionFields.extractionRunId, runId))
+    );
+    if (!field) throw new Error("Synthetic extraction field was not created.");
+    await expect(withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      recordAcceptedExtractionUsage(tx, scoped, {
+        extractionFieldId: field.id,
+        downstreamEntityType: "document",
+        downstreamEntityId: intent.documentId
+      })
+    )).rejects.toThrow("human-accepted");
+    const decisionId = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      reviewExtractionField(tx, scoped, {
+        extractionFieldId: field.id,
+        decision: "corrected",
+        acceptedValue: "SYN-123-CORRECTED",
+        rationale: "Synthetic reviewer reconciled the source span"
+      })
+    );
+    const usageId = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      recordAcceptedExtractionUsage(tx, scoped, {
+        extractionFieldId: field.id,
+        downstreamEntityType: "document",
+        downstreamEntityId: intent.documentId
+      })
+    );
+    const usageRetry = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      recordAcceptedExtractionUsage(tx, scoped, {
+        extractionFieldId: field.id,
+        downstreamEntityType: "document",
+        downstreamEntityId: intent.documentId
+      })
+    );
+    expect(usageRetry).toBe(usageId);
+    const decisions = await withTenantTransaction(database, context(tenantA), (tx) =>
+      tx.select().from(aiExtractionFieldDecisions).where(eq(aiExtractionFieldDecisions.extractionFieldId, field.id))
+    );
+    const usages = await withTenantTransaction(database, context(tenantA), (tx) =>
+      tx.select().from(aiExtractionUsages).where(eq(aiExtractionUsages.id, usageId))
+    );
+    expect(decisions).toHaveLength(1);
+    expect(decisions[0]?.id).toBe(decisionId);
+    expect(usages).toHaveLength(1);
+    expect(usages[0]?.decisionId).toBe(decisionId);
+    const otherTenant = await withTenantTransaction(database, context(tenantB), (tx) =>
+      tx.select().from(aiExtractionFields).where(eq(aiExtractionFields.id, field.id))
+    );
+    expect(otherTenant).toEqual([]);
   });
 
   it("refuses a write aimed at another tenant even with a valid context", async () => {

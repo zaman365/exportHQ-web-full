@@ -29,14 +29,21 @@ remaining production components.
 - Tenant-scoped Export Lane and readiness persistence with optimistic versions,
   customer/reviewer status separation, derived owned tasks, audit/outbox,
   idempotent support requests and explicit pre-governance referral wording.
+- A versioned regulatory source/rule registry and tenant-scoped lane-impact
+  projection that excludes stale, inactive, unreviewed and superseded material;
+  plus immutable AI extraction proposals with provider/model/prompt/rule
+  provenance, confidence, source spans, append-only human decisions and
+  downstream-usage links. Only synthetic registry fixtures exist today.
 - Dedicated Buyers and Requirements routes: a searchable, stage-aware illustrative buyer-development pipeline and a source-aware conditional control register linked back to opportunities, readiness, learning, evidence, and qualified-help paths.
 - A public opportunity-to-payment acquisition story, a limited ExportPanel Export Studio preview, and plan language aligned to the Basic → verified/paid → Scale/Managed trust ladder.
 - A dedicated Export operations Learning Center category with contextual hints for lanes, economics, deals, buyer trust, provider matching, finance, shipment, policy, and clusters.
 - A primary Email Inbox beside the retained Actionable Inbox, with export-aware categories, related-record context, private drafts, email-to-follow-up conversion, provider setup guidance, plan/role gates, and tenant-scoped mail persistence contracts.
 - A versioned, transactional market catalog publisher and incremental PostgreSQL migration for country, product, opportunity, evidence, verification, and shortlist records.
 - Internal customer portfolio and scoped operator workspace over the same domain projection.
-- Unit and journey tests; 32 real-PostgreSQL integration tests covering
-  cross-tenant isolation, direct projection-write denial, webhook projection,
+- Unit and journey tests; 34 database-package tests, including 20
+  real-PostgreSQL integration scenarios covering cross-tenant isolation,
+  direct projection-write denial, webhook projection,
+  regulatory freshness and publisher-write denial, human-gated AI provenance,
   dead-lettering and concurrent durable controls; desktop/mobile Playwright;
   and CI definitions for quality, database, Worker artifact, E2E, security and
   immutable release promotion.

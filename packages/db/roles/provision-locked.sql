@@ -43,6 +43,10 @@ GRANT SELECT ON ALL SEQUENCES IN SCHEMA drizzle TO exporthq_backup;
 
 REVOKE UPDATE, DELETE ON audit_events FROM exporthq_app, exporthq_support;
 REVOKE ALL ON idempotency_keys, rate_limit_counters, webhook_deliveries FROM exporthq_support;
+REVOKE INSERT, UPDATE, DELETE ON regulatory_publishers, regulatory_sources, regulatory_rules FROM exporthq_app, exporthq_support;
+REVOKE DELETE ON regulatory_rule_lane_impacts, ai_extraction_runs FROM exporthq_app, exporthq_support;
+REVOKE UPDATE, DELETE ON ai_extraction_fields, ai_extraction_source_spans,
+  ai_extraction_field_decisions, ai_extraction_usages FROM exporthq_app, exporthq_support;
 
 GRANT EXECUTE ON FUNCTION app_resolve_organization(text) TO exporthq_app;
 GRANT EXECUTE ON FUNCTION app_upsert_organization(text, text, text, text) TO exporthq_app;

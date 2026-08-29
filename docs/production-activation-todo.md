@@ -117,9 +117,12 @@ Gate 5: one real pilot Export Lane and controlled launch
 > append-only audit, database-held plan entitlements replacing the identity
 > provider's billing product, the identity bridge as `SECURITY DEFINER`
 > functions, durable idempotency, and the organization/company-profile
-> repositories. Onboarding is PostgreSQL-authoritative when the capability is
-> activated. The non-owner application-role suite passes 29 tests, including
-> tenant isolation, durable-control concurrency and webhook projection; clean
+> repositories. Onboarding, Export Lane, readiness, verification cases,
+> regulatory lane impacts and AI extraction provenance are PostgreSQL-authoritative
+> when their capabilities are activated. The database package passes 34 tests,
+> including 20 real-PostgreSQL scenarios through the non-owner application role
+> for tenant isolation, regulatory freshness, reviewed AI usage, durable-control
+> concurrency and webhook projection; clean
 > migrate, backup and separate-database restore also pass locally. Neon,
 > Protected-branch CI and three Neon project/schema/role records are now
 > captured. Human-held role credentials, Hyperdrive, recovery evidence and the
@@ -131,7 +134,9 @@ Gate 5: one real pilot Export Lane and controlled launch
       envelope.
       <br>`migrations-v2/0000_reproducible_baseline.sql` is the clean baseline,
       `0001_security_envelope.sql` is the RLS/identity bridge, the checksum
-      manifest prevents mutation, and `roles/bootstrap.sql` applies separated roles.
+      manifest prevents mutation, `0002` through `0006` add the R1 aggregate,
+      evidence, readiness, regulatory and AI-provenance slices, and
+      `roles/bootstrap.sql` applies separated roles.
 - [x] Create separate migration, application and read-only support roles.
 - [x] Ensure the application role is non-owner and does not have `BYPASSRLS`.
 - [x] Set organization context transactionally for every tenant request and reset it safely.

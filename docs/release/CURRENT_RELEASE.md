@@ -40,6 +40,8 @@ Evidence belongs under `docs/release/evidence/<version-or-gate>/` and must inclu
 
 Local repository evidence is recorded in
 [`evidence/r0-local-2026-08-29/README.md`](evidence/r0-local-2026-08-29/README.md).
+The current R1 local database checkpoint is recorded in
+[`evidence/r1-local-2026-08-29/README.md`](evidence/r1-local-2026-08-29/README.md).
 The founder authorization in
 [`R0_FOUNDER_DEVELOPMENT_AUTHORIZATION.md`](R0_FOUNDER_DEVELOPMENT_AUTHORIZATION.md)
 allows R1-R6 development to continue. Provider and deferred human-review items
