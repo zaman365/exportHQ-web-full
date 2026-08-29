@@ -8,8 +8,12 @@
 On 2026-08-29 the founder instructed that the programme roles be named. The
 authenticated Export HQ provider and repository accounts identify the founder
 as Mohammed Maniruzzaman (`@zaman365`). During the single-founder R0 period he
-temporarily occupies all six roles. This records accountability; it does not
-replace independent pull-request, security or legal review.
+temporarily occupies all six roles. On 2026-08-29 the founder also recorded a
+solo-repository exception: GitHub pull requests do not require a second
+collaborator's approval while the repository has only one contributor. Pull
+requests and all required hosted checks remain mandatory. This exception does
+not replace independent security, privacy/legal, incident-response or release
+approval.
 
 | Role             | Accountable for                                                | Owner                 |
 | ---------------- | -------------------------------------------------------------- | --------------------- |

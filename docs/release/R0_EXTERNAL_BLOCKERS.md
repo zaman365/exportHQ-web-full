@@ -6,20 +6,22 @@ start until the remaining R0 evidence is created in the systems that own it.
 ## Founder and governance
 
 - Mohammed Maniruzzaman is named as product, technical, data, identity,
-  security and operations owner for the single-founder R0 period. Independent
-  reviewer and approval separation remain required.
+  security and operations owner for the single-founder R0 period. The founder's
+  2026-08-29 solo-repository decision waives only a second GitHub collaborator
+  and pull-request approval; external approval separation remains required.
 - Approve classification, retention/deletion, telemetry and incident policies.
 - Create the directive's issues and milestones and assign named accountable
-  owners/reviewers. The authenticated GitHub UI has protected `main` with PR,
-  approval, CODEOWNERS, latest-push approval, conversation-resolution,
-  linear-history and no-bypass controls. All eight successful hosted contexts
-  are now required and branches must be current before merge. Six phase
-  milestones and all 22 directive R0/R1 issues exist; every issue is assigned
-  to `@zaman365` with its accountable role, while reviewer remains blocking. See
+  owners and required external reviewers. Protected `main` retains the PR,
+  required-status, current-branch, conversation-resolution, linear-history and
+  no-bypass controls. GitHub approval, CODEOWNERS approval and latest-push
+  approval are disabled under the documented solo-repository exception. All
+  eight successful hosted contexts remain required. Six phase milestones and
+  all 22 directive R0/R1 issues exist; every issue is assigned to `@zaman365`
+  with its accountable role. See
   [`evidence/r0-hosted-ci-2026-08-29/`](evidence/r0-hosted-ci-2026-08-29/).
 - Pull request [#1](https://github.com/zaman365/exportHQ-web-full/pull/1) is the
-  hosted R0 evidence candidate. It cannot merge until another write-capable
-  reviewer approves it, as intended by the protection rule.
+  hosted R0 evidence candidate. It may merge without a second GitHub reviewer
+  only after every protected status check succeeds.
 
 ## Provider configuration
 
@@ -44,6 +46,7 @@ start until the remaining R0 evidence is created in the systems that own it.
 ## Human review and release evidence
 
 - Complete security, privacy/legal, backup/PITR and incident/rollback reviews.
+  These are not waived by the GitHub solo-repository decision.
 - The PR CI gates are green and their URLs/exact SHA are indexed. An attested
   artifact promotion from protected `main`, artifact checksum/SBOM/provenance,
   production recovery output and named approvals remain required.
