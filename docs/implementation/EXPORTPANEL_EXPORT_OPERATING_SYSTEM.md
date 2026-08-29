@@ -198,7 +198,8 @@ Verified on 2026-08-25:
 
 The UI and domain boundary are implementation-ready, but these require separate production credentials, contracts, security review, and provider onboarding:
 
-- Clerk production instance and organization billing plans.
+- Clerk production identity/organization instance; Clerk Billing is deferred in
+  favor of the internal PostgreSQL ledger and reviewed BDT payment adapter.
 - PostgreSQL/RLS repositories and audit writes.
 - Private R2 evidence vault, malware scanning, signed uploads and download logs.
 - BSW/Bangladesh Trade Portal/EPB/CCI&E/BSTI supported connectors.

@@ -1,0 +1,8 @@
+ALTER TABLE "customer_api_clients" DROP CONSTRAINT "customer_api_clients_scope_check";--> statement-breakpoint
+ALTER TABLE "customer_webhook_subscriptions" DROP CONSTRAINT "customer_webhook_event_check";--> statement-breakpoint
+ALTER TABLE "external_guest_grants" DROP CONSTRAINT "external_guest_grants_permission_check";--> statement-breakpoint
+ALTER TABLE "billing_entitlement_drift_incidents" ADD CONSTRAINT "billing_drift_severity_check" CHECK ("billing_entitlement_drift_incidents"."severity" in ('low', 'medium', 'high', 'critical'));--> statement-breakpoint
+ALTER TABLE "customer_api_clients" ADD CONSTRAINT "customer_api_clients_scope_check" CHECK (cardinality("customer_api_clients"."scopes") > 0 and "customer_api_clients"."scopes" <@ array['shipment:read','shipment:event:read','invoice:read','payment:read','document:approved:read']::text[]);--> statement-breakpoint
+ALTER TABLE "customer_webhook_subscriptions" ADD CONSTRAINT "customer_webhook_event_check" CHECK (cardinality("customer_webhook_subscriptions"."event_types") > 0 and "customer_webhook_subscriptions"."event_types" <@ array['shipment.updated','shipment.exception_opened','invoice.issued','payment.confirmed','document.approved']::text[]);--> statement-breakpoint
+ALTER TABLE "external_guest_grants" ADD CONSTRAINT "external_guest_grants_purpose_check" CHECK ("external_guest_grants"."purpose" in ('buyer_review', 'forwarder_handoff', 'cf_clearance', 'inspection_review'));--> statement-breakpoint
+ALTER TABLE "external_guest_grants" ADD CONSTRAINT "external_guest_grants_permission_check" CHECK (cardinality("external_guest_grants"."permissions") > 0 and "external_guest_grants"."permissions" <@ array['read','comment','upload_approved_evidence']::text[]);

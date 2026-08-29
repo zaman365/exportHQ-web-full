@@ -7,7 +7,7 @@ This checklist separates code readiness from provider activation. ExportPanel fa
 - Set `CLERK_SECRET_KEY` and `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` on the `exporthq-app` Worker.
 - Keep `https://export-hq.com` as the authorized origin.
 - Set the sign-in, sign-up, onboarding, and sign-out URLs under `/ExportPanel` as documented in `production-auth.md`.
-- Enable Organizations and organization Billing plan keys `launch`, `scale`, and `managed`.
+- Enable Organizations. Keep Clerk Billing disabled; Export HQ's PostgreSQL ledger owns plan keys and entitlements.
 
 ## 2. Enable primary identifiers
 
@@ -39,7 +39,7 @@ Test in a fresh browser profile:
 4. Google, Microsoft, LinkedIn, and Facebook sign-in;
 5. matching-email account linking;
 6. organization creation and switching;
-7. Basic subscription restrictions;
+7. Basic restrictions and internal-ledger entitlement transitions;
 8. administrator Managed access inside an organization;
 9. sign-out and return to `/ExportPanel/preview`;
 10. revoked administrator access after removing the allowlist entry.

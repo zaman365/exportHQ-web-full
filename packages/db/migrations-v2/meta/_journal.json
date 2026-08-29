@@ -134,6 +134,41 @@
       "when": 1788032194674,
       "tag": "0018_r3_buyer_verification_guard",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1788032903300,
+      "tag": "0019_r4_public_beta_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1788033000012,
+      "tag": "0020_r4_checkout_invoice_authority",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1788033385917,
+      "tag": "0021_r4_constraint_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1788033429087,
+      "tag": "0022_r4_usage_capacity_and_activation",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1788034022935,
+      "tag": "0023_r4_provider_activation_evidence",
+      "breakpoints": true
     }
   ]
 }

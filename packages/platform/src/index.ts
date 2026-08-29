@@ -172,3 +172,18 @@ export {
   type BillingProviderAdapter,
   type BillingProviderWebhookEnvelope
 } from "./billing-provider/index";
+
+export {
+  assertSelfServiceBillingActivation,
+  assertValidatedPaymentNotification,
+  sslCommerzCandidate,
+  type SelfServiceBillingActivationEvidence,
+  type ValidatedPaymentNotification
+} from "./billing-provider/public-beta";
+
+export {
+  assertCustomerWebhookReplayWindow,
+  assertReviewedApiScope,
+  signCustomerWebhook,
+  type CustomerWebhookSigningInput
+} from "./customer-webhooks/index";

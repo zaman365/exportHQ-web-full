@@ -8,6 +8,7 @@ export * from "./i18n";
 export * from "./pilot";
 export * from "./commercial";
 export * from "./document-consistency";
+export * from "./public-beta";
 export * from "./billing-catalog";
 export * from "./companion-workflows";
 export * from "./money/index";

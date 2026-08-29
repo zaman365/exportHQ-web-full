@@ -722,8 +722,9 @@ Build the commercial spine before multiplying integrations.
   an approved pooling exception, and recorded deployment evidence for the
   checked-in repositories, roles, RLS and transactional audit controls.
 - Private EU R2 upload, scanning, signed-download, and audit pipeline.
-- Complete Clerk production methods, registered webhook secret/endpoint, billing
-  plans, role templates, production staff allowlist and MFA policy.
+- Complete Clerk production methods, registered webhook secret/endpoint, role
+  templates, production staff allowlist and MFA policy. Clerk Billing is
+  deferred; the PostgreSQL ledger and reviewed BDT adapter own subscriptions.
 - Reviewed Google, Microsoft, Yahoo/AOL, Apple/iCloud, Zoho, and custom IMAP/SMTP mail adapters; encrypted token vault; Gmail Pub/Sub; Microsoft Graph subscriptions; IMAP sync workers; MIME/attachment pipeline; delivery monitoring; and mailbox security review.
 - Trusted business-verification review workflow.
 - Reviewed live market/readiness catalog publishing operations.

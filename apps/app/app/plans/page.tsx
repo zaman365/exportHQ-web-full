@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PricingTable } from "@clerk/nextjs";
 import { ArrowLeft, ArrowRight, Check, Crown, Rocket, Sparkles } from "lucide-react";
 import { minimumTierForFeature, subscriptionCatalog, type SubscriptionTier, type WorkspaceFeature } from "@exporthq/authorization";
 import { resolveCapability } from "@exporthq/platform";
@@ -53,9 +52,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
   const requiredTier = requestedFeature ? minimumTierForFeature(requestedFeature) : undefined;
   const recommendedTier = requiredTier === "launch" || requiredTier === "scale" || requiredTier === "managed" ? requiredTier : "scale";
   const billing = resolveCapability("self-service-billing");
-  const checkoutActive = billing.enabled
-    && billing.mode === "production"
-    && Boolean(process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY);
+  const checkoutActive = billing.enabled && billing.mode === "production";
   return (
     <main className="plans-page">
       <header className="plans-topbar"><a href="https://export-hq.com"><Logo /></a><div><Link href="/preview"><ArrowLeft size={14} /> Preview ExportPanel</Link><Link href="/sign-in">Sign in</Link></div></header>
@@ -71,7 +68,7 @@ export default async function PlansPage({ searchParams }: { searchParams: Promis
           return <article className={`plan-access-card${featured ? " featured" : ""}`} key={tier}><header><span><Icon size={20} /></span><b>{plan.availabilityStatus}</b></header><p>{plan.name.toUpperCase()}</p><h2>{plan.summary}</h2><small>Best for · {bestFor}</small><ul>{highlights.map((item) => <li key={item}><Check size={15} /> {item}</li>)}</ul><Link href="/sign-up">Explore {plan.name} <ArrowRight size={14} /></Link></article>;
         })}
       </section>
-      {checkoutActive ? <section className="clerk-pricing"><header><p>SUBSCRIBE SECURELY</p><h2>Choose or manage your organization plan</h2></header><PricingTable for="organization" /></section> : <section className="plans-footnote"><strong>Checkout is not active</strong><span>Plan previews are available, but subscription checkout stays closed until billing, cancellation, invoice, refund and entitlement-reconciliation controls are verified.</span><Link href="/sign-up">Create Basic account <ArrowRight size={14} /></Link></section>}
+      {checkoutActive ? <section className="plans-footnote"><strong>BDT self-service billing is active</strong><span>Signed-in organization owners can choose or manage the reviewed provider-backed plan from Billing & usage. Export HQ&apos;s internal ledger remains the entitlement authority.</span><Link href="/billing">Open Billing & usage <ArrowRight size={14} /></Link></section> : <section className="plans-footnote"><strong>Checkout is not active</strong><span>Plan previews are available, but subscription checkout stays closed until the reviewed BDT provider, cancellation, invoice, refund, dunning, settlement and entitlement-reconciliation controls are verified. Clerk Billing is not required.</span><Link href="/sign-up">Create Basic account <ArrowRight size={14} /></Link></section>}
       <section className="plans-footnote"><strong>Not ready to choose?</strong><span>Create a Basic account, complete onboarding, and decide with your real export brief in view.</span><Link href="/sign-up">Create Basic account <ArrowRight size={14} /></Link></section>
     </main>
   );

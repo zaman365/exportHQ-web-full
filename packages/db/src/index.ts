@@ -286,6 +286,45 @@ export {
 } from "./repositories/billing";
 
 export {
+  approveCustomerBillingRefund,
+  completeCustomerBillingRefund,
+  createSelfServiceCheckout,
+  openDunningCase,
+  readPublicBetaUsage,
+  recordCheckoutProviderSession,
+  recordEntitlementDrift,
+  recordPlanChangeTreatment,
+  settleValidatedCheckout,
+  type PublicBetaUsageReadModel
+} from "./repositories/public-beta-billing";
+
+export {
+  acceptProviderCase,
+  createProviderCase,
+  openProviderCaseIssue,
+  requestProviderCaseAcceptance,
+  resolveProviderCaseIssue,
+  revokeProviderCaseEvidence,
+  shareProviderCaseEvidence,
+  transitionProviderCase
+} from "./repositories/provider-operations";
+
+export {
+  acceptExternalGuestGrant,
+  authorizeExternalGuest,
+  createCustomerApiClient,
+  createCustomerWebhookSubscription,
+  createExternalGuestGrant,
+  queueCustomerWebhookDelivery,
+  recordCustomerWebhookOutcome,
+  revokeCustomerApiClient,
+  revokeExternalGuestGrant,
+  rotateCustomerApiSecret,
+  rotateCustomerWebhookSecret,
+  verifyCustomerWebhookSubscription
+} from "./repositories/external-collaboration";
+
+export {
   readPrivateBetaCockpit,
   type PrivateBetaCockpit
 } from "./read-models/private-beta";

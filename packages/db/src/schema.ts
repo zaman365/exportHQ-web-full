@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   check,
   index,
@@ -1225,10 +1226,18 @@ export const serviceProviderProfiles = pgTable("service_provider_profiles", {
   verifiedAt: timestamp("verified_at", { withTimezone: true }),
   verifiedBy: text("verified_by"),
   commissionDisclosure: text("commission_disclosure").notNull(),
+  commercialRelationshipDisclosure: text("commercial_relationship_disclosure").notNull().default("No commercial relationship recorded."),
+  rankingBasis: text("ranking_basis").notNull().default("No ranking while unverified."),
+  responseSlaMinutes: integer("response_sla_minutes"),
+  verificationExpiresAt: timestamp("verification_expires_at", { withTimezone: true }),
+  suspensionReason: text("suspension_reason"),
   active: boolean("active").notNull().default(false),
   ...timestamps
 }, (table) => [
-  index("service_provider_profiles_status_idx").on(table.verificationStatus, table.active)
+  index("service_provider_profiles_status_idx").on(table.verificationStatus, table.active),
+  check("service_provider_profiles_sla_check", sql`${table.responseSlaMinutes} is null or ${table.responseSlaMinutes} between 1 and 43200`),
+  check("service_provider_profiles_verification_expiry_check", sql`${table.verificationStatus} <> 'verified' or ${table.verificationExpiresAt} is not null`),
+  check("service_provider_profiles_suspension_check", sql`${table.verificationStatus} <> 'suspended' or ${table.suspensionReason} is not null`)
 ]);
 
 export const readinessProviderReferrals = pgTable("readiness_provider_referrals", {
@@ -2489,7 +2498,6 @@ export const billingPlanCatalogVersions = pgTable("billing_plan_catalog_versions
   check("billing_plan_catalog_versions_status_check", sql`${table.status} in ('draft', 'published', 'retired')`),
   check("billing_plan_catalog_versions_hash_check", sql`${table.contentHashSha256} ~ '^[a-f0-9]{64}$'`),
   check("billing_plan_catalog_versions_publication_check", sql`${table.status} <> 'published' or num_nonnulls(${table.effectiveFrom}, ${table.publishedBy}, ${table.reviewReference}) = 3`),
-  check("billing_plan_catalog_versions_r3_gate_check", sql`not ${table.selfServiceEnabled}`)
 ]);
 
 export const billingPlanPrices = pgTable("billing_plan_prices", {
@@ -2504,6 +2512,14 @@ export const billingPlanPrices = pgTable("billing_plan_prices", {
   offerStatus: text("offer_status").notNull(),
   includedActiveLanes: integer("included_active_lanes"),
   includedEditors: integer("included_editors"),
+  includedStorageBytes: bigint("included_storage_bytes", { mode: "number" }).notNull().default(0),
+  includedAutomationUnits: integer("included_automation_units").notNull().default(0),
+  includedWorkPacks: integer("included_work_packs").notNull().default(0),
+  activeLaneOverageMinor: integer("active_lane_overage_minor").notNull().default(0),
+  editorOverageMinor: integer("editor_overage_minor").notNull().default(0),
+  storageGibOverageMinor: integer("storage_gib_overage_minor").notNull().default(0),
+  automationHundredOverageMinor: integer("automation_hundred_overage_minor").notNull().default(0),
+  workPackOverageMinor: integer("work_pack_overage_minor").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [
   uniqueIndex("billing_plan_prices_catalog_name_unique").on(table.catalogVersionId, table.displayName),
@@ -2512,7 +2528,9 @@ export const billingPlanPrices = pgTable("billing_plan_prices", {
   check("billing_plan_prices_amount_check", sql`${table.amountMinor} >= 0 and ${table.currency} = 'BDT'`),
   check("billing_plan_prices_interval_check", sql`${table.billingInterval} in ('one_time', 'quarterly', 'annual', 'monthly')`),
   check("billing_plan_prices_cadence_check", sql`(${table.billingInterval} = 'one_time' and ${table.billingCadenceMonths} is null) or (${table.billingInterval} <> 'one_time' and ${table.billingCadenceMonths} >= 1)`),
-  check("billing_plan_prices_status_check", sql`${table.offerStatus} in ('preview', 'manual_pilot', 'planned')`)
+  check("billing_plan_prices_status_check", sql`${table.offerStatus} in ('preview', 'manual_pilot', 'planned', 'public_beta')`),
+  check("billing_plan_prices_limits_check", sql`${table.includedStorageBytes} >= 0 and ${table.includedAutomationUnits} >= 0 and ${table.includedWorkPacks} >= 0`),
+  check("billing_plan_prices_overage_check", sql`${table.activeLaneOverageMinor} >= 0 and ${table.editorOverageMinor} >= 0 and ${table.storageGibOverageMinor} >= 0 and ${table.automationHundredOverageMinor} >= 0 and ${table.workPackOverageMinor} >= 0`)
 ]);
 
 export const billingAccounts = pgTable("billing_accounts", {
@@ -2762,6 +2780,349 @@ export const billingReconciliationResults = pgTable("billing_reconciliation_resu
   check("billing_reconciliation_period_check", sql`${table.periodEnd} > ${table.periodStart}`),
   check("billing_reconciliation_money_check", sql`${table.expectedMinor} >= 0 and ${table.receivedMinor} >= 0 and ${table.creditedMinor} >= 0 and ${table.refundedMinor} >= 0 and ${table.varianceMinor} = ${table.receivedMinor} + ${table.creditedMinor} - ${table.refundedMinor} - ${table.expectedMinor} and ${table.currency} = 'BDT'`),
   check("billing_reconciliation_status_check", sql`${table.status} in ('matched', 'variance', 'resolved')`)
+]);
+
+/** R4 provider selection record. Candidate entries are useful for integration
+ * work but cannot open checkout until every independent review and managed
+ * secret reference is present. */
+export const billingProviderConfigurations = pgTable("billing_provider_configurations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  providerKey: text("provider_key").notNull().unique(),
+  displayName: text("display_name").notNull(),
+  status: text("status").notNull().default("candidate"),
+  currency: text("currency").notNull().default("BDT"),
+  checkoutMode: text("checkout_mode").notNull(),
+  documentationUrl: text("documentation_url").notNull(),
+  commercialReviewReference: text("commercial_review_reference"),
+  legalReviewReference: text("legal_review_reference"),
+  securityReviewReference: text("security_review_reference"),
+  taxReviewReference: text("tax_review_reference"),
+  cancellationEvidenceReference: text("cancellation_evidence_reference"),
+  invoiceEvidenceReference: text("invoice_evidence_reference"),
+  refundEvidenceReference: text("refund_evidence_reference"),
+  dunningEvidenceReference: text("dunning_evidence_reference"),
+  entitlementRollbackEvidenceReference: text("entitlement_rollback_evidence_reference"),
+  reconciliationEvidenceReference: text("reconciliation_evidence_reference"),
+  credentialSecretRef: text("credential_secret_ref"),
+  activatedBy: text("activated_by"),
+  activatedAt: timestamp("activated_at", { withTimezone: true }),
+  suspendedAt: timestamp("suspended_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  check("billing_provider_configurations_status_check", sql`${table.status} in ('candidate', 'approved', 'active', 'suspended', 'retired')`),
+  check("billing_provider_configurations_currency_check", sql`${table.currency} = 'BDT'`),
+  check("billing_provider_configurations_activation_check", sql`${table.status} <> 'active' or (num_nonnulls(${table.commercialReviewReference}, ${table.legalReviewReference}, ${table.securityReviewReference}, ${table.taxReviewReference}, ${table.cancellationEvidenceReference}, ${table.invoiceEvidenceReference}, ${table.refundEvidenceReference}, ${table.dunningEvidenceReference}, ${table.entitlementRollbackEvidenceReference}, ${table.reconciliationEvidenceReference}, ${table.credentialSecretRef}, ${table.activatedBy}, ${table.activatedAt}) = 13 and ${table.credentialSecretRef} like 'secret://%')`)
+]);
+
+export const billingCheckoutSessions = pgTable("billing_checkout_sessions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  billingAccountId: uuid("billing_account_id").notNull().references(() => billingAccounts.id, { onDelete: "restrict" }),
+  invoiceId: uuid("invoice_id").notNull().references(() => customerBillingInvoices.id, { onDelete: "restrict" }),
+  planPriceId: uuid("plan_price_id").notNull().references(() => billingPlanPrices.id, { onDelete: "restrict" }),
+  providerConfigurationId: uuid("provider_configuration_id").notNull().references(() => billingProviderConfigurations.id, { onDelete: "restrict" }),
+  merchantTransactionId: text("merchant_transaction_id").notNull().unique(),
+  providerSessionReference: text("provider_session_reference"),
+  amountMinor: integer("amount_minor").notNull(),
+  currency: text("currency").notNull().default("BDT"),
+  status: text("status").notNull().default("created"),
+  idempotencyKey: text("idempotency_key").notNull(),
+  returnStateHashSha256: text("return_state_hash_sha256").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  settledAt: timestamp("settled_at", { withTimezone: true }),
+  createdBy: text("created_by").notNull(),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("billing_checkout_sessions_org_id_unique").on(table.organizationId, table.id),
+  uniqueIndex("billing_checkout_sessions_org_key_unique").on(table.organizationId, table.idempotencyKey),
+  index("billing_checkout_sessions_org_status_idx").on(table.organizationId, table.status, table.expiresAt),
+  check("billing_checkout_sessions_amount_check", sql`${table.amountMinor} > 0 and ${table.currency} = 'BDT'`),
+  check("billing_checkout_sessions_status_check", sql`${table.status} in ('created', 'pending', 'settled', 'risky', 'failed', 'cancelled', 'expired')`),
+  check("billing_checkout_sessions_hash_check", sql`${table.returnStateHashSha256} ~ '^[a-f0-9]{64}$'`),
+  check("billing_checkout_sessions_settlement_check", sql`${table.status} <> 'settled' or ${table.settledAt} is not null`)
+]);
+
+export const billingSettlementRecords = pgTable("billing_settlement_records", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  checkoutSessionId: uuid("checkout_session_id").notNull().references(() => billingCheckoutSessions.id, { onDelete: "restrict" }),
+  providerEventId: uuid("provider_event_id").notNull().references(() => billingProviderEvents.id, { onDelete: "restrict" }),
+  providerTransactionId: text("provider_transaction_id").notNull().unique(),
+  amountMinor: integer("amount_minor").notNull(),
+  providerFeeMinor: integer("provider_fee_minor").notNull().default(0),
+  netSettlementMinor: integer("net_settlement_minor").notNull(),
+  currency: text("currency").notNull().default("BDT"),
+  status: text("status").notNull(),
+  riskLevel: text("risk_level").notNull(),
+  providerValidationReference: text("provider_validation_reference").notNull(),
+  payloadHashSha256: text("payload_hash_sha256").notNull(),
+  occurredAt: timestamp("occurred_at", { withTimezone: true }).notNull(),
+  recordedBy: text("recorded_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("billing_settlement_checkout_unique").on(table.checkoutSessionId),
+  uniqueIndex("billing_settlement_org_id_unique").on(table.organizationId, table.id),
+  index("billing_settlement_org_status_idx").on(table.organizationId, table.status, table.occurredAt),
+  check("billing_settlement_money_check", sql`${table.amountMinor} > 0 and ${table.providerFeeMinor} >= 0 and ${table.netSettlementMinor} = ${table.amountMinor} - ${table.providerFeeMinor} and ${table.currency} = 'BDT'`),
+  check("billing_settlement_status_check", sql`${table.status} in ('pending', 'settled', 'reversed')`),
+  check("billing_settlement_risk_check", sql`${table.riskLevel} in ('safe', 'risky')`),
+  check("billing_settlement_hash_check", sql`${table.payloadHashSha256} ~ '^[a-f0-9]{64}$'`)
+]);
+
+export const billingDunningCases = pgTable("billing_dunning_cases", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  subscriptionId: uuid("subscription_id").notNull().references(() => billingSubscriptions.id, { onDelete: "cascade" }),
+  invoiceId: uuid("invoice_id").notNull().references(() => customerBillingInvoices.id, { onDelete: "cascade" }),
+  status: text("status").notNull().default("open"),
+  attemptCount: integer("attempt_count").notNull().default(0),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }),
+  customerNoticeReference: text("customer_notice_reference"),
+  outcomeReason: text("outcome_reason"),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("billing_dunning_invoice_unique").on(table.invoiceId),
+  index("billing_dunning_org_status_idx").on(table.organizationId, table.status, table.nextAttemptAt),
+  check("billing_dunning_status_check", sql`${table.status} in ('open', 'notified', 'retrying', 'resolved', 'written_off')`),
+  check("billing_dunning_attempts_check", sql`${table.attemptCount} between 0 and 12`),
+  check("billing_dunning_resolution_check", sql`${table.status} not in ('resolved', 'written_off') or num_nonnulls(${table.outcomeReason}, ${table.resolvedAt}) = 2`)
+]);
+
+export const billingEntitlementDriftIncidents = pgTable("billing_entitlement_drift_incidents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  subscriptionId: uuid("subscription_id").references(() => billingSubscriptions.id, { onDelete: "set null" }),
+  severity: text("severity").notNull(),
+  expectedTier: subscriptionTier("expected_tier").notNull(),
+  actualTier: subscriptionTier("actual_tier").notNull(),
+  status: text("status").notNull().default("open"),
+  detectedAt: timestamp("detected_at", { withTimezone: true }).notNull(),
+  evidenceReference: text("evidence_reference").notNull(),
+  resolvedBy: text("resolved_by"),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  resolutionReference: text("resolution_reference"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("billing_drift_org_status_idx").on(table.organizationId, table.status, table.severity),
+  check("billing_drift_severity_check", sql`${table.severity} in ('low', 'medium', 'high', 'critical')`),
+  check("billing_drift_difference_check", sql`${table.expectedTier} <> ${table.actualTier}`),
+  check("billing_drift_status_check", sql`${table.status} in ('open', 'investigating', 'resolved')`),
+  check("billing_drift_resolution_check", sql`${table.status} <> 'resolved' or num_nonnulls(${table.resolvedBy}, ${table.resolvedAt}, ${table.resolutionReference}) = 3`)
+]);
+
+export const billingPlanChangeNotices = pgTable("billing_plan_change_notices", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  subscriptionId: uuid("subscription_id").notNull().references(() => billingSubscriptions.id, { onDelete: "cascade" }),
+  fromPlanPriceId: uuid("from_plan_price_id").notNull().references(() => billingPlanPrices.id, { onDelete: "restrict" }),
+  toPlanPriceId: uuid("to_plan_price_id").notNull().references(() => billingPlanPrices.id, { onDelete: "restrict" }),
+  treatment: text("treatment").notNull(),
+  noticeReference: text("notice_reference"),
+  effectiveAt: timestamp("effective_at", { withTimezone: true }).notNull(),
+  acknowledgedBy: text("acknowledged_by"),
+  acknowledgedAt: timestamp("acknowledged_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("billing_plan_change_org_effective_idx").on(table.organizationId, table.effectiveAt),
+  check("billing_plan_change_treatment_check", sql`${table.treatment} in ('grandfathered', 'notified')`),
+  check("billing_plan_change_notice_check", sql`${table.treatment} <> 'notified' or ${table.noticeReference} is not null`),
+  check("billing_plan_change_ack_check", sql`num_nonnulls(${table.acknowledgedBy}, ${table.acknowledgedAt}) in (0, 2)`)
+]);
+
+export const serviceProviderVerificationEvidence = pgTable("service_provider_verification_evidence", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  providerId: uuid("provider_id").notNull().references(() => serviceProviderProfiles.id, { onDelete: "cascade" }),
+  evidenceType: text("evidence_type").notNull(),
+  storageReference: text("storage_reference").notNull(),
+  contentHashSha256: text("content_hash_sha256").notNull(),
+  validFrom: timestamp("valid_from", { withTimezone: true }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  reviewedBy: text("reviewed_by").notNull(),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }).notNull(),
+  status: text("status").notNull().default("current"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("provider_verification_evidence_unique").on(table.providerId, table.evidenceType, table.contentHashSha256),
+  index("provider_verification_evidence_expiry_idx").on(table.providerId, table.status, table.expiresAt),
+  check("provider_verification_evidence_hash_check", sql`${table.contentHashSha256} ~ '^[a-f0-9]{64}$'`),
+  check("provider_verification_evidence_window_check", sql`${table.expiresAt} > ${table.validFrom}`),
+  check("provider_verification_evidence_status_check", sql`${table.status} in ('current', 'expired', 'superseded', 'rejected')`)
+]);
+
+export const providerCases = pgTable("provider_cases", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  referralId: uuid("referral_id").references(() => readinessProviderReferrals.id, { onDelete: "set null" }),
+  providerId: uuid("provider_id").notNull().references(() => serviceProviderProfiles.id, { onDelete: "restrict" }),
+  exportLaneId: uuid("export_lane_id").references(() => exportLanes.id, { onDelete: "set null" }),
+  category: text("category").notNull(),
+  scope: text("scope").notNull(),
+  feeDisclosure: text("fee_disclosure").notNull(),
+  commissionDisclosure: text("commission_disclosure").notNull(),
+  commercialRelationship: text("commercial_relationship").notNull(),
+  rankingBasis: text("ranking_basis").notNull(),
+  status: text("status").notNull().default("draft"),
+  responseDueAt: timestamp("response_due_at", { withTimezone: true }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  acceptedBy: text("accepted_by"),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  introducedAt: timestamp("introduced_at", { withTimezone: true }),
+  completedAt: timestamp("completed_at", { withTimezone: true }),
+  outcomeReview: text("outcome_review"),
+  createdBy: text("created_by").notNull(),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("provider_cases_org_id_unique").on(table.organizationId, table.id),
+  index("provider_cases_org_status_idx").on(table.organizationId, table.status, table.responseDueAt),
+  check("provider_cases_status_check", sql`${table.status} in ('draft', 'awaiting_acceptance', 'accepted', 'introduced', 'in_progress', 'completed', 'disputed', 'cancelled')`),
+  check("provider_cases_window_check", sql`${table.expiresAt} > ${table.responseDueAt}`),
+  check("provider_cases_acceptance_check", sql`${table.status} in ('draft', 'awaiting_acceptance') or num_nonnulls(${table.acceptedBy}, ${table.acceptedAt}) = 2`),
+  check("provider_cases_introduction_check", sql`${table.status} not in ('introduced', 'in_progress', 'completed', 'disputed') or ${table.introducedAt} is not null`),
+  check("provider_cases_completion_check", sql`${table.status} <> 'completed' or num_nonnulls(${table.completedAt}, ${table.outcomeReview}) = 2`)
+]);
+
+export const providerCaseEvidenceShares = pgTable("provider_case_evidence_shares", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  providerCaseId: uuid("provider_case_id").notNull().references(() => providerCases.id, { onDelete: "cascade" }),
+  documentVersionId: uuid("document_version_id").notNull().references(() => documentVersions.id, { onDelete: "restrict" }),
+  purpose: text("purpose").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  approvedByCustomer: text("approved_by_customer").notNull(),
+  approvedAt: timestamp("approved_at", { withTimezone: true }).notNull(),
+  revokedBy: text("revoked_by"),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("provider_case_evidence_share_unique").on(table.providerCaseId, table.documentVersionId, table.purpose),
+  index("provider_case_evidence_org_expiry_idx").on(table.organizationId, table.expiresAt),
+  check("provider_case_evidence_revoke_check", sql`num_nonnulls(${table.revokedBy}, ${table.revokedAt}) in (0, 2)`)
+]);
+
+export const providerCaseIssues = pgTable("provider_case_issues", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  providerCaseId: uuid("provider_case_id").notNull().references(() => providerCases.id, { onDelete: "cascade" }),
+  issueType: text("issue_type").notNull(),
+  severity: text("severity").notNull(),
+  status: text("status").notNull().default("open"),
+  summary: text("summary").notNull(),
+  evidenceReference: text("evidence_reference").notNull(),
+  ownerActorId: text("owner_actor_id").notNull(),
+  openedBy: text("opened_by").notNull(),
+  openedAt: timestamp("opened_at", { withTimezone: true }).notNull(),
+  resolution: text("resolution"),
+  resolvedBy: text("resolved_by"),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  index("provider_case_issues_org_status_idx").on(table.organizationId, table.status, table.severity),
+  check("provider_case_issues_type_check", sql`${table.issueType} in ('complaint', 'dispute', 'suspension', 'reverification', 'outcome_review')`),
+  check("provider_case_issues_severity_check", sql`${table.severity} in ('low', 'medium', 'high', 'critical')`),
+  check("provider_case_issues_status_check", sql`${table.status} in ('open', 'investigating', 'resolved', 'dismissed')`),
+  check("provider_case_issues_resolution_check", sql`${table.status} not in ('resolved', 'dismissed') or num_nonnulls(${table.resolution}, ${table.resolvedBy}, ${table.resolvedAt}) = 3`)
+]);
+
+export const externalGuestGrants = pgTable("external_guest_grants", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  guestActorId: text("guest_actor_id").notNull(),
+  guestType: text("guest_type").notNull(),
+  purpose: text("purpose").notNull(),
+  resourceType: text("resource_type").notNull(),
+  resourceId: uuid("resource_id").notNull(),
+  permissions: text("permissions").array().notNull(),
+  status: text("status").notNull().default("pending"),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  revokedBy: text("revoked_by"),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  createdBy: text("created_by").notNull(),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("external_guest_grants_actor_resource_unique").on(table.organizationId, table.guestActorId, table.resourceType, table.resourceId),
+  index("external_guest_grants_org_status_idx").on(table.organizationId, table.status, table.expiresAt),
+  check("external_guest_grants_type_check", sql`${table.guestType} in ('buyer', 'forwarder', 'cf_agent', 'inspector')`),
+  check("external_guest_grants_status_check", sql`${table.status} in ('pending', 'active', 'revoked', 'expired')`),
+  check("external_guest_grants_purpose_check", sql`${table.purpose} in ('buyer_review', 'forwarder_handoff', 'cf_clearance', 'inspection_review')`),
+  check("external_guest_grants_permission_check", sql`cardinality(${table.permissions}) > 0 and ${table.permissions} <@ array['read','comment','upload_approved_evidence']::text[]`),
+  check("external_guest_grants_active_check", sql`${table.status} <> 'active' or ${table.acceptedAt} is not null`),
+  check("external_guest_grants_revoke_check", sql`${table.status} <> 'revoked' or num_nonnulls(${table.revokedBy}, ${table.revokedAt}) = 2`)
+]);
+
+export const customerApiClients = pgTable("customer_api_clients", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  clientKey: text("client_key").notNull().unique(),
+  secretHashSha256: text("secret_hash_sha256").notNull(),
+  secretVersion: integer("secret_version").notNull().default(1),
+  scopes: text("scopes").array().notNull(),
+  rateLimitPerMinute: integer("rate_limit_per_minute").notNull(),
+  status: text("status").notNull().default("active"),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  lastRotatedAt: timestamp("last_rotated_at", { withTimezone: true }).notNull(),
+  createdBy: text("created_by").notNull(),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("customer_api_clients_org_id_unique").on(table.organizationId, table.id),
+  index("customer_api_clients_org_status_idx").on(table.organizationId, table.status, table.expiresAt),
+  check("customer_api_clients_hash_check", sql`${table.secretHashSha256} ~ '^[a-f0-9]{64}$'`),
+  check("customer_api_clients_version_check", sql`${table.secretVersion} >= 1`),
+  check("customer_api_clients_rate_check", sql`${table.rateLimitPerMinute} between 1 and 600`),
+  check("customer_api_clients_status_check", sql`${table.status} in ('active', 'suspended', 'revoked', 'expired')`),
+  check("customer_api_clients_scope_check", sql`cardinality(${table.scopes}) > 0 and ${table.scopes} <@ array['shipment:read','shipment:event:read','invoice:read','payment:read','document:approved:read']::text[]`)
+]);
+
+export const customerWebhookSubscriptions = pgTable("customer_webhook_subscriptions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  apiClientId: uuid("api_client_id").notNull().references(() => customerApiClients.id, { onDelete: "cascade" }),
+  endpointUrl: text("endpoint_url").notNull(),
+  eventTypes: text("event_types").array().notNull(),
+  signingSecretRef: text("signing_secret_ref").notNull(),
+  secretVersion: integer("secret_version").notNull().default(1),
+  status: text("status").notNull().default("pending_verification"),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  lastRotatedAt: timestamp("last_rotated_at", { withTimezone: true }).notNull(),
+  createdBy: text("created_by").notNull(),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("customer_webhook_endpoint_unique").on(table.organizationId, table.endpointUrl),
+  uniqueIndex("customer_webhook_subscriptions_org_id_unique").on(table.organizationId, table.id),
+  index("customer_webhook_org_status_idx").on(table.organizationId, table.status),
+  check("customer_webhook_url_check", sql`${table.endpointUrl} ~ '^https://'`),
+  check("customer_webhook_secret_check", sql`${table.signingSecretRef} like 'secret://%' and ${table.secretVersion} >= 1`),
+  check("customer_webhook_status_check", sql`${table.status} in ('pending_verification', 'active', 'paused', 'revoked')`),
+  check("customer_webhook_active_check", sql`${table.status} <> 'active' or ${table.verifiedAt} is not null`),
+  check("customer_webhook_event_check", sql`cardinality(${table.eventTypes}) > 0 and ${table.eventTypes} <@ array['shipment.updated','shipment.exception_opened','invoice.issued','payment.confirmed','document.approved']::text[]`)
+]);
+
+export const customerWebhookDeliveries = pgTable("customer_webhook_deliveries", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  subscriptionId: uuid("subscription_id").notNull().references(() => customerWebhookSubscriptions.id, { onDelete: "cascade" }),
+  eventType: text("event_type").notNull(),
+  resourceType: text("resource_type").notNull(),
+  resourceId: uuid("resource_id").notNull(),
+  payloadHashSha256: text("payload_hash_sha256").notNull(),
+  secretVersion: integer("secret_version").notNull(),
+  replayNonce: text("replay_nonce").notNull().unique(),
+  idempotencyKey: text("idempotency_key").notNull(),
+  status: text("status").notNull().default("pending"),
+  attempts: integer("attempts").notNull().default(0),
+  signedAt: timestamp("signed_at", { withTimezone: true }).notNull(),
+  deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+  lastFailureCode: text("last_failure_code"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("customer_webhook_delivery_key_unique").on(table.organizationId, table.idempotencyKey),
+  index("customer_webhook_delivery_status_idx").on(table.organizationId, table.status, table.createdAt),
+  check("customer_webhook_delivery_hash_check", sql`${table.payloadHashSha256} ~ '^[a-f0-9]{64}$'`),
+  check("customer_webhook_delivery_status_check", sql`${table.status} in ('pending', 'delivered', 'retryable_failure', 'dead_letter')`),
+  check("customer_webhook_delivery_attempt_check", sql`${table.attempts} between 0 and 6`),
+  check("customer_webhook_delivery_delivered_check", sql`${table.status} <> 'delivered' or ${table.deliveredAt} is not null`)
 ]);
 
 /**
