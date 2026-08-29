@@ -15,10 +15,11 @@ These were read directly from the Cloudflare and Clerk consoles.
 | Worker | `exporthq-app` | Deployed | _unnamed_ |
 | Worker route | `export-hq.com/ExportPanel*` (zone `export-hq.com`) | Active | _unnamed_ |
 | Clerk application | `app_3IRaL4aCvvYhwQqcWobdU1UDeJj` ("Export HQ") | Active | _unnamed_ |
-| Clerk production instance | `ins_3IRabAnEQBciVzmSDLT4Qhzb5go` for `export-hq.com` | Active, 10 sign-ups | _unnamed_ |
+| Clerk production instance | `ins_3IRabAnEQBciVzmSDLT4Qhzb5go` for `export-hq.com` | Active; application/email DNS and SSL verified; ExportPanel paths configured | _unnamed_ |
 | Clerk Organizations | Enabled, membership required, admin/member roles | Active | _unnamed_ |
 | Clerk Billing | **Not enabled** — plan keys `launch`/`scale`/`managed` do not exist | Blocked | _unnamed_ |
-| Clerk webhooks | **None configured** | Blocked | _unnamed_ |
+| Clerk webhook | `https://export-hq.com/ExportPanel/api/webhooks/clerk` | Endpoint registered for 16 reviewed identity/organization/billing events; signing-secret transfer and delivery test pending | _unnamed_ |
+| Clerk production methods | Email/password and email verification-code sign-up/sign-in | Configured; real-domain journey evidence pending. Phone/SMS and MFA are plan-gated | _unnamed_ |
 | Clerk custom roles | 2 of 2 used (`org:admin`, `org:member`) | At plan ceiling | _unnamed_ |
 | Neon development project | `exporthq-development-eu` (`late-morning-49181333`) | PostgreSQL 17 in AWS `eu-central-1`; 2 checked-in migrations, 39 migration-owned tables and 29 RLS tables verified; locked role shells provisioned; LOGIN credentials pending named human entry | _unnamed_ |
 | Neon staging project | `exporthq-staging-eu` (`young-wildflower-06976535`) | PostgreSQL 17 in AWS `eu-central-1`; 2 checked-in migrations, 39 migration-owned tables and 29 RLS tables verified; locked role shells provisioned; LOGIN credentials pending named human entry | _unnamed_ |
@@ -65,6 +66,7 @@ agent. Each is set with `wrangler secret put <NAME>` by a named human owner.
    role templates — executive, department lead, manager, viewer, external —
    cannot be created in Clerk on the current plan. Authorization already
    normalises any unrecognised role to `member`, so this fails safe.
-3. **No webhook endpoint is registered**, so Clerk changes are not projected
-   anywhere. The receiving endpoint now exists and verifies signatures; see
-   [`activation-gates.md`](activation-gates.md) for the registration steps.
+3. **The Clerk webhook signing secret has not yet been transferred directly to
+   Cloudflare**, so the registered endpoint remains fail-closed and no live
+   delivery has been accepted. See
+   [`release/evidence/r0-clerk-2026-08-29/`](release/evidence/r0-clerk-2026-08-29/).

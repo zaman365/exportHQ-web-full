@@ -80,17 +80,18 @@ Gate 5: one real pilot Export Lane and controlled launch
 
 > **Verified 2026-08-26 from the Clerk console.** Production instance
 > `ins_3IRabAnEQBciVzmSDLT4Qhzb5go` on `export-hq.com` is live with
-> Organizations enabled. Blocked: Billing is not enabled, so the `launch`,
-> `scale` and `managed` plan keys do not exist and every organization resolves
-> to `explore`; custom roles are at the plan ceiling of 2, so only `org:admin`
-> and `org:member` exist; no webhook endpoint is registered. The receiving
-> endpoint and its signature verification are implemented — see
-> [`activation-gates.md`](activation-gates.md).
+> Organizations enabled. On 2026-08-29, the custom domain/DNS/SSL and
+> ExportPanel paths were verified, email/password and email-code methods were
+> inspected, and the reviewed webhook endpoint was registered. Blocked:
+> Billing is not enabled, phone/SMS and MFA are plan-gated, custom roles remain
+> at the 2-role ceiling, and the webhook signing secret/live delivery test
+> still require a named human secret owner. See
+> [`release/evidence/r0-clerk-2026-08-29/`](release/evidence/r0-clerk-2026-08-29/).
 
 - [x] Create or verify the Export HQ-owned Clerk production instance for `export-hq.com`.
-- [ ] Configure production publishable and secret keys only through the deployment secret store.
+- [x] Configure production publishable and secret keys only through the deployment secret store.
 - [x] Restrict authorized parties to the approved Export HQ origin.
-- [ ] Configure sign-in, sign-up, onboarding and sign-out callbacks under `/ExportPanel`.
+- [x] Configure sign-in, sign-up, onboarding and sign-out callbacks under `/ExportPanel`.
 - [ ] Activate and test the approved email/password, email OTP and phone/SMS methods.
 - [ ] Configure production OAuth applications one at a time; advertise a method only after a
       successful real-account test.
