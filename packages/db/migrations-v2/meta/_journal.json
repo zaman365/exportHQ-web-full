@@ -22,6 +22,13 @@
       "when": 1788025500000,
       "tag": "0002_r1_export_lane",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788025600000,
+      "tag": "0003_r1_passport_evidence",
+      "breakpoints": true
     }
   ]
 }

@@ -48,6 +48,7 @@ GRANT EXECUTE ON FUNCTION app_resolve_organization(text) TO exporthq_app;
 GRANT EXECUTE ON FUNCTION app_upsert_organization(text, text, text, text) TO exporthq_app;
 GRANT EXECUTE ON FUNCTION app_deactivate_organization(text) TO exporthq_app;
 GRANT EXECUTE ON FUNCTION app_project_membership(uuid, text, text, boolean) TO exporthq_app;
+GRANT EXECUTE ON FUNCTION app_enqueue_outbox_event(uuid, uuid, text, text, text, text, jsonb, timestamptz) TO exporthq_app;
 
 ALTER DEFAULT PRIVILEGES FOR ROLE exporthq_migration IN SCHEMA public
   GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO exporthq_app;

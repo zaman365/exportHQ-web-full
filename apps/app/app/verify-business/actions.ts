@@ -1,14 +1,13 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { getClerkClient } from "@exporthq/auth";
+import { createBusinessVerificationCase } from "@exporthq/db";
 import { businessVerificationSchema } from "@exporthq/validation";
 import { checkRateLimit } from "../_lib/activation";
 import { getWorkspaceSession } from "../_lib/session";
+import { runTenantCommand } from "../_lib/tenant";
 
 export type VerificationActionState = { error?: string };
-
-type ExportPanelMetadata = { exportPanel?: Record<string, unknown> };
 
 export async function requestBusinessVerification(
   _state: VerificationActionState,
@@ -40,42 +39,27 @@ export async function requestBusinessVerification(
     originCountry: formData.get("originCountry"),
     website: formData.get("website"),
     businessEmail: formData.get("businessEmail"),
-    evidenceUrl: formData.get("evidenceUrl"),
     declaration: formData.get("declaration")
   });
   if (!parsed.success) {
-    return { error: "Check every field, use full https:// links, and accept the declaration before submitting." };
+    return { error: "Check every field, use the official business details, and accept the declaration before continuing." };
   }
 
-  if (session.isDemo) redirect("/verify-business?submitted=1");
+  if (session.isDemo) redirect("/verify-business?draft=1&synthetic=1");
 
-  const client = getClerkClient();
-  const organization = await client.organizations.getOrganization({ organizationId: session.organizationId });
-  const publicMetadata = organization.publicMetadata as ExportPanelMetadata;
-  const privateMetadata = organization.privateMetadata as ExportPanelMetadata;
-  const submittedAt = new Date().toISOString();
-
-  await client.organizations.updateOrganizationMetadata(session.organizationId, {
-    publicMetadata: {
-      ...publicMetadata,
-      exportPanel: {
-        ...(publicMetadata.exportPanel ?? {}),
-        businessVerification: "pending",
-        verificationSubmittedAt: submittedAt
-      }
-    },
-    privateMetadata: {
-      ...privateMetadata,
-      exportPanel: {
-        ...(privateMetadata.exportPanel ?? {}),
-        verificationRequest: {
-          ...parsed.data,
-          submittedAt,
-          submittedBy: session.userId
-        }
-      }
-    }
-  });
-
-  redirect("/verify-business?submitted=1");
+  const persisted = await runTenantCommand(session, (tx, context) =>
+    createBusinessVerificationCase(tx, context, {
+      legalName: parsed.data.legalName,
+      countryCode: parsed.data.originCountry,
+      registrationAuthority: parsed.data.registrationAuthority,
+      registrationNumber: parsed.data.registrationNumber,
+      registrationType: "company_registration",
+      website: parsed.data.website,
+      businessEmail: parsed.data.businessEmail
+    })
+  );
+  if (!persisted.ran) {
+    return { error: "Verification case storage is not activated. Nothing was submitted; you can continue preparing your details." };
+  }
+  redirect(`/verify-business?draft=1&case=${encodeURIComponent(persisted.value.id)}`);
 }

@@ -7,7 +7,19 @@ import { grantOrganizationEntitlement, readOrganizationTier } from "./entitlemen
 import { saveCompanyProfile, readCompanyProfile } from "./repositories/company-profile";
 import { PostgresIdempotencyStore, PostgresRateLimitStore } from "./stores";
 import { createExportLane, listExportLanes, transitionStoredExportLane } from "./repositories/export-lanes";
-import { auditEvents, exportLaneStageEvents, organizationMemberships, products } from "./schema";
+import {
+  authorizeEvidenceDownload,
+  consumeEvidenceUploadIntent,
+  createEvidenceUploadIntent,
+  recordEvidenceScanResult
+} from "./repositories/evidence-vault";
+import {
+  addBusinessVerificationEvidence,
+  createBusinessVerificationCase,
+  readBusinessVerificationCase,
+  transitionBusinessVerificationCase
+} from "./repositories/business-verification";
+import { auditEvents, documentUploadIntents, exportLaneStageEvents, organizationMemberships, products } from "./schema";
 
 /**
  * Cross-tenant isolation, proved against a real PostgreSQL with the migrations
@@ -139,6 +151,105 @@ describeWithDatabase("tenant isolation", () => {
     );
     expect(visibleToA.items.some((item) => item.id === lane.id)).toBe(true);
     expect(visibleToB.items.some((item) => item.id === lane.id)).toBe(false);
+  });
+
+  it("runs the synthetic evidence and business-verification path without arbitrary URLs", async () => {
+    const checksum = "a".repeat(64);
+    const intent = await withTenantTransaction(database, context(tenantA), async (tx, scoped) => {
+      await saveCompanyProfile(tx, scoped, { originCountryCode: "BD", industry: "Synthetic verification" });
+      return createEvidenceUploadIntent(tx, scoped, {
+        name: "Synthetic registration.pdf",
+        category: "company",
+        linkedEntityType: "organization",
+        linkedEntityId: tenantA,
+        mimeType: "application/pdf",
+        byteSize: 128,
+        checksumSha256: checksum,
+        expiresAt: new Date(Date.now() + 5 * 60_000)
+      });
+    });
+    await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      consumeEvidenceUploadIntent(tx, scoped, {
+        intentId: intent.id,
+        object: { key: intent.objectKey, size: intent.byteSize, etag: "synthetic-etag", version: "quarantine-v1" },
+        checksumSha256: checksum
+      })
+    );
+    await withTenantTransaction(
+      database,
+      { organizationId: tenantA, actorId: "system_scanner", actorType: "system" },
+      (tx, scoped) => recordEvidenceScanResult(tx, scoped, {
+        documentVersionId: intent.documentVersionId,
+        state: "clean",
+        attempt: 1,
+        scannerReference: "synthetic-scan",
+        promotedObject: { key: intent.objectKey, size: intent.byteSize, etag: "synthetic-clean-etag", version: "clean-v1" }
+      })
+    );
+    const download = await withTenantTransaction(
+      database,
+      { organizationId: tenantA, actorId: "system_reviewer", actorType: "system" },
+      (tx, scoped) => authorizeEvidenceDownload(tx, scoped, intent.documentVersionId)
+    );
+    expect(download.objectKey).toBe(intent.objectKey);
+
+    const verificationCase = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      createBusinessVerificationCase(tx, scoped, {
+        legalName: "Synthetic A Ltd",
+        countryCode: "BD",
+        registrationAuthority: "Synthetic registry",
+        registrationNumber: `SYN-${Date.now()}`,
+        registrationType: "company_registration",
+        website: "https://synthetic.invalid",
+        businessEmail: "verification@synthetic.invalid"
+      })
+    );
+    await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      addBusinessVerificationEvidence(tx, scoped, {
+        caseId: verificationCase.id,
+        documentVersionId: intent.documentVersionId,
+        evidenceType: "registration_extract"
+      })
+    );
+    const submitted = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      transitionBusinessVerificationCase(tx, scoped, {
+        caseId: verificationCase.id,
+        expectedVersion: verificationCase.version,
+        status: "submitted",
+        rationale: "Synthetic evidence package complete"
+      })
+    );
+    const underReview = await withTenantTransaction(
+      database,
+      { organizationId: tenantA, actorId: "staff_reviewer", actorType: "staff" },
+      (tx, scoped) => transitionBusinessVerificationCase(tx, scoped, {
+        caseId: verificationCase.id,
+        expectedVersion: submitted.version,
+        status: "under_review",
+        rationale: "Synthetic reviewer accepted assignment",
+        reviewDueAt: new Date(Date.now() + 24 * 60 * 60_000)
+      })
+    );
+    const verified = await withTenantTransaction(
+      database,
+      { organizationId: tenantA, actorId: "staff_reviewer", actorType: "staff" },
+      (tx, scoped) => transitionBusinessVerificationCase(tx, scoped, {
+        caseId: verificationCase.id,
+        expectedVersion: underReview.version,
+        status: "verified",
+        rationale: "Synthetic facts reconciled to clean evidence"
+      })
+    );
+    expect(verified.status).toBe("verified");
+
+    const otherTenantCase = await withTenantTransaction(database, context(tenantB), (tx, scoped) =>
+      readBusinessVerificationCase(tx, scoped, verificationCase.id)
+    );
+    const otherTenantIntents = await withTenantTransaction(database, context(tenantB), (tx) =>
+      tx.select().from(documentUploadIntents)
+    );
+    expect(otherTenantCase).toBeNull();
+    expect(otherTenantIntents.some((record) => record.id === intent.id)).toBe(false);
   });
 
   it("refuses a write aimed at another tenant even with a valid context", async () => {

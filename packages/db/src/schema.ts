@@ -60,6 +60,12 @@ export const exportLaneHealth = pgEnum("export_lane_health", ["on_track", "needs
 export const exportLaneIncoterm = pgEnum("export_lane_incoterm", ["FOB", "CIF", "DDP"]);
 export const exportLaneParticipantRole = pgEnum("export_lane_participant_role", ["owner", "contributor", "reviewer", "observer"]);
 export const exportLaneDecisionStatus = pgEnum("export_lane_decision_status", ["proposed", "approved", "rejected", "superseded"]);
+export const evidenceUploadIntentStatus = pgEnum("evidence_upload_intent_status", ["pending", "consumed", "expired", "cancelled"]);
+export const evidenceStorageState = pgEnum("evidence_storage_state", ["quarantine", "clean", "rejected", "deleted"]);
+export const evidenceScanState = pgEnum("evidence_scan_state", ["queued", "scanning", "clean", "rejected", "retryable_failure", "dead_letter"]);
+export const evidenceShareStatus = pgEnum("evidence_share_status", ["active", "revoked", "expired"]);
+export const verificationCaseStatus = pgEnum("verification_case_status", ["draft", "submitted", "under_review", "verified", "rejected", "withdrawn"]);
+export const passportFactStatus = pgEnum("passport_fact_status", ["declared", "evidence_added", "under_review", "verified", "rejected", "expired"]);
 
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -514,6 +520,258 @@ export const documentVersions = pgTable("document_versions", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [uniqueIndex("document_version_unique").on(table.documentId, table.version)]);
 
+export const documentUploadIntents = pgTable("document_upload_intents", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  documentId: uuid("document_id").notNull().references(() => documents.id, { onDelete: "cascade" }),
+  documentVersionId: uuid("document_version_id").notNull().references(() => documentVersions.id, { onDelete: "cascade" }),
+  objectKey: text("object_key").notNull().unique(),
+  expectedMimeType: text("expected_mime_type").notNull(),
+  expectedByteSize: integer("expected_byte_size").notNull(),
+  expectedChecksumSha256: text("expected_checksum_sha256").notNull(),
+  status: evidenceUploadIntentStatus("status").notNull().default("pending"),
+  createdBy: text("created_by").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  consumedAt: timestamp("consumed_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("document_upload_intents_org_id_unique").on(table.organizationId, table.id),
+  index("document_upload_intents_org_status_expiry_idx").on(table.organizationId, table.status, table.expiresAt),
+  check("document_upload_intents_mime_check", sql`${table.expectedMimeType} in ('application/pdf', 'image/jpeg', 'image/png')`),
+  check("document_upload_intents_size_check", sql`${table.expectedByteSize} between 1 and 26214400`),
+  check("document_upload_intents_checksum_check", sql`${table.expectedChecksumSha256} ~ '^[a-f0-9]{64}$'`),
+  check("document_upload_intents_consumption_check", sql`(${table.status} = 'consumed') = (${table.consumedAt} is not null)`)
+]);
+
+export const documentStorageObjects = pgTable("document_storage_objects", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  documentVersionId: uuid("document_version_id").notNull().references(() => documentVersions.id, { onDelete: "restrict" }),
+  state: evidenceStorageState("state").notNull().default("quarantine"),
+  objectKey: text("object_key").notNull().unique(),
+  providerVersion: text("provider_version").notNull(),
+  etag: text("etag").notNull(),
+  byteSize: integer("byte_size").notNull(),
+  checksumSha256: text("checksum_sha256").notNull(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("document_storage_objects_org_id_unique").on(table.organizationId, table.id),
+  uniqueIndex("document_storage_objects_document_version_unique").on(table.documentVersionId),
+  index("document_storage_objects_org_state_idx").on(table.organizationId, table.state),
+  check("document_storage_objects_size_check", sql`${table.byteSize} between 1 and 26214400`),
+  check("document_storage_objects_checksum_check", sql`${table.checksumSha256} ~ '^[a-f0-9]{64}$'`),
+  check("document_storage_objects_deletion_check", sql`(${table.state} = 'deleted') = (${table.deletedAt} is not null)`)
+]);
+
+export const documentScanEvents = pgTable("document_scan_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  documentVersionId: uuid("document_version_id").notNull().references(() => documentVersions.id, { onDelete: "restrict" }),
+  state: evidenceScanState("state").notNull(),
+  attempt: integer("attempt").notNull(),
+  scannerReference: text("scanner_reference"),
+  safeReasonCode: text("safe_reason_code"),
+  recordedBy: text("recorded_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("document_scan_events_version_attempt_state_unique").on(table.documentVersionId, table.attempt, table.state),
+  index("document_scan_events_org_version_idx").on(table.organizationId, table.documentVersionId),
+  check("document_scan_events_attempt_check", sql`${table.attempt} between 1 and 5`)
+]);
+
+export const documentEvidenceLinks = pgTable("document_evidence_links", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  documentVersionId: uuid("document_version_id").notNull().references(() => documentVersions.id, { onDelete: "restrict" }),
+  entityType: text("entity_type").notNull(),
+  entityId: uuid("entity_id").notNull(),
+  purpose: text("purpose").notNull(),
+  linkedBy: text("linked_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("document_evidence_links_unique").on(table.documentVersionId, table.entityType, table.entityId, table.purpose),
+  index("document_evidence_links_org_entity_idx").on(table.organizationId, table.entityType, table.entityId)
+]);
+
+export const documentExternalShares = pgTable("document_external_shares", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  documentVersionId: uuid("document_version_id").notNull().references(() => documentVersions.id, { onDelete: "restrict" }),
+  tokenHash: text("token_hash").notNull().unique(),
+  status: evidenceShareStatus("status").notNull().default("active"),
+  purpose: text("purpose").notNull(),
+  recipientReference: text("recipient_reference").notNull(),
+  createdBy: text("created_by").notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  maximumDownloads: integer("maximum_downloads").notNull().default(1),
+  downloadCount: integer("download_count").notNull().default(0),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  revokedBy: text("revoked_by"),
+  ...timestamps
+}, (table) => [
+  index("document_external_shares_org_status_idx").on(table.organizationId, table.status, table.expiresAt),
+  check("document_external_shares_download_check", sql`${table.maximumDownloads} between 1 and 100 and ${table.downloadCount} between 0 and ${table.maximumDownloads}`),
+  check("document_external_shares_revocation_check", sql`(${table.status} = 'revoked') = (${table.revokedAt} is not null and ${table.revokedBy} is not null)`)
+]);
+
+export const legalHolds = pgTable("legal_holds", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  entityType: text("entity_type").notNull(),
+  entityId: uuid("entity_id").notNull(),
+  reason: text("reason").notNull(),
+  authorityReference: text("authority_reference").notNull(),
+  appliedBy: text("applied_by").notNull(),
+  appliedAt: timestamp("applied_at", { withTimezone: true }).notNull().defaultNow(),
+  releasedBy: text("released_by"),
+  releasedAt: timestamp("released_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  index("legal_holds_org_entity_idx").on(table.organizationId, table.entityType, table.entityId),
+  check("legal_holds_release_check", sql`num_nonnulls(${table.releasedBy}, ${table.releasedAt}) in (0, 2)`)
+]);
+
+export const companyRegistrationFacts = pgTable("company_registration_facts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  jurisdictionCountryCode: text("jurisdiction_country_code").notNull(),
+  registrationAuthority: text("registration_authority").notNull(),
+  registrationNumber: text("registration_number").notNull(),
+  registrationType: text("registration_type").notNull(),
+  status: passportFactStatus("status").notNull().default("declared"),
+  evidenceDocumentVersionId: uuid("evidence_document_version_id").references(() => documentVersions.id, { onDelete: "restrict" }),
+  validFrom: timestamp("valid_from", { withTimezone: true }),
+  expiresAt: timestamp("expires_at", { withTimezone: true }),
+  verifiedBy: text("verified_by"),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("company_registration_facts_unique").on(table.organizationId, table.registrationAuthority, table.registrationNumber),
+  index("company_registration_facts_org_status_idx").on(table.organizationId, table.status),
+  check("company_registration_facts_country_check", sql`char_length(${table.jurisdictionCountryCode}) = 2`)
+]);
+
+export const companySignatoryFacts = pgTable("company_signatory_facts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  membershipId: uuid("membership_id").references(() => organizationMemberships.id, { onDelete: "set null" }),
+  displayName: text("display_name").notNull(),
+  positionTitle: text("position_title").notNull(),
+  authorityScope: text("authority_scope").notNull(),
+  status: passportFactStatus("status").notNull().default("declared"),
+  evidenceDocumentVersionId: uuid("evidence_document_version_id").references(() => documentVersions.id, { onDelete: "restrict" }),
+  effectiveFrom: timestamp("effective_from", { withTimezone: true }).notNull(),
+  effectiveTo: timestamp("effective_to", { withTimezone: true }),
+  verifiedBy: text("verified_by"),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  index("company_signatory_facts_org_status_idx").on(table.organizationId, table.status),
+  check("company_signatory_facts_window_check", sql`${table.effectiveTo} is null or ${table.effectiveTo} > ${table.effectiveFrom}`)
+]);
+
+export const companyContactFacts = pgTable("company_contact_facts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  contactType: text("contact_type").notNull(),
+  label: text("label").notNull(),
+  value: text("value").notNull(),
+  primary: boolean("primary").notNull().default(false),
+  status: passportFactStatus("status").notNull().default("declared"),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [index("company_contact_facts_org_type_idx").on(table.organizationId, table.contactType)]);
+
+export const companyBankingRouteFacts = pgTable("company_banking_route_facts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  bankName: text("bank_name").notNull(),
+  bankCountryCode: text("bank_country_code").notNull(),
+  swiftBic: text("swift_bic"),
+  beneficiaryName: text("beneficiary_name").notNull(),
+  maskedAccountReference: text("masked_account_reference").notNull(),
+  currencies: text("currencies").array().notNull().default([]),
+  status: passportFactStatus("status").notNull().default("declared"),
+  evidenceDocumentVersionId: uuid("evidence_document_version_id").references(() => documentVersions.id, { onDelete: "restrict" }),
+  verifiedBy: text("verified_by"),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  index("company_banking_route_facts_org_status_idx").on(table.organizationId, table.status),
+  check("company_banking_route_facts_country_check", sql`char_length(${table.bankCountryCode}) = 2`),
+  check("company_banking_route_facts_mask_check", sql`${table.maskedAccountReference} !~ '[0-9]{7,}'`)
+]);
+
+export const facilityCapacityFacts = pgTable("facility_capacity_facts", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  facilityId: uuid("facility_id").notNull().references(() => facilities.id, { onDelete: "cascade" }),
+  productId: uuid("product_id").references(() => products.id, { onDelete: "set null" }),
+  capacityAmount: integer("capacity_amount").notNull(),
+  capacityUnit: text("capacity_unit").notNull(),
+  period: text("period").notNull(),
+  leadTimeDays: integer("lead_time_days"),
+  status: passportFactStatus("status").notNull().default("declared"),
+  evidenceDocumentVersionId: uuid("evidence_document_version_id").references(() => documentVersions.id, { onDelete: "restrict" }),
+  verifiedBy: text("verified_by"),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  index("facility_capacity_facts_org_facility_idx").on(table.organizationId, table.facilityId),
+  check("facility_capacity_facts_amount_check", sql`${table.capacityAmount} > 0`),
+  check("facility_capacity_facts_lead_time_check", sql`${table.leadTimeDays} is null or ${table.leadTimeDays} >= 0`)
+]);
+
+export const businessVerificationCases = pgTable("business_verification_cases", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  status: verificationCaseStatus("status").notNull().default("draft"),
+  version: integer("version").notNull().default(1),
+  subjectLegalName: text("subject_legal_name").notNull(),
+  subjectCountryCode: text("subject_country_code").notNull(),
+  submittedBy: text("submitted_by"),
+  submittedAt: timestamp("submitted_at", { withTimezone: true }),
+  assignedReviewer: text("assigned_reviewer"),
+  reviewDueAt: timestamp("review_due_at", { withTimezone: true }),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("business_verification_cases_org_id_unique").on(table.organizationId, table.id),
+  index("business_verification_cases_org_status_idx").on(table.organizationId, table.status),
+  check("business_verification_cases_country_check", sql`char_length(${table.subjectCountryCode}) = 2`),
+  check("business_verification_cases_version_check", sql`${table.version} >= 1`)
+]);
+
+export const businessVerificationEvidence = pgTable("business_verification_evidence", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  caseId: uuid("case_id").notNull().references(() => businessVerificationCases.id, { onDelete: "cascade" }),
+  documentVersionId: uuid("document_version_id").notNull().references(() => documentVersions.id, { onDelete: "restrict" }),
+  evidenceType: text("evidence_type").notNull(),
+  addedBy: text("added_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("business_verification_evidence_unique").on(table.caseId, table.documentVersionId, table.evidenceType),
+  index("business_verification_evidence_org_case_idx").on(table.organizationId, table.caseId)
+]);
+
+export const businessVerificationStatusHistory = pgTable("business_verification_status_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  caseId: uuid("case_id").notNull().references(() => businessVerificationCases.id, { onDelete: "cascade" }),
+  fromStatus: verificationCaseStatus("from_status").notNull(),
+  toStatus: verificationCaseStatus("to_status").notNull(),
+  caseVersion: integer("case_version").notNull(),
+  rationale: text("rationale").notNull(),
+  changedBy: text("changed_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("business_verification_history_case_version_unique").on(table.caseId, table.caseVersion),
+  index("business_verification_history_org_case_idx").on(table.organizationId, table.caseId),
+  check("business_verification_history_version_check", sql`${table.caseVersion} >= 2`)
+]);
+
 /**
  * The Export Lane is the R1 aggregate root. Downstream readiness, evidence,
  * buyer, offer, shipment and payment records attach to this stable identifier
@@ -610,6 +868,8 @@ export const exportLaneDecisions = pgTable("export_lane_decisions", {
 export const readinessAssessments = pgTable("readiness_assessments", {
   id: uuid("id").primaryKey().defaultRandom(),
   organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  exportLaneId: uuid("export_lane_id").references(() => exportLanes.id, { onDelete: "cascade" }),
+  version: integer("version").notNull().default(1),
   createdBy: text("created_by").notNull(),
   methodVersion: text("method_version").notNull(),
   status: readinessAssessmentStatus("status").notNull().default("draft"),
@@ -688,6 +948,7 @@ export const serviceProviderProfiles = pgTable("service_provider_profiles", {
 export const readinessProviderReferrals = pgTable("readiness_provider_referrals", {
   id: uuid("id").primaryKey().defaultRandom(),
   organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  exportLaneId: uuid("export_lane_id").references(() => exportLanes.id, { onDelete: "cascade" }),
   assessmentId: uuid("assessment_id").notNull().references(() => readinessAssessments.id, { onDelete: "cascade" }),
   requirementKey: text("requirement_key").notNull(),
   providerCategory: text("provider_category").notNull(),
@@ -708,6 +969,7 @@ export const readinessProviderReferrals = pgTable("readiness_provider_referrals"
 export const tasks = pgTable("tasks", {
   id: uuid("id").primaryKey().defaultRandom(),
   organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  exportLaneId: uuid("export_lane_id").references(() => exportLanes.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description").notNull(),
   ownerId: text("owner_id").notNull(),
