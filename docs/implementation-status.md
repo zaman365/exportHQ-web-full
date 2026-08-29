@@ -55,14 +55,20 @@ remaining production components.
 Activation is tracked in [`production-activation-todo.md`](production-activation-todo.md) and the
 deployment's own gate state is readable at `/ExportPanel/api/activation`.
 
-| Gate                             | State       | What is blocking                                                                                                                                                                                                                                       |
-| -------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Gate 0 — ownership and freeze    | In progress | Protected `main`, 8 required checks, 6 milestones and the 22-item R0/R1 backlog exist; Mohammed Maniruzzaman owns all six single-founder roles; a solo-repository exception waives only GitHub approval, while external policy approvals remain absent |
-| Gate 1 — identity and PostgreSQL | In progress | Frankfurt Neon projects/migrations/locked roles, initial Clerk configuration and hosted CI are evidenced; live credentials/Hyperdrive, webhook secret/delivery, Billing/MFA/journeys and recovery approvals remain                                     |
-| Gate 2 — evidence vault          | Not started | R2 not provisioned; uploads fail closed                                                                                                                                                                                                                |
-| Gate 3 — production persistence  | Not started | Preview adapters still back customer workflows                                                                                                                                                                                                         |
-| Gate 4 — trust and integrations  | Not started | No reviewed provider or mail applications                                                                                                                                                                                                              |
-| Gate 5 — pilot and launch        | In progress | Builds, Worker smoke, Playwright, rate limits, redaction and sampled telemetry config pass locally; CSP enforcement, external monitoring/review and pilot evidence remain                                                                              |
+On 2026-08-29 the founder authorized R1-R6 development and accepted the risk of
+deferring independent security, privacy/legal, recovery and rollback review.
+The table below remains a production-activation view: deferred controls do not
+stop implementation, but no affected capability becomes Live until its gate is
+recorded.
+
+| Gate                             | State       | What is blocking                                                                                                                                                                                                         |
+| -------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Gate 0 — ownership and freeze    | In progress | Development authorized; protected `main`, 8 required checks, 6 milestones and the 22-item R0/R1 backlog exist; all six roles are assigned; deferred external policy approvals still block affected production activation |
+| Gate 1 — identity and PostgreSQL | In progress | Frankfurt Neon projects/migrations/locked roles, initial Clerk configuration and hosted CI are evidenced; live credentials/Hyperdrive, webhook secret/delivery, Billing/MFA/journeys and recovery approvals remain       |
+| Gate 2 — evidence vault          | Not started | R2 not provisioned; uploads fail closed                                                                                                                                                                                  |
+| Gate 3 — production persistence  | Not started | Preview adapters still back customer workflows                                                                                                                                                                           |
+| Gate 4 — trust and integrations  | Not started | No reviewed provider or mail applications                                                                                                                                                                                |
+| Gate 5 — pilot and launch        | In progress | Builds, Worker smoke, Playwright, rate limits, redaction and sampled telemetry config pass locally; CSP enforcement, external monitoring/review and pilot evidence remain                                                |
 
 No capability in this table may be described as live before its gate records evidence.
 

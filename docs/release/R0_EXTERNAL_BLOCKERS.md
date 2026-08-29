@@ -1,15 +1,21 @@
 # R0 external blockers
 
-Repository-owned R0 controls are implemented and locally verified. R1 must not
-start until the remaining R0 evidence is created in the systems that own it.
+Repository-owned R0 controls are implemented and locally verified. The founder
+authorized R1-R6 development on 2026-08-29 and accepted the risk of deferring
+the independent decisions below. These items block affected production
+activation, real customer data and external Alpha; they do not block continued
+implementation in test, preview or fail-closed modes. See
+[`R0_FOUNDER_DEVELOPMENT_AUTHORIZATION.md`](R0_FOUNDER_DEVELOPMENT_AUTHORIZATION.md).
 
 ## Founder and governance
 
 - Mohammed Maniruzzaman is named as product, technical, data, identity,
   security and operations owner for the single-founder R0 period. The founder's
   2026-08-29 solo-repository decision waives only a second GitHub collaborator
-  and pull-request approval; external approval separation remains required.
-- Approve classification, retention/deletion, telemetry and incident policies.
+  and pull-request approval. A separate founder decision authorizes continued
+  development while external approval separation remains a production gate.
+- Obtain approval for classification, retention/deletion, telemetry and
+  incident policies before the affected production activation.
 - Create the directive's issues and milestones and assign named accountable
   owners and required external reviewers. Protected `main` retains the PR,
   required-status, current-branch, conversation-resolution, linear-history and
@@ -43,13 +49,15 @@ start until the remaining R0 evidence is created in the systems that own it.
 - Configure Cloudflare production secrets, custom route, uptime checks and
   release annotations; run the attested artifact workflow from protected main.
 
-## Human review and release evidence
+## Deferred human review and release evidence
 
 - Complete security, privacy/legal, backup/PITR and incident/rollback reviews.
-  These are not waived by the GitHub solo-repository decision.
+  They are deferred for development, not waived or represented as independently
+  approved.
 - The PR CI gates are green and their URLs/exact SHA are indexed. An attested
   artifact promotion from protected `main`, artifact checksum/SBOM/provenance,
   production recovery output and named approvals remain required.
-- R0 remains open and external Alpha remains prohibited until those records
-  exist. No local test result is presented as third-party configuration or
-  approval evidence.
+- R0 production activation remains open and external Alpha remains prohibited
+  until those records exist. R1-R6 engineering may continue behind the ordered
+  fail-closed gates. No local test result is presented as third-party
+  configuration or approval evidence.

@@ -50,8 +50,9 @@ Gate 5: one real pilot Export Lane and controlled launch
 > [`incident-response.md`](incident-response.md),
 > [`production-ownership.md`](production-ownership.md). On 2026-08-29 Mohammed
 > Maniruzzaman was assigned to all six roles for the single-founder R0 period.
-> The gate stays open because the policies and independent reviews remain
-> unapproved.
+> On 2026-08-29 he authorized R1-R6 development and accepted deferral risk. The
+> production gate stays open because the policies and independent reviews
+> remain unapproved; fail-closed development may continue.
 
 - [x] Name the product owner, technical lead, data owner, identity owner, security owner and
       operations owner.
@@ -377,7 +378,7 @@ A checkbox above may be closed only when the component has:
 
 | Gate                             | State       | Blocking outcome                                                                                      |
 | -------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
-| Gate 0 — ownership and freeze    | In progress | Protected backlog/CI exists; owners and approvals remain unnamed                                      |
+| Gate 0 — ownership and freeze    | In progress | Development authorized and owners named; deferred policy/reviewer approvals block activation          |
 | Gate 1 — identity and PostgreSQL | In progress | Neon/Clerk foundation and CI evidenced; secrets, Hyperdrive, Billing/MFA/journeys and recovery remain |
 | Gate 2 — private evidence vault  | Not started | Real evidence must not be accepted                                                                    |
 | Gate 3 — production persistence  | Not started | Preview adapters remain in customer workflows                                                         |
