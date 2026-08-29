@@ -10,8 +10,11 @@ start until the remaining R0 evidence is created in the systems that own it.
 - Create the directive's issues and milestones and assign named accountable
   owners/reviewers. The authenticated GitHub UI has protected `main` with PR,
   approval, CODEOWNERS, latest-push approval, conversation-resolution,
-  linear-history and no-bypass controls. Required hosted check registration is
-  still pending the corrected PR run.
+  linear-history and no-bypass controls. All eight successful hosted contexts
+  are now required and branches must be current before merge. Six phase
+  milestones and all 22 directive R0/R1 issues exist; every issue deliberately
+  records owner/reviewer as blocking rather than inventing a person. See
+  [`evidence/r0-hosted-ci-2026-08-29/`](evidence/r0-hosted-ci-2026-08-29/).
 - Pull request [#1](https://github.com/zaman365/exportHQ-web-full/pull/1) is the
   hosted R0 evidence candidate. It cannot merge until another write-capable
   reviewer approves it, as intended by the protection rule.
@@ -36,9 +39,9 @@ start until the remaining R0 evidence is created in the systems that own it.
 ## Human review and release evidence
 
 - Complete security, privacy/legal, backup/PITR and incident/rollback reviews.
-- Run the CI gates and store their URLs, exact SHA, artifact checksum, SBOM,
-  provenance, restore/RLS output and named approvals under the release evidence
-  index.
+- The PR CI gates are green and their URLs/exact SHA are indexed. An attested
+  artifact promotion from protected `main`, artifact checksum/SBOM/provenance,
+  production recovery output and named approvals remain required.
 - R0 remains open and external Alpha remains prohibited until those records
   exist. No local test result is presented as third-party configuration or
   approval evidence.

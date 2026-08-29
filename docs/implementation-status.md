@@ -57,8 +57,8 @@ deployment's own gate state is readable at `/ExportPanel/api/activation`.
 
 | Gate | State | What is blocking |
 | --- | --- | --- |
-| Gate 0 — ownership and freeze | In progress | Repository governance and risk/evidence templates exist; named owners, approvals and GitHub enforcement are absent |
-| Gate 1 — identity and PostgreSQL | In progress | Clean local PostgreSQL/RLS/backup/restore proof passes; Neon, Clerk provider configuration and CI evidence are absent |
+| Gate 0 — ownership and freeze | In progress | Protected `main`, 8 required checks, 6 milestones and the 22-item R0/R1 backlog exist; named owners and approvals remain absent |
+| Gate 1 — identity and PostgreSQL | In progress | Frankfurt Neon projects/migrations/locked roles, initial Clerk configuration and hosted CI are evidenced; live credentials/Hyperdrive, webhook secret/delivery, Billing/MFA/journeys and recovery approvals remain |
 | Gate 2 — evidence vault | Not started | R2 not provisioned; uploads fail closed |
 | Gate 3 — production persistence | Not started | Preview adapters still back customer workflows |
 | Gate 4 — trust and integrations | Not started | No reviewed provider or mail applications |
@@ -87,12 +87,12 @@ Clerk production credentials are provisioned separately as Cloudflare Worker sec
 
 Before accepting real customer data:
 
-1. provision Frankfurt Neon and apply the checksum-protected `migrations-v2` chain with the migration role;
-2. apply `packages/db/roles/bootstrap.sql`, store each role credential separately, and record production RLS evidence;
-3. register the Clerk webhook secret/endpoint and configure invitations, role templates, staff allowlists and MFA policy;
+1. finalize the locked Frankfurt Neon role credentials through a protected human session and connect the application role to Hyperdrive;
+2. record staging restore, production PITR and independent encrypted-export evidence;
+3. transfer the registered Clerk webhook secret directly into Cloudflare and configure invitations, role templates, staff allowlists, MFA and Billing policy;
 4. continue replacing the remaining preview-backed modeled commands; onboarding and the reviewed identity projection are already database-authoritative;
 5. provision private EU R2, signed upload intents, quarantine, malware scanning, checksums, and authorized download logging;
-6. run the checked-in database, Playwright and Worker workflows in GitHub; add R2 object-enumeration and signed-file isolation once Gate 2 exists;
+6. retain the required green GitHub database, Playwright, security and Worker checks; add R2 object-enumeration and signed-file isolation once Gate 2 exists;
 7. enforce the production CSP after Clerk/R2 exercise; connect external error monitoring if approved; retain the existing redaction/analytics allowlist and execute scheduled backup/restore drills.
 8. apply the market intelligence migration, publish the reviewed starter catalog, and connect verification approval to the trusted operations workflow.
 9. replace Export Studio preview persistence with tenant-scoped PostgreSQL repositories and audited commands;
