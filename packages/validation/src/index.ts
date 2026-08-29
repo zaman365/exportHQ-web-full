@@ -30,6 +30,7 @@ export const organizationProfileSchema = z.object({
     supportEmail: z.email()
   }),
   primaryOffer: z.object({
+    id: z.uuid().optional(),
     name: z.string().trim().max(180),
     category: z.string().trim().max(120),
     internalReference: z.string().trim().max(64),
@@ -80,6 +81,13 @@ export const taskUpdateSchema = z.object({
     "completed",
     "blocked"
   ])
+});
+
+export const taskStatusTransitionSchema = z.object({
+  taskId: z.uuid(),
+  expectedVersion: z.coerce.number().int().positive(),
+  status: z.enum(["todo", "in_progress", "completed", "blocked"]),
+  rationale: z.string().trim().min(3).max(500)
 });
 
 export const documentIntentSchema = z.object({

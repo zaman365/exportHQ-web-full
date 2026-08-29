@@ -100,6 +100,7 @@ export async function applyOrganizationState(session: CustomerSession): Promise<
   );
   return {
     ...session,
+    organizationName: profile?.tradingName ?? session.organizationName,
     status: profile?.onboardingComplete ? "active" : "needs-onboarding",
     businessVerification: profile?.verificationStatus === "verified"
       ? "verified"

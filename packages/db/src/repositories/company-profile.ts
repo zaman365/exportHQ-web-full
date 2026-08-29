@@ -15,6 +15,8 @@ import type { ExportHqTransaction, TenantContext } from "../tenant";
 
 export interface CompanyProfileRecord {
   readonly organizationId: string;
+  readonly legalName: string | null;
+  readonly tradingName: string | null;
   readonly originCountryCode: string;
   readonly industry: string;
   readonly website: string | null;
@@ -23,6 +25,7 @@ export interface CompanyProfileRecord {
   readonly onboardingPercent: number;
   readonly supportEmail: string | null;
   readonly defaultCurrency: string;
+  readonly defaultTimezone: string;
   readonly exportStage: string | null;
   readonly primarySalesChannel: string | null;
   readonly marketStrategy: Record<string, unknown>;
@@ -36,6 +39,8 @@ export async function readCompanyProfile(
   const [row] = await tx
     .select({
       organizationId: companyProfiles.organizationId,
+      legalName: companyProfiles.legalName,
+      tradingName: companyProfiles.tradingName,
       originCountryCode: companyProfiles.originCountryCode,
       industry: companyProfiles.industry,
       website: companyProfiles.website,
@@ -44,6 +49,7 @@ export async function readCompanyProfile(
       onboardingPercent: companyProfiles.onboardingPercent,
       supportEmail: companyProfiles.supportEmail,
       defaultCurrency: companyProfiles.defaultCurrency,
+      defaultTimezone: companyProfiles.defaultTimezone,
       exportStage: companyProfiles.exportStage,
       primarySalesChannel: companyProfiles.primarySalesChannel,
       marketStrategy: companyProfiles.marketStrategy,
@@ -56,11 +62,14 @@ export async function readCompanyProfile(
 }
 
 export interface CompanyProfileInput {
+  readonly legalName?: string | null;
+  readonly tradingName?: string | null;
   readonly originCountryCode: string;
   readonly industry: string;
   readonly website?: string | null;
   readonly supportEmail?: string | null;
   readonly defaultCurrency?: string;
+  readonly defaultTimezone?: string;
   readonly exportStage?: string | null;
   readonly primarySalesChannel?: string | null;
   readonly marketStrategy?: Record<string, unknown>;
@@ -80,11 +89,14 @@ export async function saveCompanyProfile(
   const now = new Date();
   const values = {
     organizationId: context.organizationId,
+    legalName: normalizedOptionalText(input.legalName),
+    tradingName: normalizedOptionalText(input.tradingName),
     originCountryCode: input.originCountryCode,
     industry: input.industry,
     website: input.website ?? null,
     supportEmail: input.supportEmail ?? null,
     defaultCurrency: input.defaultCurrency ?? "USD",
+    defaultTimezone: input.defaultTimezone ?? "Asia/Dhaka",
     exportStage: input.exportStage ?? null,
     primarySalesChannel: input.primarySalesChannel ?? null,
     marketStrategy: input.marketStrategy ?? {},
@@ -102,6 +114,18 @@ export async function saveCompanyProfile(
     entityId: context.organizationId,
     metadata: { fields: Object.keys(input).sort() }
   });
+  await enqueueOutboxEvent(tx, context, {
+    topic: "company_profile.updated",
+    aggregateType: "company_profile",
+    aggregateId: context.organizationId,
+    dedupeKey: `company-profile:${context.organizationId}:${now.toISOString()}`,
+    payload: { fields: Object.keys(input).sort() }
+  });
+}
+
+function normalizedOptionalText(value: string | null | undefined): string | null {
+  const normalized = value?.trim() ?? "";
+  return normalized || null;
 }
 
 /**

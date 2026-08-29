@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { getClerkClient } from "@exporthq/auth";
 import { authorizeOrganization, canAccessOrganization } from "@exporthq/authorization";
 import { subscriptionCatalog } from "@exporthq/authorization";
+import { readCompanyProfile, readPrimaryProduct } from "@exporthq/db";
 import SettingsClient from "./settings-client";
 import type {
   ExportStageCode,
@@ -12,6 +12,7 @@ import type {
   TargetMarketCode
 } from "./settings-data";
 import { requireWorkspaceFeature } from "../_lib/session";
+import { runTenantCommand } from "../_lib/tenant";
 
 export const metadata: Metadata = {
   title: "Settings — Export HQ",
@@ -21,10 +22,6 @@ export const metadata: Metadata = {
 export const dynamic = "force-dynamic";
 
 const countryNames: Record<string, string> = { BD: "Bangladesh", DE: "Germany", IN: "India", NL: "Netherlands", GB: "United Kingdom" };
-
-function text(value: unknown): string | undefined {
-  return typeof value === "string" ? value : undefined;
-}
 
 const marketCodes = new Set<TargetMarketCode>(["DE", "NL", "GB", "JP", "SA", "AE"]);
 const salesChannelCodes = new Set<SalesChannelCode>(["wholesale", "retail", "marketplace", "services"]);
@@ -62,38 +59,38 @@ export default async function SettingsPage() {
   let initialPrimaryOffer: Partial<PrimaryOfferSettings> = {};
   let initialMarketStrategy: Partial<MarketStrategySettings> = {};
   if (!session.isDemo && session.organizationId) {
-    const client = getClerkClient();
-    const organization = await client.organizations.getOrganization({ organizationId: session.organizationId });
-    const metadata = organization.privateMetadata as { exportPanel?: { profileSettings?: Record<string, unknown>; company?: Record<string, unknown>; firstProduct?: Record<string, unknown>; marketStrategy?: Record<string, unknown>; stage?: unknown; salesChannel?: unknown } };
-    const exportPanel = metadata.exportPanel ?? {};
-    const saved = exportPanel.profileSettings ?? {};
-    const company = exportPanel.company ?? {};
-    const product = exportPanel.firstProduct ?? {};
-    const marketStrategy = exportPanel.marketStrategy ?? {};
+    const persisted = await runTenantCommand(session, async (tx, context) => ({
+      profile: await readCompanyProfile(tx, context),
+      product: await readPrimaryProduct(tx, context)
+    }));
+    const profile = persisted.ran ? persisted.value.profile : null;
+    const product = persisted.ran ? persisted.value.product : null;
+    const marketStrategy = profile?.marketStrategy ?? {};
     const fallbackName = session.organizationName ?? "Your business";
     const fallbackEmail = session.userEmail ?? "";
     initialOrganization = {
-      legalName: text(saved.legalName) ?? text(company.legalName) ?? fallbackName,
-      tradingName: text(saved.tradingName) ?? text(company.tradingName) ?? fallbackName,
-      website: text(saved.website) ?? text(company.website) ?? "",
-      country: text(saved.country) ?? countryNames[text(company.originCountry) ?? ""] ?? "Bangladesh",
-      timezone: text(saved.timezone) ?? "Asia/Dhaka",
-      defaultCurrency: text(saved.defaultCurrency) ?? "USD",
-      supportEmail: text(saved.supportEmail) ?? fallbackEmail
+      legalName: profile?.legalName ?? fallbackName,
+      tradingName: profile?.tradingName ?? fallbackName,
+      website: profile?.website ?? "",
+      country: countryNames[profile?.originCountryCode ?? ""] ?? "Bangladesh",
+      timezone: profile?.defaultTimezone ?? "Asia/Dhaka",
+      defaultCurrency: profile?.defaultCurrency ?? "USD",
+      supportEmail: profile?.supportEmail ?? fallbackEmail
     };
     initialPrimaryOffer = {
-      name: text(product.name) ?? "",
-      category: text(product.category) ?? "Other",
-      internalReference: text(product.sku) ?? "",
-      hsCode: text(product.hsCode) ?? "",
-      specification: text(product.composition) ?? text(product.description) ?? ""
+      ...(product ? { id: product.id } : {}),
+      name: product?.name ?? "",
+      category: product?.category ?? "Other",
+      internalReference: product?.sku.startsWith("EXPORTHQ-PRIMARY-") ? "" : product?.sku ?? "",
+      hsCode: product?.hsCode ?? "",
+      specification: product?.composition ?? ""
     };
     initialMarketStrategy = {
-      primaryMarket: choice(marketStrategy.primaryMarket, marketCodes) ?? choice(product.targetMarketCode, marketCodes) ?? "",
+      primaryMarket: choice(marketStrategy.primaryMarket, marketCodes) ?? "",
       secondaryMarkets: choices(marketStrategy.secondaryMarkets, marketCodes),
-      primarySalesChannel: choice(marketStrategy.primarySalesChannel, salesChannelCodes) ?? choice(exportPanel.salesChannel, salesChannelCodes) ?? "",
+      primarySalesChannel: choice(marketStrategy.primarySalesChannel, salesChannelCodes) ?? choice(profile?.primarySalesChannel, salesChannelCodes) ?? "",
       secondarySalesChannels: choices(marketStrategy.secondarySalesChannels, salesChannelCodes),
-      currentExportStage: choice(marketStrategy.currentExportStage, exportStageCodes) ?? choice(exportPanel.stage, exportStageCodes) ?? ""
+      currentExportStage: choice(marketStrategy.currentExportStage, exportStageCodes) ?? choice(profile?.exportStage, exportStageCodes) ?? ""
     };
   }
 
@@ -107,6 +104,7 @@ export default async function SettingsPage() {
       organizationName={session.organizationName ?? "Your business"}
       tierName={subscriptionCatalog[session.tier].name}
       businessVerification={session.businessVerification}
+      authoritativeTenantMode={!session.isDemo}
       initialOrganization={initialOrganization}
       initialPrimaryOffer={initialPrimaryOffer}
       initialMarketStrategy={initialMarketStrategy}

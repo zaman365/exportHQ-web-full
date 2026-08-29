@@ -26,5 +26,5 @@ export default async function LearningCenterPage({
   const topicValue = params.topic;
   const topic = Array.isArray(topicValue) ? topicValue[0] : topicValue;
 
-  return <WorkspaceShell active="learning" session={session}><LearningCenterClient initialTopic={topic} /></WorkspaceShell>;
+  return <WorkspaceShell active="learning" session={session}><LearningCenterClient initialTopic={topic} allowPreviewPersistence={!session.userId || session.isDemo} /></WorkspaceShell>;
 }

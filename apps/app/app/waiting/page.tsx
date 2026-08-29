@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { authorizeOrganization, canAccessOrganization } from "@exporthq/authorization";
-import { demoSnapshot } from "@exporthq/domain";
+import { readWorkspaceDashboard } from "@exporthq/db";
 import { WorkspaceShell } from "../_components/workspace-shell";
-import WaitingClient from "./waiting-client";
 import { getProgressiveWorkspaceFeatureSession } from "../_lib/session";
+import { runTenantCommand } from "../_lib/tenant";
+import { TenantWaiting, TenantWaitingUnavailable } from "./tenant-waiting";
 
 export const metadata: Metadata = {
   title: "Waiting — Export HQ",
@@ -18,5 +19,12 @@ export default async function WaitingPage() {
   const fullAccess = session.features.includes("waiting");
   if (fullAccess && principal) authorizeOrganization(principal, principal.organizationId, "tasks:view");
   const canManage = Boolean(fullAccess && principal && canAccessOrganization(principal, principal.organizationId, "tasks:manage"));
-  return <WorkspaceShell active="waiting" session={session}><WaitingClient initialTasks={[...demoSnapshot.tasks]} canManage={canManage} /></WorkspaceShell>;
+  if (session.userId && !session.isDemo) {
+    const persisted = await runTenantCommand(session, (tx, context) => readWorkspaceDashboard(tx, context, { taskLimit: 100 }));
+    return <WorkspaceShell active="waiting" session={session}>{persisted.ran
+      ? <TenantWaiting tasks={persisted.value.tasks} canManage={canManage} />
+      : <TenantWaitingUnavailable />}</WorkspaceShell>;
+  }
+  const { PreviewWaiting } = await import("./preview-waiting");
+  return <WorkspaceShell active="waiting" session={session}><PreviewWaiting canManage={canManage} /></WorkspaceShell>;
 }

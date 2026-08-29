@@ -362,6 +362,7 @@ export default function SettingsClient({
   organizationName,
   tierName,
   businessVerification,
+  authoritativeTenantMode,
   initialOrganization,
   initialPrimaryOffer,
   initialMarketStrategy
@@ -374,11 +375,14 @@ export default function SettingsClient({
   organizationName: string;
   tierName: string;
   businessVerification: BusinessVerificationStatus;
+  authoritativeTenantMode: boolean;
   initialOrganization: Partial<OrganizationSettings>;
   initialPrimaryOffer: Partial<PrimaryOfferSettings>;
   initialMarketStrategy: Partial<MarketStrategySettings>;
 }) {
-  const availableNavigation = navigation;
+  const availableNavigation = authoritativeTenantMode
+    ? navigation.filter((item) => item.id === "organization")
+    : navigation;
   const workspaceDefaults = useMemo<WorkspaceSettingsState>(() => ({
     ...initialWorkspaceSettings,
     organization: { ...initialWorkspaceSettings.organization, ...initialOrganization },
@@ -403,21 +407,23 @@ export default function SettingsClient({
   const [savingOrganization, startSavingOrganization] = useTransition();
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored) setWorkspace(mergeStoredState(JSON.parse(stored), workspaceDefaults));
-    } catch {
-      localStorage.removeItem(storageKey);
+    if (!authEnabled) {
+      try {
+        const stored = localStorage.getItem(storageKey);
+        if (stored) setWorkspace(mergeStoredState(JSON.parse(stored), workspaceDefaults));
+      } catch {
+        localStorage.removeItem(storageKey);
+      }
     }
     const initialSection = new URLSearchParams(window.location.search).get("section") ?? window.location.hash.slice(1);
     if (isSettingsSection(initialSection) && availableNavigation.some((item) => item.id === initialSection)) setSection(initialSection);
     setHydrated(true);
-  }, [availableNavigation, workspaceDefaults]);
+  }, [authEnabled, availableNavigation, workspaceDefaults]);
 
   useEffect(() => {
-    if (!hydrated) return;
+    if (!hydrated || authEnabled) return;
     localStorage.setItem(storageKey, JSON.stringify(workspace));
-  }, [workspace, hydrated]);
+  }, [authEnabled, workspace, hydrated]);
 
   useEffect(() => {
     const syncSection = () => {

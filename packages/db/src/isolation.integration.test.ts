@@ -5,6 +5,9 @@ import { readTenantContext, withPlatformTransaction, withTenantTransaction } fro
 import { recordAuditEvent } from "./audit";
 import { grantOrganizationEntitlement, readOrganizationTier } from "./entitlements";
 import { saveCompanyProfile, readCompanyProfile } from "./repositories/company-profile";
+import { savePrimaryProduct } from "./repositories/products";
+import { transitionTaskStatus } from "./repositories/tasks";
+import { readTenantExportLane, readWorkspaceDashboard } from "./read-models/workspace";
 import { PostgresIdempotencyStore, PostgresRateLimitStore } from "./stores";
 import { createExportLane, listExportLanes, transitionStoredExportLane } from "./repositories/export-lanes";
 import {
@@ -47,6 +50,7 @@ import {
   regulatoryRuleLaneImpacts,
   readinessProviderReferrals,
   readinessResponses,
+  taskStatusHistory,
   tasks
 } from "./schema";
 
@@ -479,6 +483,103 @@ describeWithDatabase("tenant isolation", () => {
         canonicalBaseUrl: "https://forbidden.synthetic.invalid"
       })
     )).rejects.toThrow();
+  });
+
+  it("builds the paid workspace only from tenant-owned profile, product and lane records", async () => {
+    const suffix = crypto.randomUUID().slice(0, 8);
+    const { lane, taskId } = await withTenantTransaction(database, context(tenantA), async (tx, scoped) => {
+      await saveCompanyProfile(tx, scoped, {
+        legalName: "Synthetic Authoritative Ltd",
+        tradingName: "Synthetic Authoritative",
+        originCountryCode: "BD",
+        industry: "apparel",
+        defaultCurrency: "USD",
+        defaultTimezone: "Asia/Dhaka"
+      });
+      const product = await savePrimaryProduct(tx, scoped, {
+        name: "Synthetic authoritative shirt",
+        category: "apparel",
+        internalReference: `AUTH-${suffix}`,
+        hsCode: "6205.20",
+        specification: "Synthetic integration fixture",
+        countryOfOrigin: "BD",
+        currency: "USD"
+      });
+      if (!product) throw new Error("Synthetic primary product was not created.");
+      const [membership] = await tx.insert(organizationMemberships).values({
+        organizationId: tenantA,
+        clerkUserId: `user_dashboard_${suffix}`,
+        role: "org:member"
+      }).returning({ id: organizationMemberships.id });
+      if (!membership) throw new Error("Synthetic workspace membership was not created.");
+      const lane = await createExportLane(tx, scoped, {
+        productId: product.id,
+        originCountryCode: "BD",
+        destinationCountryCode: "DE",
+        salesChannel: "wholesale",
+        buyerSegment: "synthetic importer",
+        route: "Chattogram-Hamburg",
+        incoterm: "FOB",
+        targetMarginBps: 1800,
+        currency: "USD",
+        ownerMembershipId: membership.id
+      });
+      const [task] = await tx.insert(tasks).values({
+        organizationId: tenantA,
+        exportLaneId: lane.id,
+        title: "Synthetic authoritative task",
+        description: "Synthetic tenant task transition",
+        ownerId: "user_test",
+        responsibility: "customer",
+        priority: "normal",
+        status: "todo"
+      }).returning({ id: tasks.id });
+      if (!task) throw new Error("Synthetic workspace task was not created.");
+      return { lane, taskId: task.id };
+    });
+    const dashboard = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      readWorkspaceDashboard(tx, scoped)
+    );
+    expect(dashboard.organization).toMatchObject({
+      legalName: "Synthetic Authoritative Ltd",
+      tradingName: "Synthetic Authoritative"
+    });
+    expect(dashboard.products.some((product) => product.name === "Synthetic authoritative shirt")).toBe(true);
+    expect(dashboard.tasks.some((task) => task.id === taskId && task.version === 1)).toBe(true);
+    const transitioned = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      transitionTaskStatus(tx, scoped, {
+        taskId,
+        expectedVersion: 1,
+        status: "in_progress",
+        rationale: "Synthetic owner started the task"
+      })
+    );
+    expect(transitioned).toMatchObject({ id: taskId, version: 2, status: "in_progress" });
+    await expect(withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      transitionTaskStatus(tx, scoped, {
+        taskId,
+        expectedVersion: 1,
+        status: "completed",
+        rationale: "Stale synthetic transition"
+      })
+    )).rejects.toThrow("version conflict");
+    const history = await withTenantTransaction(database, context(tenantA), (tx) =>
+      tx.select().from(taskStatusHistory).where(eq(taskStatusHistory.taskId, taskId))
+    );
+    expect(history).toHaveLength(1);
+    expect(history[0]).toMatchObject({ taskVersion: 2, fromStatus: "todo", toStatus: "in_progress" });
+    const otherTenantHistory = await withTenantTransaction(database, context(tenantB), (tx) =>
+      tx.select().from(taskStatusHistory).where(eq(taskStatusHistory.taskId, taskId))
+    );
+    expect(otherTenantHistory).toEqual([]);
+    const studio = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      readTenantExportLane(tx, scoped, lane.id)
+    );
+    expect(studio).toMatchObject({ id: lane.id, productName: "Synthetic authoritative shirt", destinationCountryCode: "DE" });
+    const otherTenantStudio = await withTenantTransaction(database, context(tenantB), (tx, scoped) =>
+      readTenantExportLane(tx, scoped, lane.id)
+    );
+    expect(otherTenantStudio).toBeNull();
   });
 
   it("retains AI extraction source spans and requires a human decision before downstream use", async () => {

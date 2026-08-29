@@ -148,3 +148,24 @@ export {
   type ExtractionFieldProposalInput,
   type ExtractionSourceSpanInput
 } from "./repositories/ai-extraction";
+
+export {
+  readPrimaryProduct,
+  savePrimaryProduct,
+  type ProductRecord
+} from "./repositories/products";
+
+export {
+  TaskVersionConflictError,
+  transitionTaskStatus
+} from "./repositories/tasks";
+
+export {
+  readTenantExportLane,
+  readWorkspaceDashboard,
+  type TenantExportLaneReadModel,
+  type WorkspaceDashboardProduct,
+  type WorkspaceDashboardReadModel,
+  type WorkspaceDashboardTask,
+  type WorkspaceTaskStatus
+} from "./read-models/workspace";

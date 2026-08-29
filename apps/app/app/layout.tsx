@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Geist_Mono, Manrope } from "next/font/google";
-import { demoSnapshot } from "@exporthq/domain";
 import { tenantTheme } from "@exporthq/ui";
 import { AuthProvider } from "./_components/auth-provider";
 import "./globals.css";
@@ -42,7 +41,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   /* The only route a customer colour takes into the DOM. tenantTheme() emits
      exactly four custom properties and clamps them for contrast, so a tenant
      can never reach Export HQ chrome, actions or status colour. */
-  const tenant = tenantTheme(demoSnapshot.organization.brand);
+  const tenant = tenantTheme();
 
   return (
     <html lang="en" className={`${sans.variable} ${mono.variable} ${display.variable}`}>

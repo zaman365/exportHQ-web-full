@@ -36,11 +36,13 @@ const kindMeta: Record<LearningKind, { label: string; icon: typeof Lightbulb }> 
 function LearningDetail({
   resource,
   completed,
+  canTrackCompletion,
   onToggle,
   onClose
 }: {
   resource: LearningResource;
   completed: boolean;
+  canTrackCompletion: boolean;
   onToggle: () => void;
   onClose: () => void;
 }) {
@@ -53,12 +55,12 @@ function LearningDetail({
       <p className="learning-detail__summary">{resource.summary}</p>
       <div className="learning-detail__meta"><span><Clock3 size={13} />{resource.minutes} min</span><span>{learningCategories.find((category) => category.id === resource.category)?.label}</span></div>
       <div className="learning-detail__body"><p>{resource.content}</p>{resource.steps && <><h3>Follow these steps</h3><ol>{resource.steps.map((step, index) => <li key={step}><span>{index + 1}</span><p>{step}</p></li>)}</ol></>}</div>
-      <footer><button type="button" className={`learning-complete${completed ? " completed" : ""}`} onClick={onToggle}>{completed ? <CheckCircle2 size={16} /> : <Check size={16} />}{completed ? "Completed" : "Mark as complete"}</button></footer>
+      <footer>{canTrackCompletion ? <button type="button" className={`learning-complete${completed ? " completed" : ""}`} onClick={onToggle}>{completed ? <CheckCircle2 size={16} /> : <Check size={16} />}{completed ? "Completed" : "Mark as complete"}</button> : <small>Tenant learning progress is not stored yet.</small>}</footer>
     </aside>
   );
 }
 
-export default function LearningCenterClient({ initialTopic }: { initialTopic?: string | undefined }) {
+export default function LearningCenterClient({ initialTopic, allowPreviewPersistence }: { initialTopic?: string | undefined; allowPreviewPersistence: boolean }) {
   const initialResource = learningCatalog.find((resource) => resource.id === initialTopic) ?? learningCatalog.find((resource) => resource.featured) ?? learningCatalog[0];
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState<"all" | LearningCategoryId>(initialResource?.category ?? "all");
@@ -67,17 +69,19 @@ export default function LearningCenterClient({ initialTopic }: { initialTopic?: 
   const [completed, setCompleted] = useState<string[]>([]);
 
   useEffect(() => {
+    if (!allowPreviewPersistence) return;
     try {
       const stored = localStorage.getItem(completedStorageKey);
       if (stored) setCompleted(JSON.parse(stored) as string[]);
     } catch {
       localStorage.removeItem(completedStorageKey);
     }
-  }, []);
+  }, [allowPreviewPersistence]);
 
   useEffect(() => {
+    if (!allowPreviewPersistence) return;
     localStorage.setItem(completedStorageKey, JSON.stringify(completed));
-  }, [completed]);
+  }, [allowPreviewPersistence, completed]);
 
   const filtered = useMemo(() => learningCatalog.filter((resource) => {
     const haystack = `${resource.title} ${resource.summary} ${resource.content} ${resource.keywords.join(" ")}`.toLowerCase();
@@ -130,7 +134,7 @@ export default function LearningCenterClient({ initialTopic }: { initialTopic?: 
           })}</div>
         </section>
 
-        {selected && <LearningDetail resource={selected} completed={completed.includes(selected.id)} onToggle={() => toggleCompleted(selected.id)} onClose={() => setSelectedId(null)} />}
+        {selected && <LearningDetail resource={selected} completed={completed.includes(selected.id)} canTrackCompletion={allowPreviewPersistence} onToggle={() => toggleCompleted(selected.id)} onClose={() => setSelectedId(null)} />}
       </div>
     </>
   );
