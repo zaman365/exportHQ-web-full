@@ -1,6 +1,6 @@
 # ExportPanel production authentication
 
-ExportPanel uses Clerk for customer identity, organization membership, and subscription-plan claims. Route authorization is enforced on the server; hiding navigation is only a secondary usability layer.
+ExportPanel uses Clerk for customer identity and organization membership. Export HQ's PostgreSQL ledger owns subscription plans and entitlements; Clerk Billing is not required. Route authorization is enforced on the server; hiding navigation is only a secondary usability layer.
 
 ## Access model
 
@@ -20,7 +20,7 @@ Organization owners and admins receive the permission ceiling of their plan. Mem
 
 1. Create or promote a Clerk production application for `export-hq.com`.
 2. Enable Organizations. Customers must operate inside an organization boundary.
-3. Enable Clerk Billing for organizations and create plans with exact keys `launch`, `scale`, and `managed`.
+3. Keep Clerk Billing disabled unless a later reviewed decision adopts it. Plan keys and entitlement transitions come from Export HQ's internal ledger and the reviewed BDT payment adapter.
 4. Configure the Clerk dashboard URLs for:
    - sign-in: `https://export-hq.com/ExportPanel/sign-in`
    - sign-up: `https://export-hq.com/ExportPanel/sign-up`
@@ -83,7 +83,7 @@ Before routing customers to the deployment, verify each state with a separate te
 2. homepage sign-in opens ExportPanel authentication;
 3. a new account creates an organization and completes onboarding;
 4. a Basic organization cannot open Launch or Scale routes by direct URL;
-5. Launch, Scale, and Managed organizations receive only their entitled features;
+5. internally entitled Launch, Scale, and Managed organizations receive only their entitled features;
 6. the Home navigation opens the dashboard;
 7. organization switching re-evaluates entitlements;
 8. account controls provide a working sign-out and return to `/ExportPanel/preview`.

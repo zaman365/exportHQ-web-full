@@ -57,6 +57,7 @@ export type WorkspaceFeature =
   | "settings"
   | "onboarding"
   | "plans"
+  | "billing"
   | "inbox"
   | "my-work"
   | "waiting"
@@ -111,7 +112,8 @@ const launchFeatures = [
   "create",
   "products",
   "documents",
-  "requirements"
+  "requirements",
+  "billing"
 ] as const satisfies readonly WorkspaceFeature[];
 const scaleFeatures = [
   ...launchFeatures,

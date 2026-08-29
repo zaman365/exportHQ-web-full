@@ -15,7 +15,9 @@ Status language is centrally constrained to `Live`, `Pilot`, `Preview` and `Plan
 | Evidence vault | Planned | Provider-neutral quarantine plus resumable multipart/integrity contracts exist; production R2 and scanner remain unbound, so upload/download fail closed | Gate 2 |
 | Business verification | Preview | Submission UX exists; trusted evidence review is not active | Gate 4 |
 | Buyer/provider/mail/bank/freight/government adapters | Planned | Illustrative or disconnected only | Gate 4 plus adapter-specific evidence |
-| Self-service billing | Planned | No approved Bangladesh payment path or reconciled ledger | Billing-specific evidence and R4 gate |
+| Self-service billing | Preview | PostgreSQL-authoritative BDT checkout, settlement/refund/dunning/drift controls and exact usage UX exist; SSLCOMMERZ is a technical candidate only and checkout remains closed | Active reviewed provider plus billing-specific R4 evidence |
+| Governed provider cases | Preview | Verification expiry, disclosure, acceptance, exact evidence sharing, complaint/dispute and outcome contracts exist; no production provider is active | Gate 4 provider approval and R4 outcomes |
+| External guests, API and customer webhooks | Preview | Exact-resource expiring guests, narrow read scopes, managed secret references, signing/replay and operations-only delivery controls pass locally | Deployed endpoints, rotation/recovery and R4 reliability evidence |
 | Operations console | Preview | Illustrative projection only; real customer access prohibited until scoped grants pass | R0-07 / Gate 1 |
 | Broad external launch | Planned | R0 baseline release verdict is No-Go | Gate 5 and later release gates |
 

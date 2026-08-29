@@ -1,0 +1,18 @@
+{
+  "transferBytes": {
+    "initialJavaScriptGzip": 250000,
+    "initialCssGzip": 180000,
+    "routeData": 100000,
+    "largestImage": 300000
+  },
+  "experienceMilliseconds": {
+    "lowEndAndroidLcp": 3500,
+    "constrainedNetworkTti": 5000
+  },
+  "serviceLevelObjectives": {
+    "readApiP95": 350,
+    "writeApiP95": 700,
+    "databaseQueryP95": 250,
+    "monthlyAvailabilityPercent": 99.5
+  }
+}

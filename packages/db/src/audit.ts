@@ -112,6 +112,22 @@ export const auditableActions = [
   "billing.subscription_transitioned",
   "billing.invoice_issued",
   "billing.reconciled",
+  "billing.checkout_settled",
+  "provider.case_created",
+  "provider.case_transitioned",
+  "provider.evidence_shared",
+  "provider.evidence_revoked",
+  "provider.issue_opened",
+  "provider.issue_resolved",
+  "external_guest.grant_created",
+  "external_guest.grant_accepted",
+  "external_guest.grant_revoked",
+  "customer_api.client_created",
+  "customer_api.secret_rotated",
+  "customer_api.client_revoked",
+  "customer_webhook.subscription_created",
+  "customer_webhook.subscription_verified",
+  "customer_webhook.secret_rotated",
   "identity.reconciliation_requested"
 ] as const;
 

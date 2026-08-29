@@ -57,6 +57,16 @@ GRANT UPDATE (status, agreement_accepted_by, agreement_accepted_at,
   support_owner_actor_id, started_at, ended_at, updated_at)
   ON pilot_participations TO exporthq_app;
 REVOKE INSERT, UPDATE, DELETE ON billing_plan_catalog_versions, billing_plan_prices FROM exporthq_app, exporthq_support;
+REVOKE INSERT, UPDATE, DELETE ON billing_provider_configurations, service_provider_profiles,
+  service_provider_verification_evidence FROM exporthq_app, exporthq_support;
+REVOKE SELECT ON billing_provider_configurations, service_provider_verification_evidence
+  FROM exporthq_app, exporthq_support;
+GRANT SELECT (id, provider_key, display_name, status, currency, checkout_mode,
+  documentation_url, activated_at, suspended_at, created_at, updated_at)
+  ON billing_provider_configurations TO exporthq_app, exporthq_support;
+GRANT SELECT (id, provider_id, evidence_type, valid_from, expires_at,
+  reviewed_at, status, created_at)
+  ON service_provider_verification_evidence TO exporthq_app, exporthq_support;
 REVOKE DELETE ON
   buyer_accounts, buyer_contacts, buyer_provenance_records, buyer_outreach_consents, buyer_communication_audit,
   sales_opportunities, buyer_rfqs, buyer_rfq_lines, buyer_rfq_requirements, buyer_rfq_attachments,
@@ -68,7 +78,12 @@ REVOKE DELETE ON
   companion_workflow_cases, companion_workflow_items, companion_workflow_evidence,
   billing_accounts, billing_subscriptions, billing_subscription_history, customer_billing_invoices, customer_billing_credits,
   customer_billing_refunds, billing_transactions, billing_provider_events, usage_ledger_entries,
-  billing_entitlement_transitions, billing_reconciliation_results
+  billing_entitlement_transitions, billing_reconciliation_results,
+  billing_checkout_sessions, billing_settlement_records, billing_dunning_cases,
+  billing_entitlement_drift_incidents, billing_plan_change_notices,
+  provider_cases, provider_case_evidence_shares, provider_case_issues,
+  external_guest_grants, customer_api_clients, customer_webhook_subscriptions,
+  customer_webhook_deliveries
 FROM exporthq_app, exporthq_support;
 REVOKE DELETE ON billing_cancellation_requests FROM exporthq_app, exporthq_support;
 REVOKE UPDATE ON
@@ -79,6 +94,7 @@ REVOKE UPDATE ON
   billing_subscription_history, customer_billing_credits, billing_provider_events,
   usage_ledger_entries, billing_entitlement_transitions, billing_reconciliation_results
 FROM exporthq_app, exporthq_support;
+REVOKE UPDATE ON billing_settlement_records FROM exporthq_app, exporthq_support;
 
 GRANT EXECUTE ON FUNCTION app_resolve_organization(text) TO exporthq_app;
 GRANT EXECUTE ON FUNCTION app_upsert_organization(text, text, text, text) TO exporthq_app;

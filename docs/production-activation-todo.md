@@ -86,8 +86,8 @@ Gate 5: one real pilot Export Lane and controlled launch
 > Organizations enabled. On 2026-08-29, the custom domain/DNS/SSL and
 > ExportPanel paths were verified, email/password and email-code methods were
 > inspected, the reviewed webhook endpoint was registered, and production
-> access was restricted to invite-only. Blocked: Billing is not enabled,
-> phone/SMS and MFA are plan-gated, custom roles remain
+> access was restricted to invite-only. Clerk Billing is intentionally
+> deferred; phone/SMS and MFA are plan-gated, custom roles remain
 > at the 2-role ceiling, and the webhook signing secret/live delivery test
 > still require a named human secret owner. See
 > [`release/evidence/r0-clerk-2026-08-29/`](release/evidence/r0-clerk-2026-08-29/).
@@ -100,8 +100,10 @@ Gate 5: one real pilot Export Lane and controlled launch
 - [ ] Configure production OAuth applications one at a time; advertise a method only after a
       successful real-account test.
 - [ ] Enable Clerk Organizations and verify create, select, invite, switch and leave behavior.
-- [ ] Create exact Billing plan keys `launch`, `scale` and `managed`, then test entitlement
-      transitions and failure states.
+- [x] Record the decision to keep Clerk Billing disabled; use the internal
+      PostgreSQL plan catalog and BDT provider adapter for entitlements.
+- [ ] Test internal-ledger entitlement transitions and failure states against
+      the deployed reviewed BDT provider path.
 - [ ] Configure webhook signature verification, replay protection, idempotency and dead-letter
       handling for users, organizations, memberships, roles, invitations and plan changes.
 - [ ] Define role templates and verify their mapping to central authorization permissions.
@@ -390,7 +392,7 @@ A checkbox above may be closed only when the component has:
 | Gate                             | State       | Blocking outcome                                                                                      |
 | -------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
 | Gate 0 — ownership and freeze    | In progress | Development authorized and owners named; deferred policy/reviewer approvals block activation          |
-| Gate 1 — identity and PostgreSQL | In progress | Neon/Clerk foundation and CI evidenced; secrets, Hyperdrive, Billing/MFA/journeys and recovery remain |
+| Gate 1 — identity and PostgreSQL | In progress | Neon/Clerk foundation and CI evidenced; secrets, Hyperdrive, MFA/journeys and recovery remain |
 | Gate 2 — private evidence vault  | Not started | Real evidence must not be accepted                                                                    |
 | Gate 3 — production persistence  | In progress | Readiness/verification persistence is authoritative; other preview adapters remain                     |
 | Gate 4 — trust and integrations  | Not started | External capabilities cannot be called live                                                           |

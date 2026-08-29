@@ -17,7 +17,7 @@ These were read directly from the Cloudflare and Clerk consoles.
 | Clerk application         | `app_3IRaL4aCvvYhwQqcWobdU1UDeJj` ("Export HQ")                                               | Active                                                                                                                                                                                          | Mohammed Maniruzzaman (identity)             |
 | Clerk production instance | `ins_3IRabAnEQBciVzmSDLT4Qhzb5go` for `export-hq.com`                                         | Active; application/email DNS and SSL verified; ExportPanel paths configured                                                                                                                    | Mohammed Maniruzzaman (identity)             |
 | Clerk Organizations       | Enabled, membership required, admin/member roles                                              | Active                                                                                                                                                                                          | Mohammed Maniruzzaman (identity)             |
-| Clerk Billing             | **Not enabled** — plan keys `launch`/`scale`/`managed` do not exist                           | Blocked                                                                                                                                                                                         | Mohammed Maniruzzaman (product)              |
+| Clerk Billing             | Not enabled by product decision; internal PostgreSQL billing owns plan keys and entitlements | Deferred / not an activation dependency                                                                                                                                                         | Mohammed Maniruzzaman (product)              |
 | Clerk webhook             | `https://export-hq.com/ExportPanel/api/webhooks/clerk`                                        | Endpoint registered for 16 reviewed identity/organization/billing events; signing-secret transfer and delivery test pending                                                                     | Mohammed Maniruzzaman (identity)             |
 | Clerk production methods  | Email/password and email verification-code sign-up/sign-in                                    | Configured and invite-only; real-domain journey evidence pending. Phone/SMS and MFA are plan-gated                                                                                              | Mohammed Maniruzzaman (identity)             |
 | Clerk custom roles        | 2 of 2 used (`org:admin`, `org:member`)                                                       | At plan ceiling                                                                                                                                                                                 | Mohammed Maniruzzaman (identity)             |
@@ -57,11 +57,9 @@ agent. Each is set with `wrangler secret put <NAME>` by a named human owner.
 
 ## Known blockers
 
-1. **Clerk Billing is not enabled**, so the plan keys `launch`, `scale` and
-   `managed` cannot exist yet. Every organization therefore resolves to the
-   `explore` tier. Enabling Billing requires connecting a payment provider and
-   accepting commercial terms — a decision for the business owner, not an
-   automated change.
+1. **The reviewed BDT provider is not active.** The database catalog and manual
+   audited entitlements remain authoritative; public checkout stays closed.
+   Clerk Billing is deliberately not part of this activation path.
 2. **Custom organization roles are at the plan ceiling** (2 of 2). The richer
    role templates — executive, department lead, manager, viewer, external —
    cannot be created in Clerk on the current plan. Authorization already

@@ -67,18 +67,28 @@ remaining production components.
   companion workflows; and a migration-owned manual billing catalog with
   owner cancellation requests. External provider activation and real outcomes
   remain separate gates.
+- An R4 Public Beta engineering foundation with a reviewed-provider activation
+  envelope, SSLCOMMERZ as a non-active technical candidate, invoice-authoritative
+  BDT checkout sessions, validated settlement/risk/refund/dunning/drift ledgers,
+  exact five-capability limits and projected overage UX, governed provider cases,
+  exact-resource guests, scoped expiring API clients, signed customer webhooks,
+  static payload budgets and an authoritative Billing & usage route. Clerk
+  Billing is deliberately not used. Provider credentials, commercial/legal/
+  security/tax approval, production delivery and real outcome evidence remain
+  gates rather than inferred implementation status.
 - Dedicated Buyers and Requirements routes: a searchable, stage-aware illustrative buyer-development pipeline and a source-aware conditional control register linked back to opportunities, readiness, learning, evidence, and qualified-help paths.
 - A public opportunity-to-payment acquisition story, a limited ExportPanel Export Studio preview, and plan language aligned to the Basic → verified/paid → Scale/Managed trust ladder.
 - A dedicated Export operations Learning Center category with contextual hints for lanes, economics, deals, buyer trust, provider matching, finance, shipment, policy, and clusters.
 - A primary Email Inbox beside the retained Actionable Inbox, with export-aware categories, related-record context, private drafts, email-to-follow-up conversion, provider setup guidance, plan/role gates, and tenant-scoped mail persistence contracts.
 - A versioned, transactional market catalog publisher and incremental PostgreSQL migration for country, product, opportunity, evidence, verification, and shortlist records.
 - Internal customer portfolio and scoped operator workspace over the same domain projection.
-- Unit and journey tests; 40 database-package tests, including 26
+- Unit and journey tests; 45 database-package tests, including 31
   real-PostgreSQL integration scenarios covering cross-tenant isolation,
   direct projection-write denial, webhook projection,
   regulatory freshness and publisher-write denial, human-gated AI provenance,
   buyer human-review authority, exact quote delivery, customer billing-ledger
-  denial, owner cancellation, dead-lettering and concurrent durable controls;
+  denial, owner cancellation, R4 candidate-provider/usage/guest/API/webhook
+  controls, dead-lettering and concurrent durable controls;
   desktop/mobile Playwright;
   and CI definitions for quality, database, Worker artifact, E2E, security and
   immutable release promotion.
@@ -118,7 +128,7 @@ recorded.
 | Gate                             | State       | What is blocking                                                                                                                                                                                                         |
 | -------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Gate 0 — ownership and freeze    | In progress | Development authorized; protected `main`, 8 required checks, 6 milestones and the 22-item R0/R1 backlog exist; all six roles are assigned; deferred external policy approvals still block affected production activation |
-| Gate 1 — identity and PostgreSQL | In progress | Frankfurt Neon projects/migrations/locked roles, initial Clerk configuration and hosted CI are evidenced; live credentials/Hyperdrive, webhook secret/delivery, Billing/MFA/journeys and recovery approvals remain       |
+| Gate 1 — identity and PostgreSQL | In progress | Frankfurt Neon projects/migrations/locked roles, initial Clerk configuration and hosted CI are evidenced; live credentials/Hyperdrive, webhook secret/delivery, MFA/journeys and recovery approvals remain               |
 | Gate 2 — evidence vault          | In progress | Provider-neutral lifecycle and negative-path tests pass; production private R2, isolated scanner, lifecycle rules and inventory reconciliation are not provisioned, so uploads fail closed                              |
 | Gate 3 — production persistence  | In progress | Profile, primary product, paid dashboard, lane/readiness, tenant Studio and task center are PostgreSQL-authoritative; later-phase surfaces remain fail-closed behind preview adapters                                  |
 | Gate 4 — trust and integrations  | Not started | No reviewed provider or mail applications                                                                                                                                                                                |
@@ -138,7 +148,7 @@ Activation still requires an ExportHQ-owned Clerk production instance:
 
 1. configure `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` in the application build environment;
 2. add `CLERK_SECRET_KEY` as a Cloudflare Worker secret and optionally add `CLERK_JWT_KEY` for networkless verification;
-3. enable Clerk Organizations and create Billing plan keys `launch`, `scale`, and `managed`;
+3. enable Clerk Organizations; keep Clerk Billing disabled and verify the internal-ledger plan path;
 4. deploy only after the production keys and plans exist, then verify sign-in, organization creation, onboarding, plan access, organization switching, and sign-out on `export-hq.com/ExportPanel`.
 
 Clerk production credentials are provisioned separately as Cloudflare Worker secrets and must remain outside source control. Every deployment should verify their presence before testing organization selection, onboarding, plan access, switching, and sign-out.
@@ -149,7 +159,7 @@ Before accepting real customer data:
 
 1. finalize the locked Frankfurt Neon role credentials through a protected human session and connect the application role to Hyperdrive;
 2. record staging restore, production PITR and independent encrypted-export evidence;
-3. transfer the registered Clerk webhook secret directly into Cloudflare and configure invitations, role templates, staff allowlists, MFA and Billing policy;
+3. transfer the registered Clerk webhook secret directly into Cloudflare and configure invitations, role templates, staff allowlists and MFA policy;
 4. continue replacing the remaining preview-backed modeled commands; onboarding, profile/product settings, the reviewed identity projection, paid dashboard, tenant Studio and task center are already database-authoritative;
 5. provision private EU R2, signed upload intents, quarantine, malware scanning, checksums, and authorized download logging;
 6. retain the required green GitHub database, Playwright, security and Worker checks; add R2 object-enumeration and signed-file isolation once Gate 2 exists;

@@ -44,6 +44,10 @@ The current R1 local database checkpoint is recorded in
 [`evidence/r1-local-2026-08-29/README.md`](evidence/r1-local-2026-08-29/README.md).
 The current R2 internal Alpha engineering checkpoint is recorded in
 [`evidence/r2-local-2026-08-29/README.md`](evidence/r2-local-2026-08-29/README.md).
+The current R3 Private Beta engineering checkpoint is recorded in
+[`evidence/r3-local-2026-08-29/README.md`](evidence/r3-local-2026-08-29/README.md).
+The current R4 Public Beta engineering checkpoint is recorded in
+[`evidence/r4-local-2026-08-29/README.md`](evidence/r4-local-2026-08-29/README.md).
 The founder authorization in
 [`R0_FOUNDER_DEVELOPMENT_AUTHORIZATION.md`](R0_FOUNDER_DEVELOPMENT_AUTHORIZATION.md)
 allows R1-R6 development to continue. Provider and deferred human-review items
