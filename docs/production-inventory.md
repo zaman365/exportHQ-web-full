@@ -20,9 +20,9 @@ These were read directly from the Cloudflare and Clerk consoles.
 | Clerk Billing | **Not enabled** — plan keys `launch`/`scale`/`managed` do not exist | Blocked | _unnamed_ |
 | Clerk webhooks | **None configured** | Blocked | _unnamed_ |
 | Clerk custom roles | 2 of 2 used (`org:admin`, `org:member`) | At plan ceiling | _unnamed_ |
-| Neon development project | `exporthq-development-eu` (`late-morning-49181333`) | Provisioned in AWS `eu-central-1`; migrations and separated roles pending | _unnamed_ |
-| Neon staging project | `exporthq-staging-eu` (`young-wildflower-06976535`) | Provisioned in AWS `eu-central-1`; migrations and separated roles pending | _unnamed_ |
-| Neon production project | `exporthq-production-eu` (`icy-mode-97605326`) | Provisioned in AWS `eu-central-1`; migrations, separated roles, Hyperdrive and recovery evidence pending | _unnamed_ |
+| Neon development project | `exporthq-development-eu` (`late-morning-49181333`) | PostgreSQL 17 in AWS `eu-central-1`; 2 checked-in migrations, 39 migration-owned tables and 29 RLS tables verified; locked role shells provisioned; LOGIN credentials pending named human entry | _unnamed_ |
+| Neon staging project | `exporthq-staging-eu` (`young-wildflower-06976535`) | PostgreSQL 17 in AWS `eu-central-1`; 2 checked-in migrations, 39 migration-owned tables and 29 RLS tables verified; locked role shells provisioned; LOGIN credentials pending named human entry | _unnamed_ |
+| Neon production project | `exporthq-production-eu` (`icy-mode-97605326`) | PostgreSQL 17 in AWS `eu-central-1`; 2 checked-in migrations, 39 migration-owned tables and 29 RLS tables verified; locked role shells provisioned; LOGIN credentials, Hyperdrive and recovery evidence pending | _unnamed_ |
 | R2 evidence buckets | **Not provisioned**; account activation is waiting for billing completion by an account owner | Blocked | _unnamed_ |
 | Sentry / PostHog | **Not provisioned** | Blocked | _unnamed_ |
 
