@@ -51,6 +51,15 @@ export const webhookDeliveryState = pgEnum("webhook_delivery_state", [
   "received", "processed", "ignored", "failed", "dead_letter"
 ]);
 export const outboxEventState = pgEnum("outbox_event_state", ["pending", "processing", "published", "dead_letter"]);
+export const exportLaneStatus = pgEnum("export_lane_status", ["draft", "active", "on_hold", "completed", "cancelled", "archived"]);
+export const exportLaneStage = pgEnum("export_lane_stage", [
+  "opportunity", "readiness", "evidence", "buyer", "offer",
+  "production", "shipment", "payment", "repeat"
+]);
+export const exportLaneHealth = pgEnum("export_lane_health", ["on_track", "needs_attention", "blocked"]);
+export const exportLaneIncoterm = pgEnum("export_lane_incoterm", ["FOB", "CIF", "DDP"]);
+export const exportLaneParticipantRole = pgEnum("export_lane_participant_role", ["owner", "contributor", "reviewer", "observer"]);
+export const exportLaneDecisionStatus = pgEnum("export_lane_decision_status", ["proposed", "approved", "rejected", "superseded"]);
 
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -504,6 +513,99 @@ export const documentVersions = pgTable("document_versions", {
   scanStatus: text("scan_status").notNull().default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
 }, (table) => [uniqueIndex("document_version_unique").on(table.documentId, table.version)]);
+
+/**
+ * The Export Lane is the R1 aggregate root. Downstream readiness, evidence,
+ * buyer, offer, shipment and payment records attach to this stable identifier
+ * rather than reconstructing a lane from product/market fields.
+ */
+export const exportLanes = pgTable("export_lanes", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "restrict" }),
+  originCountryCode: text("origin_country_code").notNull(),
+  destinationCountryCode: text("destination_country_code").notNull(),
+  salesChannel: text("sales_channel").notNull(),
+  buyerSegment: text("buyer_segment").notNull(),
+  route: text("route").notNull(),
+  incoterm: exportLaneIncoterm("incoterm").notNull(),
+  status: exportLaneStatus("status").notNull().default("draft"),
+  health: exportLaneHealth("health").notNull().default("on_track"),
+  stage: exportLaneStage("stage").notNull().default("opportunity"),
+  targetMarginBps: integer("target_margin_bps").notNull(),
+  currency: text("currency").notNull(),
+  ownerMembershipId: uuid("owner_membership_id").notNull().references(() => organizationMemberships.id, { onDelete: "restrict" }),
+  version: integer("version").notNull().default(1),
+  archivedAt: timestamp("archived_at", { withTimezone: true }),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("export_lanes_org_id_unique").on(table.organizationId, table.id),
+  index("export_lanes_org_updated_idx").on(table.organizationId, table.updatedAt),
+  index("export_lanes_org_status_stage_idx").on(table.organizationId, table.status, table.stage),
+  check("export_lanes_country_codes_check", sql`char_length(${table.originCountryCode}) = 2 and char_length(${table.destinationCountryCode}) = 2`),
+  check("export_lanes_currency_check", sql`char_length(${table.currency}) = 3`),
+  check("export_lanes_target_margin_check", sql`${table.targetMarginBps} between 0 and 10000`),
+  check("export_lanes_version_check", sql`${table.version} >= 1`),
+  check("export_lanes_archival_check", sql`(${table.status} = 'archived') = (${table.archivedAt} is not null)`)
+]);
+
+export const exportLaneStageEvents = pgTable("export_lane_stage_events", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  exportLaneId: uuid("export_lane_id").notNull().references(() => exportLanes.id, { onDelete: "cascade" }),
+  fromStatus: exportLaneStatus("from_status").notNull(),
+  toStatus: exportLaneStatus("to_status").notNull(),
+  fromStage: exportLaneStage("from_stage").notNull(),
+  toStage: exportLaneStage("to_stage").notNull(),
+  aggregateVersion: integer("aggregate_version").notNull(),
+  changedBy: text("changed_by").notNull(),
+  rationale: text("rationale").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("export_lane_stage_events_lane_version_unique").on(table.exportLaneId, table.aggregateVersion),
+  index("export_lane_stage_events_org_lane_idx").on(table.organizationId, table.exportLaneId),
+  check("export_lane_stage_events_version_check", sql`${table.aggregateVersion} >= 2`),
+  check("export_lane_stage_events_rationale_check", sql`char_length(trim(${table.rationale})) > 0`)
+]);
+
+export const exportLaneParticipants = pgTable("export_lane_participants", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  exportLaneId: uuid("export_lane_id").notNull().references(() => exportLanes.id, { onDelete: "cascade" }),
+  membershipId: uuid("membership_id").references(() => organizationMemberships.id, { onDelete: "cascade" }),
+  staffProfileId: uuid("staff_profile_id").references(() => staffProfiles.id, { onDelete: "cascade" }),
+  externalReference: text("external_reference"),
+  role: exportLaneParticipantRole("role").notNull(),
+  active: boolean("active").notNull().default(true),
+  addedBy: text("added_by").notNull(),
+  ...timestamps
+}, (table) => [
+  index("export_lane_participants_org_lane_idx").on(table.organizationId, table.exportLaneId),
+  uniqueIndex("export_lane_participants_membership_unique").on(table.exportLaneId, table.membershipId),
+  uniqueIndex("export_lane_participants_staff_unique").on(table.exportLaneId, table.staffProfileId),
+  check("export_lane_participants_identity_check", sql`num_nonnulls(${table.membershipId}, ${table.staffProfileId}, ${table.externalReference}) = 1`)
+]);
+
+export const exportLaneDecisions = pgTable("export_lane_decisions", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  exportLaneId: uuid("export_lane_id").notNull().references(() => exportLanes.id, { onDelete: "cascade" }),
+  decisionType: text("decision_type").notNull(),
+  status: exportLaneDecisionStatus("status").notNull().default("proposed"),
+  summary: text("summary").notNull(),
+  rationale: text("rationale").notNull(),
+  evidenceDocumentVersionId: uuid("evidence_document_version_id").references(() => documentVersions.id, { onDelete: "restrict" }),
+  decidedBy: text("decided_by").notNull(),
+  decidedAt: timestamp("decided_at", { withTimezone: true }).notNull().defaultNow(),
+  supersedesDecisionId: uuid("supersedes_decision_id"),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("export_lane_decisions_org_id_unique").on(table.organizationId, table.id),
+  index("export_lane_decisions_org_lane_idx").on(table.organizationId, table.exportLaneId),
+  index("export_lane_decisions_lane_type_idx").on(table.exportLaneId, table.decisionType, table.decidedAt),
+  check("export_lane_decisions_summary_check", sql`char_length(trim(${table.summary})) > 0`),
+  check("export_lane_decisions_rationale_check", sql`char_length(trim(${table.rationale})) > 0`)
+]);
 
 export const readinessAssessments = pgTable("readiness_assessments", {
   id: uuid("id").primaryKey().defaultRandom(),
