@@ -69,6 +69,7 @@ export const regulatoryImpactState = pgEnum("regulatory_impact_state", ["pending
 export const aiExtractionRunState = pgEnum("ai_extraction_run_state", ["proposed", "under_review", "accepted", "rejected", "failed"]);
 export const aiExtractionDecision = pgEnum("ai_extraction_decision", ["accepted", "rejected", "corrected"]);
 export const passportFactStatus = pgEnum("passport_fact_status", ["declared", "evidence_added", "under_review", "verified", "rejected", "expired"]);
+export const legalDocumentStatus = pgEnum("legal_document_status", ["draft", "published", "retired"]);
 
 export const organizations = pgTable("organizations", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -82,6 +83,44 @@ export const organizations = pgTable("organizations", {
   deletedAt: timestamp("deleted_at", { withTimezone: true }),
   ...timestamps
 });
+
+/** Global, versioned publication registry. Application roles may read but may
+ * never publish legal text; publishing requires a reviewed migration. */
+export const legalDocuments = pgTable("legal_documents", {
+  id: uuid("id").primaryKey(),
+  slug: text("slug").notNull(),
+  version: text("version").notNull(),
+  title: text("title").notNull(),
+  summary: text("summary").notNull(),
+  contentHashSha256: text("content_hash_sha256").notNull(),
+  status: legalDocumentStatus("status").notNull().default("draft"),
+  effectiveAt: timestamp("effective_at", { withTimezone: true }),
+  publishedAt: timestamp("published_at", { withTimezone: true }),
+  publishedBy: text("published_by"),
+  reviewReference: text("review_reference"),
+  ...timestamps
+}, (table) => [
+  uniqueIndex("legal_documents_slug_version_unique").on(table.slug, table.version),
+  index("legal_documents_slug_status_idx").on(table.slug, table.status, table.effectiveAt),
+  check("legal_documents_hash_check", sql`${table.contentHashSha256} ~ '^[a-f0-9]{64}$'`),
+  check("legal_documents_publication_check", sql`${table.status} <> 'published' or num_nonnulls(${table.effectiveAt}, ${table.publishedAt}, ${table.publishedBy}, ${table.reviewReference}) = 4`)
+]);
+
+export const organizationLegalAcceptances = pgTable("organization_legal_acceptances", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  legalDocumentId: uuid("legal_document_id").notNull().references(() => legalDocuments.id, { onDelete: "restrict" }),
+  acceptedBy: text("accepted_by").notNull(),
+  acceptedVersion: text("accepted_version").notNull(),
+  acceptedHashSha256: text("accepted_hash_sha256").notNull(),
+  acceptanceSource: text("acceptance_source").notNull().default("workspace"),
+  acceptedAt: timestamp("accepted_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("organization_legal_acceptances_org_id_unique").on(table.organizationId, table.id),
+  uniqueIndex("organization_legal_acceptances_actor_document_unique").on(table.organizationId, table.acceptedBy, table.legalDocumentId),
+  index("organization_legal_acceptances_org_actor_idx").on(table.organizationId, table.acceptedBy, table.acceptedAt),
+  check("organization_legal_acceptances_hash_check", sql`${table.acceptedHashSha256} ~ '^[a-f0-9]{64}$'`)
+]);
 
 export const organizationMemberships = pgTable("organization_memberships", {
   id: uuid("id").primaryKey().defaultRandom(),

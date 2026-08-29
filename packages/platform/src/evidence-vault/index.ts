@@ -145,6 +145,9 @@ export class EvidenceVault {
     readonly sha256: string;
   }): Promise<StagedEvidenceObject> {
     assertTenantEvidenceObjectKey(input.objectKey, input.organizationId);
+    if (await this.buckets.quarantine.head(input.objectKey)) {
+      throw new Error("Evidence already exists at this quarantine key; request a new version before retrying.");
+    }
     const upload = { mimeType: input.mimeType, byteSize: input.bytes.byteLength, sha256: input.sha256 };
     validateEvidenceUpload(upload);
     assertEvidenceMagicBytes(upload.mimeType, input.bytes);

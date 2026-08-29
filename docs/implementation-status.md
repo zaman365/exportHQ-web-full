@@ -44,7 +44,7 @@ remaining production components.
 - A primary Email Inbox beside the retained Actionable Inbox, with export-aware categories, related-record context, private drafts, email-to-follow-up conversion, provider setup guidance, plan/role gates, and tenant-scoped mail persistence contracts.
 - A versioned, transactional market catalog publisher and incremental PostgreSQL migration for country, product, opportunity, evidence, verification, and shortlist records.
 - Internal customer portfolio and scoped operator workspace over the same domain projection.
-- Unit and journey tests; 35 database-package tests, including 21
+- Unit and journey tests; 36 database-package tests, including 22
   real-PostgreSQL integration scenarios covering cross-tenant isolation,
   direct projection-write denial, webhook projection,
   regulatory freshness and publisher-write denial, human-gated AI provenance,
@@ -61,6 +61,15 @@ remaining production components.
   database, then commits delivery, reviewed organization/membership projection,
   append-only audit and outbox state atomically. Subscription events only enqueue
   reconciliation and cannot directly grant a plan.
+- A provider-neutral private evidence pipeline with one-use upload records,
+  tenant/object/action-scoped signed capabilities, magic-byte/size/checksum
+  validation, quarantine, clean/rejected promotion, review approval, audited
+  downloads, expiring/revocable external shares, legal hold, retention deletion
+  and customer-export requests. Production R2 and scanner bindings remain gated.
+- A public Legal & Trust Center containing nine explicit engineering drafts,
+  each tied to a canonical SHA-256 hash, plus a PostgreSQL publication registry
+  and tenant-isolated append-only acceptance history that refuses draft or
+  mismatched versions. Independent legal/privacy review remains deferred.
 - A platform-admin-only activation report at `/ExportPanel/api/activation` so deployment state can be
   checked against this document rather than trusted.
 
@@ -79,7 +88,7 @@ recorded.
 | -------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Gate 0 — ownership and freeze    | In progress | Development authorized; protected `main`, 8 required checks, 6 milestones and the 22-item R0/R1 backlog exist; all six roles are assigned; deferred external policy approvals still block affected production activation |
 | Gate 1 — identity and PostgreSQL | In progress | Frankfurt Neon projects/migrations/locked roles, initial Clerk configuration and hosted CI are evidenced; live credentials/Hyperdrive, webhook secret/delivery, Billing/MFA/journeys and recovery approvals remain       |
-| Gate 2 — evidence vault          | Not started | R2 not provisioned; uploads fail closed                                                                                                                                                                                  |
+| Gate 2 — evidence vault          | In progress | Provider-neutral lifecycle and negative-path tests pass; production private R2, isolated scanner, lifecycle rules and inventory reconciliation are not provisioned, so uploads fail closed                              |
 | Gate 3 — production persistence  | In progress | Profile, primary product, paid dashboard, lane/readiness, tenant Studio and task center are PostgreSQL-authoritative; later-phase surfaces remain fail-closed behind preview adapters                                  |
 | Gate 4 — trust and integrations  | Not started | No reviewed provider or mail applications                                                                                                                                                                                |
 | Gate 5 — pilot and launch        | In progress | Builds, Worker smoke, Playwright, rate limits, redaction and sampled telemetry config pass locally; CSP enforcement, external monitoring/review and pilot evidence remain                                                |

@@ -101,6 +101,19 @@ async function seed(url) {
         'high', 'synthetic-method-v1', 'synthetic-rule-v1', 'human_reviewed',
         'synthetic_reviewer', '2026-08-02T00:00:00Z'
       ) on conflict (id) do nothing`;
+    await client`
+      insert into legal_documents (
+        id, slug, version, title, summary, content_hash_sha256, status,
+        effective_at, published_at, published_by, review_reference
+      ) values (
+        '44444444-4444-4444-8444-444444444444',
+        'synthetic-integration-policy', 'synthetic-v1',
+        'Synthetic integration policy',
+        'Synthetic integration-only legal acceptance record.',
+        repeat('c', 64), 'published',
+        '2026-08-01T00:00:00Z', '2026-08-01T00:00:00Z',
+        'synthetic_reviewer', 'synthetic-review.invalid'
+      ) on conflict (id) do nothing`;
   });
 }
 

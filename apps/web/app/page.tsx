@@ -982,7 +982,11 @@ export default function HomePage() {
         </div>
         <div className="container footer-bottom">
           <span>© 2026 Export HQ. All rights reserved.</span>
-          <span>Privacy · Security · Data ownership</span>
+          <nav className="footer-legal-links" aria-label="Legal and trust">
+            <a href="/legal/privacy">Privacy</a>
+            <a href="/legal/security">Security</a>
+            <a href="/legal/service-boundaries">Service boundaries</a>
+          </nav>
           <span>Everything export. One accountable team.</span>
         </div>
       </footer>

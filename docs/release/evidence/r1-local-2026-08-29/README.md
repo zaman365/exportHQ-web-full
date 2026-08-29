@@ -8,7 +8,7 @@
 
 ## Scope proved
 
-The clean migration chain through `0009_r1_task_tenant_key.sql` creates:
+The clean migration chain through `0010_r1_legal_acceptances.sql` creates:
 
 - the tenant-scoped Export Lane aggregate and exact commercial ledger;
 - private evidence lifecycle metadata and versioned verification cases;
@@ -20,7 +20,9 @@ The clean migration chain through `0009_r1_task_tenant_key.sql` creates:
 - an authoritative tenant profile and primary product read path for Settings,
   Dashboard and Export Studio; and
 - versioned tenant tasks with explicit transition rationale and append-only
-  status history.
+  status history; and
+- a global draft/effective legal publication registry with tenant-isolated,
+  actor-bound and append-only exact-version acceptances.
 
 Composite tenant foreign keys, forced row-level security and locked role grants
 were applied after a clean reset. The application role cannot write the global
@@ -38,11 +40,18 @@ The following guarded sequence completed successfully:
 4. seed only synthetic tenant and source-registry fixtures; and
 5. run the database suite through the application login.
 
-Result: 5 test files passed; 35 tests passed. The tenant-isolation and webhook
-files contain 21 real-PostgreSQL scenarios, including stale-source exclusion, global publisher-write
+Result: 5 test files passed; 36 tests passed. The tenant-isolation and webhook
+files contain 22 real-PostgreSQL scenarios, including stale-source exclusion, global publisher-write
 denial, cross-tenant regulatory isolation, retained AI source spans and required
 human review before downstream usage, authoritative workspace reads, optimistic
-task transitions, append-only task history and replay-safe identity projection.
+task transitions, append-only task history, versioned legal acceptance and
+replay-safe identity projection. The evidence scenario also proves quarantine,
+clean review, unauthorized download/share denial, external-share revocation,
+legal-hold deletion denial, released-hold deletion and customer-export routing.
+
+The public web package separately exposes nine hash-locked Legal & Trust Center
+drafts. They are deliberately labelled not effective and cannot be accepted in
+the tenant application until a reviewed migration publishes an exact version.
 
 This is local engineering evidence, not Neon, R2, AI-provider, regulatory,
 security, legal or production-release approval.

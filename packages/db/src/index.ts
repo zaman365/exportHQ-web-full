@@ -105,11 +105,18 @@ export {
 } from "./repositories/export-lanes";
 
 export {
+  applyEvidenceLegalHold,
   authorizeEvidenceDownload,
   consumeEvidenceUploadIntent,
+  createEvidenceExternalShare,
   createEvidenceUploadIntent,
+  deleteEvidenceVersion,
   linkCleanEvidence,
+  recordEvidenceReviewDecision,
   recordEvidenceScanResult,
+  releaseEvidenceLegalHold,
+  requestCustomerDataExport,
+  revokeEvidenceExternalShare,
   type EvidenceUploadIntentRecord
 } from "./repositories/evidence-vault";
 
@@ -159,6 +166,14 @@ export {
   TaskVersionConflictError,
   transitionTaskStatus
 } from "./repositories/tasks";
+
+export {
+  acceptLegalDocument,
+  listActorLegalAcceptances,
+  listEffectiveLegalDocuments,
+  type EffectiveLegalDocumentRecord,
+  type LegalAcceptanceRecord
+} from "./repositories/legal";
 
 export {
   readTenantExportLane,
