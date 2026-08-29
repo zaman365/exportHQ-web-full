@@ -117,18 +117,19 @@ Gate 5: one real pilot Export Lane and controlled launch
 > activated. The non-owner application-role suite passes 29 tests, including
 > tenant isolation, durable-control concurrency and webhook projection; clean
 > migrate, backup and separate-database restore also pass locally. Neon,
-> protected-branch CI and provider evidence remain open, so this does not close
-> Gate 1.
+> Protected-branch CI and three Neon project/schema/role records are now
+> captured. Human-held role credentials, Hyperdrive, recovery evidence and the
+> remaining Clerk journeys still keep Gate 1 open.
 
-- [ ] Provision separate development, staging and production Neon projects.
+- [x] Provision separate development, staging and production Neon projects.
 - [ ] Place production in the approved Frankfurt/EU region and record the vendor/security review.
 - [x] Generate and review the structural Drizzle migration before applying the checked-in RLS
       envelope.
       <br>`migrations-v2/0000_reproducible_baseline.sql` is the clean baseline,
       `0001_security_envelope.sql` is the RLS/identity bridge, the checksum
       manifest prevents mutation, and `roles/bootstrap.sql` applies separated roles.
-- [ ] Create separate migration, application and read-only support roles.
-- [ ] Ensure the application role is non-owner and does not have `BYPASSRLS`.
+- [x] Create separate migration, application and read-only support roles.
+- [x] Ensure the application role is non-owner and does not have `BYPASSRLS`.
 - [x] Set organization context transactionally for every tenant request and reset it safely.
       <br>The application role tests prove transaction-local context is discarded on commit.
 - [ ] Implement PostgreSQL repositories for every currently modeled command and query.
@@ -142,7 +143,8 @@ Gate 5: one real pilot Export Lane and controlled launch
 - [ ] Configure automated backups, point-in-time recovery and an independent encrypted export.
 - [x] Perform and document a synthetic local restore drill.
       <br>R0 local evidence records restored row counts and RLS behavior; production
-      PITR and CI workflow evidence remain required.
+      PITR remains required; the protected hosted workflow now also proves
+      migrate, RLS, backup and separate-database restore on PostgreSQL 17.
 
 ### Gate 1 isolation tests
 
@@ -368,8 +370,8 @@ A checkbox above may be closed only when the component has:
 
 | Gate                             | State       | Blocking outcome                              |
 | -------------------------------- | ----------- | --------------------------------------------- |
-| Gate 0 — ownership and freeze    | In progress | Owners unnamed; policies drafted, not approved |
-| Gate 1 — identity and PostgreSQL | In progress | Clerk live; no Billing, no webhooks, no Neon   |
+| Gate 0 — ownership and freeze    | In progress | Protected backlog/CI exists; owners and approvals remain unnamed |
+| Gate 1 — identity and PostgreSQL | In progress | Neon/Clerk foundation and CI evidenced; secrets, Hyperdrive, Billing/MFA/journeys and recovery remain |
 | Gate 2 — private evidence vault  | Not started | Real evidence must not be accepted            |
 | Gate 3 — production persistence  | Not started | Preview adapters remain in customer workflows |
 | Gate 4 — trust and integrations  | Not started | External capabilities cannot be called live   |
