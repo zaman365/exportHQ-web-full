@@ -181,7 +181,7 @@ export function WorkspaceShell({
       <main>
         <WorkspaceTopbar active={active} session={session} />
         <div className="content" id={contentId}><WorkspaceEntitlementNotice active={active} session={session} />{children}</div>
-        <footer className="legal-footer"><span>Export HQ · {session.userId ? "Private workspace" : "Public sample · no customer data"}</span><span><ShieldCheck size={14} /> Evidence-aware compliance · Last data review 8 Aug 2026</span></footer>
+        <footer className="legal-footer"><span>Export HQ · {session.userId ? "Private workspace" : "Public sample · no customer data"}</span><span><ShieldCheck size={14} /> <a href={`${workspaceWebsiteUrl}/legal/privacy`} target="_blank" rel="noreferrer">Privacy</a> · <a href={`${workspaceWebsiteUrl}/legal/security`} target="_blank" rel="noreferrer">Security</a> · {session.userId && <Link href="/legal-acceptances">Acceptances</Link>}</span></footer>
       </main>
       <WorkspaceProjectionNotice session={session} />
     </div>

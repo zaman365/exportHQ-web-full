@@ -184,35 +184,35 @@ Gate 5: one real pilot Export Lane and controlled launch
 
 - [ ] Provision private production R2 buckets with the approved EU jurisdiction.
 - [ ] Disable public `r2.dev` and public custom-domain access.
-- [ ] Define object keys that do not expose customer names, emails or document contents.
-- [ ] Store object metadata and ownership in PostgreSQL; never treat an object key as
+- [x] Define object keys that do not expose customer names, emails or document contents.
+- [x] Store object metadata and ownership in PostgreSQL; never treat an object key as
       authorization.
 - [ ] Configure least-privilege Worker bindings and separate scanner access.
 - [ ] Add retention/lifecycle rules for abandoned uploads, rejected files and temporary exports.
 
 ### Upload and scan pipeline
 
-- [ ] Create an authorized, one-use upload-intent command linked to organization, resource and
+- [x] Create an authorized, one-use upload-intent command linked to organization, resource and
       expected evidence type.
-- [ ] Issue short-lived, operation-specific signed upload access.
-- [ ] Enforce the 25 MB limit and approved PDF/JPEG/PNG contract at the server boundary.
-- [ ] Validate checksums, media type and file signature/magic bytes.
-- [ ] Upload to quarantine only.
+- [x] Issue short-lived, operation-specific signed upload access.
+- [x] Enforce the 25 MB limit and approved PDF/JPEG/PNG contract at the server boundary.
+- [x] Validate checksums, media type and file signature/magic bytes.
+- [x] Upload to quarantine only in the provider-neutral storage contract; production R2 remains unbound.
 - [ ] Run malware scanning in an isolated service with bounded retries and a dead-letter path.
 - [ ] Permit OCR or extraction only after a clean scan result.
-- [ ] Move or promote clean evidence without losing the immutable document-version record.
+- [x] Move or promote clean evidence without losing the immutable document-version record.
 - [ ] Give rejected files a safe user-facing reason and next action without exposing scanner
       internals.
-- [ ] Audit stage, scan, accept, reject, view, download, share, revoke and delete actions.
+- [x] Audit stage, scan, accept, reject, view, download, share, revoke and delete actions.
 
 ### Download, sharing and deletion
 
-- [ ] Re-authorize organization, resource, permission, plan and evidence state for every download.
-- [ ] Issue narrowly scoped, short-lived signed download access only after authorization.
-- [ ] Add explicit, scoped, expiring and revocable external shares.
-- [ ] Prevent object enumeration and cross-tenant signed-file reuse.
-- [ ] Keep signed URLs, document contents and confidential metadata out of logs and analytics.
-- [ ] Implement retention-aware deletion, legal hold and customer export.
+- [x] Re-authorize organization, resource and evidence state for every download; route permission/plan checks through the server command boundary.
+- [x] Issue narrowly scoped, short-lived signed download access only after authorization.
+- [x] Add explicit, scoped, expiring and revocable external shares.
+- [x] Prevent object enumeration and cross-tenant signed-file reuse in capability and object-key contracts.
+- [x] Keep signed URLs, document contents and confidential metadata out of logs and analytics.
+- [x] Implement transactional retention deletion, legal hold and customer-export requests; physical R2 workers remain gated.
 - [ ] Reconcile PostgreSQL document rows with R2 inventory and alert on orphaned rows/objects.
 
 **Gate 2 exit evidence**

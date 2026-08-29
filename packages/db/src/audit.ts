@@ -64,6 +64,7 @@ export const auditableActions = [
   "data_export.requested",
   "legal_hold.applied",
   "legal_hold.released",
+  "legal.accepted",
   "identity.reconciliation_requested"
 ] as const;
 

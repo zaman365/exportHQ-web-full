@@ -19,7 +19,10 @@ const secret = "synthetic-test-secret-at-least-32-bytes-long";
 class MemoryBucket implements PrivateEvidenceBucket {
   readonly objects = new Map<string, { bytes: ArrayBuffer; metadata: EvidenceObjectMetadata }>();
 
-  async put(key: string, value: ArrayBuffer): Promise<EvidenceObjectMetadata> {
+  constructor(private readonly confirmPuts = true) {}
+
+  async put(key: string, value: ArrayBuffer): Promise<EvidenceObjectMetadata | null> {
+    if (!this.confirmPuts) return null;
     const metadata = { key, size: value.byteLength, etag: "synthetic-etag", version: crypto.randomUUID() };
     this.objects.set(key, { bytes: value.slice(0), metadata });
     return metadata;
@@ -78,6 +81,12 @@ describe("evidence vault", () => {
       objectKey,
       now: 1_000
     })).rejects.toThrow("another tenant or object");
+    await expect(verifyEvidenceCapability(token, secret, {
+      action: "upload_quarantine",
+      organizationId,
+      objectKey,
+      now: 2_000
+    })).rejects.toThrow("expired");
   });
 
   it("stages only validated bytes in quarantine and promotes clean evidence", async () => {
@@ -125,5 +134,64 @@ describe("evidence vault", () => {
       bytes: valid,
       sha256: "0".repeat(64)
     })).rejects.toThrow("checksum");
+  });
+
+  it("refuses oversized, cross-tenant, duplicate and interrupted staging", async () => {
+    const quarantine = new MemoryBucket();
+    const vault = new EvidenceVault({ quarantine, clean: new MemoryBucket(), rejected: new MemoryBucket() });
+    const objectKey = buildEvidenceObjectKey({ organizationId, documentId, documentVersionId });
+    const bytes = pdfBytes();
+    await expect(vault.stageQuarantine({
+      organizationId: documentId,
+      documentVersionId,
+      objectKey,
+      mimeType: "application/pdf",
+      bytes,
+      sha256: sha256(bytes)
+    })).rejects.toThrow("outside the authorized organization namespace");
+    const oversized = new ArrayBuffer(25 * 1024 * 1024 + 1);
+    await expect(vault.stageQuarantine({
+      organizationId,
+      documentVersionId,
+      objectKey,
+      mimeType: "application/pdf",
+      bytes: oversized,
+      sha256: "0".repeat(64)
+    })).rejects.toThrow("between 1 byte and 25 MB");
+    await vault.stageQuarantine({ organizationId, documentVersionId, objectKey, mimeType: "application/pdf", bytes, sha256: sha256(bytes) });
+    await expect(vault.stageQuarantine({
+      organizationId,
+      documentVersionId,
+      objectKey,
+      mimeType: "application/pdf",
+      bytes,
+      sha256: sha256(bytes)
+    })).rejects.toThrow("already exists");
+
+    const interruptedKey = buildEvidenceObjectKey({ organizationId, documentId, documentVersionId: crypto.randomUUID() });
+    const interrupted = new EvidenceVault({ quarantine: new MemoryBucket(false), clean: new MemoryBucket(), rejected: new MemoryBucket() });
+    await expect(interrupted.stageQuarantine({
+      organizationId,
+      documentVersionId,
+      objectKey: interruptedKey,
+      mimeType: "application/pdf",
+      bytes,
+      sha256: sha256(bytes)
+    })).rejects.toThrow("did not confirm");
+  });
+
+  it("moves scanner-rejected bytes out of quarantine without exposing them as clean", async () => {
+    const quarantine = new MemoryBucket();
+    const clean = new MemoryBucket();
+    const rejected = new MemoryBucket();
+    const vault = new EvidenceVault({ quarantine, clean, rejected });
+    const objectKey = buildEvidenceObjectKey({ organizationId, documentId, documentVersionId });
+    const bytes = pdfBytes();
+    const checksum = sha256(bytes);
+    await vault.stageQuarantine({ organizationId, documentVersionId, objectKey, mimeType: "application/pdf", bytes, sha256: checksum });
+    await vault.reject({ organizationId, objectKey, mimeType: "application/pdf", sha256: checksum });
+    expect(await quarantine.head(objectKey)).toBeNull();
+    expect(await clean.head(objectKey)).toBeNull();
+    expect(await rejected.head(objectKey)).not.toBeNull();
   });
 });

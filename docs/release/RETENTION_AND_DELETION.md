@@ -11,8 +11,14 @@
 Repository defaults bound processed/ignored webhook payloads to 30 days,
 dead-letter payloads to 90 days, and published outbox routing records to 30
 days. Expired rate-limit and idempotency records are eligible immediately.
-These schedules are executable in `packages/platform/src/jobs/retention.ts`;
-the production scheduler, legal-hold exception path and counsel approval remain
-activation evidence rather than assumed configuration.
+These schedules are executable in `packages/platform/src/jobs/retention.ts`.
+The evidence repository now records legal holds, refuses deletion while a hold
+is active, retains immutable version/audit metadata after storage deletion,
+revokes active shares and routes customer export/deletion work through audit and
+outbox. The production scheduler, physical R2 deletion/export worker, backup
+reconciliation and counsel approval remain activation evidence rather than
+assumed configuration.
 
-The current implementation is a policy/runbook foundation, not an activated deletion service. Real-data onboarding remains prohibited until the workflow, counsel review and restore/deletion evidence pass.
+The current implementation is a tested policy and transactional foundation,
+not an activated physical deletion/export service. Real-data onboarding remains
+prohibited until R2 workers, counsel review and restore/deletion evidence pass.

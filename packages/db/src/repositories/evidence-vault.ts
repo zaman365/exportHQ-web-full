@@ -1,4 +1,4 @@
-import { and, eq, gt } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import {
   buildEvidenceObjectKey,
   validateEvidenceUpload,
@@ -9,11 +9,13 @@ import { recordAuditEvent } from "../audit";
 import { enqueueOutboxEvent } from "../outbox";
 import {
   documentEvidenceLinks,
+  documentExternalShares,
   documents,
   documentScanEvents,
   documentStorageObjects,
   documentUploadIntents,
-  documentVersions
+  documentVersions,
+  legalHolds
 } from "../schema";
 import type { ExportHqTransaction, TenantContext } from "../tenant";
 
@@ -319,6 +321,242 @@ export async function authorizeEvidenceDownload(
     metadata: { access: staffReview ? "staff_review" : "approved_evidence" }
   });
   return { objectKey: record.objectKey, mimeType: record.mimeType, checksumSha256: record.checksumSha256 };
+}
+
+export async function recordEvidenceReviewDecision(
+  tx: ExportHqTransaction,
+  context: TenantContext,
+  input: {
+    readonly documentVersionId: string;
+    readonly decision: "approved" | "rejected";
+    readonly rationaleCode: string;
+  }
+): Promise<void> {
+  if (context.actorType === "customer") throw new Error("Only reviewed operations may decide evidence.");
+  const [record] = await tx.select({ documentId: documentVersions.documentId, storageState: documentStorageObjects.state })
+    .from(documentVersions)
+    .innerJoin(documentStorageObjects, eq(documentStorageObjects.documentVersionId, documentVersions.id))
+    .where(and(
+      eq(documentVersions.organizationId, context.organizationId),
+      eq(documentVersions.id, input.documentVersionId)
+    )).limit(1);
+  if (!record || record.storageState !== "clean") throw new Error("Only clean evidence may receive a review decision.");
+  const rationaleCode = requiredText(input.rationaleCode, "Evidence decision rationale code");
+  const [updated] = await tx.update(documents).set({ status: input.decision, updatedAt: new Date() }).where(and(
+    eq(documents.organizationId, context.organizationId),
+    eq(documents.id, record.documentId),
+    eq(documents.status, "under_review")
+  )).returning({ id: documents.id });
+  if (!updated) throw new Error("Evidence is not awaiting a review decision.");
+  await recordAuditEvent(tx, context, {
+    action: input.decision === "approved" ? "document.accepted" : "document.rejected",
+    entityType: "document_version",
+    entityId: input.documentVersionId,
+    metadata: { rationaleCode }
+  });
+  await enqueueOutboxEvent(tx, context, {
+    topic: `document.review_${input.decision}`,
+    aggregateType: "document_version",
+    aggregateId: input.documentVersionId,
+    dedupeKey: `document-review:${input.documentVersionId}:${input.decision}`,
+    payload: { documentVersionId: input.documentVersionId, decision: input.decision }
+  });
+}
+
+export async function createEvidenceExternalShare(
+  tx: ExportHqTransaction,
+  context: TenantContext,
+  input: {
+    readonly documentVersionId: string;
+    readonly tokenHashSha256: string;
+    readonly purpose: string;
+    readonly recipientReference: string;
+    readonly expiresAt: Date;
+    readonly maximumDownloads?: number;
+  },
+  now = new Date()
+): Promise<string> {
+  const maximumDownloads = input.maximumDownloads ?? 1;
+  if (!Number.isInteger(maximumDownloads) || maximumDownloads < 1 || maximumDownloads > 100) {
+    throw new Error("External evidence share download limit must be from 1 to 100.");
+  }
+  if (input.expiresAt <= now || input.expiresAt.getTime() - now.getTime() > 7 * 24 * 60 * 60_000) {
+    throw new Error("External evidence shares must expire within seven days.");
+  }
+  const tokenHash = input.tokenHashSha256.trim().toLowerCase();
+  if (!/^[a-f0-9]{64}$/.test(tokenHash)) throw new Error("External evidence shares require a token SHA-256 hash.");
+  const [record] = await tx.select({ storageState: documentStorageObjects.state, documentStatus: documents.status })
+    .from(documentVersions)
+    .innerJoin(documentStorageObjects, eq(documentStorageObjects.documentVersionId, documentVersions.id))
+    .innerJoin(documents, eq(documents.id, documentVersions.documentId))
+    .where(and(
+      eq(documentVersions.organizationId, context.organizationId),
+      eq(documentVersions.id, input.documentVersionId)
+    )).limit(1);
+  if (!record || record.storageState !== "clean" || record.documentStatus !== "approved") {
+    throw new Error("Only approved clean evidence may be shared externally.");
+  }
+  const [share] = await tx.insert(documentExternalShares).values({
+    organizationId: context.organizationId,
+    documentVersionId: input.documentVersionId,
+    tokenHash,
+    purpose: requiredText(input.purpose, "Share purpose"),
+    recipientReference: requiredText(input.recipientReference, "Share recipient reference"),
+    createdBy: context.actorId,
+    expiresAt: input.expiresAt,
+    maximumDownloads
+  }).returning({ id: documentExternalShares.id });
+  if (!share) throw new Error("External evidence share creation did not return a row.");
+  await recordAuditEvent(tx, context, {
+    action: "document.shared",
+    entityType: "document_version",
+    entityId: input.documentVersionId,
+    metadata: { purpose: input.purpose, maximumDownloads, expiresAt: input.expiresAt.toISOString() }
+  });
+  return share.id;
+}
+
+export async function revokeEvidenceExternalShare(
+  tx: ExportHqTransaction,
+  context: TenantContext,
+  shareId: string,
+  now = new Date()
+): Promise<void> {
+  const [share] = await tx.update(documentExternalShares).set({
+    status: "revoked",
+    revokedAt: now,
+    revokedBy: context.actorId,
+    updatedAt: now
+  }).where(and(
+    eq(documentExternalShares.organizationId, context.organizationId),
+    eq(documentExternalShares.id, shareId),
+    eq(documentExternalShares.status, "active")
+  )).returning({ documentVersionId: documentExternalShares.documentVersionId });
+  if (!share) throw new Error("Active external evidence share was not found.");
+  await recordAuditEvent(tx, context, {
+    action: "document.share_revoked",
+    entityType: "document_version",
+    entityId: share.documentVersionId,
+    metadata: { shareId }
+  });
+}
+
+export async function applyEvidenceLegalHold(
+  tx: ExportHqTransaction,
+  context: TenantContext,
+  input: { readonly documentVersionId: string; readonly reason: string; readonly authorityReference: string }
+): Promise<string> {
+  if (context.actorType === "customer") throw new Error("Only reviewed operations may apply a legal hold.");
+  const [version] = await tx.select({ id: documentVersions.id }).from(documentVersions).where(and(
+    eq(documentVersions.organizationId, context.organizationId),
+    eq(documentVersions.id, input.documentVersionId)
+  )).limit(1);
+  if (!version) throw new Error("Document version was not found in this organization.");
+  const [hold] = await tx.insert(legalHolds).values({
+    organizationId: context.organizationId,
+    entityType: "document_version",
+    entityId: input.documentVersionId,
+    reason: requiredText(input.reason, "Legal hold reason"),
+    authorityReference: requiredText(input.authorityReference, "Legal hold authority reference"),
+    appliedBy: context.actorId
+  }).returning({ id: legalHolds.id });
+  if (!hold) throw new Error("Legal hold creation did not return a row.");
+  await recordAuditEvent(tx, context, {
+    action: "legal_hold.applied",
+    entityType: "document_version",
+    entityId: input.documentVersionId,
+    metadata: { holdId: hold.id, authorityReference: input.authorityReference }
+  });
+  return hold.id;
+}
+
+export async function releaseEvidenceLegalHold(
+  tx: ExportHqTransaction,
+  context: TenantContext,
+  holdId: string,
+  now = new Date()
+): Promise<void> {
+  if (context.actorType === "customer") throw new Error("Only reviewed operations may release a legal hold.");
+  const [released] = await tx.update(legalHolds).set({ releasedBy: context.actorId, releasedAt: now, updatedAt: now }).where(and(
+    eq(legalHolds.organizationId, context.organizationId),
+    eq(legalHolds.id, holdId),
+    isNull(legalHolds.releasedAt)
+  )).returning({ entityId: legalHolds.entityId });
+  if (!released) throw new Error("Active legal hold was not found.");
+  await recordAuditEvent(tx, context, {
+    action: "legal_hold.released",
+    entityType: "document_version",
+    entityId: released.entityId,
+    metadata: { holdId }
+  });
+}
+
+export async function deleteEvidenceVersion(
+  tx: ExportHqTransaction,
+  context: TenantContext,
+  documentVersionId: string,
+  now = new Date()
+): Promise<void> {
+  if (context.actorType !== "system") throw new Error("Only the retention pipeline may delete evidence storage.");
+  const [hold] = await tx.select({ id: legalHolds.id }).from(legalHolds).where(and(
+    eq(legalHolds.organizationId, context.organizationId),
+    eq(legalHolds.entityType, "document_version"),
+    eq(legalHolds.entityId, documentVersionId),
+    isNull(legalHolds.releasedAt)
+  )).limit(1);
+  if (hold) throw new Error("Evidence under an active legal hold cannot be deleted.");
+  const [record] = await tx.select({ documentId: documentVersions.documentId }).from(documentVersions).where(and(
+    eq(documentVersions.organizationId, context.organizationId),
+    eq(documentVersions.id, documentVersionId)
+  )).limit(1);
+  if (!record) throw new Error("Document version was not found in this organization.");
+  const [deleted] = await tx.update(documentStorageObjects).set({ state: "deleted", deletedAt: now, updatedAt: now }).where(and(
+    eq(documentStorageObjects.organizationId, context.organizationId),
+    eq(documentStorageObjects.documentVersionId, documentVersionId),
+    isNull(documentStorageObjects.deletedAt)
+  )).returning({ objectKey: documentStorageObjects.objectKey });
+  if (!deleted) throw new Error("Evidence storage was not available for deletion.");
+  await tx.update(documents).set({ status: "expired", updatedAt: now }).where(and(
+    eq(documents.organizationId, context.organizationId),
+    eq(documents.id, record.documentId)
+  ));
+  await tx.update(documentExternalShares).set({ status: "revoked", revokedAt: now, revokedBy: context.actorId, updatedAt: now }).where(and(
+    eq(documentExternalShares.organizationId, context.organizationId),
+    eq(documentExternalShares.documentVersionId, documentVersionId),
+    eq(documentExternalShares.status, "active")
+  ));
+  await recordAuditEvent(tx, context, {
+    action: "document.deleted",
+    entityType: "document_version",
+    entityId: documentVersionId,
+    metadata: { retainedDatabaseRecord: true }
+  });
+  await enqueueOutboxEvent(tx, context, {
+    topic: "document.storage_delete_requested",
+    aggregateType: "document_version",
+    aggregateId: documentVersionId,
+    dedupeKey: `document-storage-delete:${documentVersionId}`,
+    payload: { documentVersionId }
+  });
+}
+
+export async function requestCustomerDataExport(
+  tx: ExportHqTransaction,
+  context: TenantContext
+): Promise<void> {
+  await recordAuditEvent(tx, context, {
+    action: "data_export.requested",
+    entityType: "organization",
+    entityId: context.organizationId,
+    metadata: { requestedByActorType: context.actorType }
+  });
+  await enqueueOutboxEvent(tx, context, {
+    topic: "organization.data_export_requested",
+    aggregateType: "organization",
+    aggregateId: context.organizationId,
+    dedupeKey: `organization-data-export:${context.organizationId}:${crypto.randomUUID()}`,
+    payload: { organizationId: context.organizationId, requestedBy: context.actorId }
+  });
 }
 
 function requiredText(value: string, label: string): string {

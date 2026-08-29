@@ -7,14 +7,26 @@ import { grantOrganizationEntitlement, readOrganizationTier } from "./entitlemen
 import { saveCompanyProfile, readCompanyProfile } from "./repositories/company-profile";
 import { savePrimaryProduct } from "./repositories/products";
 import { transitionTaskStatus } from "./repositories/tasks";
+import {
+  acceptLegalDocument,
+  listActorLegalAcceptances,
+  listEffectiveLegalDocuments
+} from "./repositories/legal";
 import { readTenantExportLane, readWorkspaceDashboard } from "./read-models/workspace";
 import { PostgresIdempotencyStore, PostgresRateLimitStore } from "./stores";
 import { createExportLane, listExportLanes, transitionStoredExportLane } from "./repositories/export-lanes";
 import {
+  applyEvidenceLegalHold,
   authorizeEvidenceDownload,
   consumeEvidenceUploadIntent,
+  createEvidenceExternalShare,
   createEvidenceUploadIntent,
-  recordEvidenceScanResult
+  deleteEvidenceVersion,
+  recordEvidenceReviewDecision,
+  recordEvidenceScanResult,
+  releaseEvidenceLegalHold,
+  requestCustomerDataExport,
+  revokeEvidenceExternalShare
 } from "./repositories/evidence-vault";
 import {
   addBusinessVerificationEvidence,
@@ -44,6 +56,8 @@ import {
   auditEvents,
   documentUploadIntents,
   exportLaneStageEvents,
+  legalDocuments,
+  organizationLegalAcceptances,
   organizationMemberships,
   products,
   regulatoryPublishers,
@@ -219,12 +233,52 @@ describeWithDatabase("tenant isolation", () => {
         promotedObject: { key: intent.objectKey, size: intent.byteSize, etag: "synthetic-clean-etag", version: "clean-v1" }
       })
     );
+    await expect(withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      authorizeEvidenceDownload(tx, scoped, intent.documentVersionId)
+    )).rejects.toThrow("not authorized");
+    await expect(withTenantTransaction(database, context(tenantB), (tx, scoped) =>
+      authorizeEvidenceDownload(tx, scoped, intent.documentVersionId)
+    )).rejects.toThrow("not authorized");
+    await expect(withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      createEvidenceExternalShare(tx, scoped, {
+        documentVersionId: intent.documentVersionId,
+        tokenHashSha256: "e".repeat(64),
+        purpose: "Synthetic denied share",
+        recipientReference: "recipient.synthetic.invalid",
+        expiresAt: new Date(Date.now() + 60_000)
+      })
+    )).rejects.toThrow("Only approved clean evidence");
     const download = await withTenantTransaction(
       database,
       { organizationId: tenantA, actorId: "system_reviewer", actorType: "system" },
       (tx, scoped) => authorizeEvidenceDownload(tx, scoped, intent.documentVersionId)
     );
     expect(download.objectKey).toBe(intent.objectKey);
+    await withTenantTransaction(
+      database,
+      { organizationId: tenantA, actorId: "system_reviewer", actorType: "system" },
+      (tx, scoped) => recordEvidenceReviewDecision(tx, scoped, {
+        documentVersionId: intent.documentVersionId,
+        decision: "approved",
+        rationaleCode: "synthetic_review_passed"
+      })
+    );
+    const customerDownload = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      authorizeEvidenceDownload(tx, scoped, intent.documentVersionId)
+    );
+    expect(customerDownload.objectKey).toBe(intent.objectKey);
+    const shareId = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      createEvidenceExternalShare(tx, scoped, {
+        documentVersionId: intent.documentVersionId,
+        tokenHashSha256: "f".repeat(64),
+        purpose: "Synthetic approved share",
+        recipientReference: "recipient.synthetic.invalid",
+        expiresAt: new Date(Date.now() + 60_000)
+      })
+    );
+    await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      revokeEvidenceExternalShare(tx, scoped, shareId)
+    );
 
     const verificationCase = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
       createBusinessVerificationCase(tx, scoped, {
@@ -283,6 +337,34 @@ describeWithDatabase("tenant isolation", () => {
     );
     expect(otherTenantCase).toBeNull();
     expect(otherTenantIntents.some((record) => record.id === intent.id)).toBe(false);
+    const holdId = await withTenantTransaction(
+      database,
+      { organizationId: tenantA, actorId: "system_retention", actorType: "system" },
+      (tx, scoped) => applyEvidenceLegalHold(tx, scoped, {
+        documentVersionId: intent.documentVersionId,
+        reason: "Synthetic retention test",
+        authorityReference: "synthetic-hold.invalid"
+      })
+    );
+    await expect(withTenantTransaction(
+      database,
+      { organizationId: tenantA, actorId: "system_retention", actorType: "system" },
+      (tx, scoped) => deleteEvidenceVersion(tx, scoped, intent.documentVersionId)
+    )).rejects.toThrow("active legal hold");
+    await withTenantTransaction(
+      database,
+      { organizationId: tenantA, actorId: "system_retention", actorType: "system" },
+      (tx, scoped) => releaseEvidenceLegalHold(tx, scoped, holdId)
+    );
+    await withTenantTransaction(
+      database,
+      { organizationId: tenantA, actorId: "system_retention", actorType: "system" },
+      (tx, scoped) => deleteEvidenceVersion(tx, scoped, intent.documentVersionId)
+    );
+    await expect(withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      authorizeEvidenceDownload(tx, scoped, intent.documentVersionId)
+    )).rejects.toThrow("not authorized");
+    await withTenantTransaction(database, context(tenantA), (tx, scoped) => requestCustomerDataExport(tx, scoped));
   });
 
   it("persists one lane-scoped readiness assessment with optimistic conflicts, tasks and support requests", async () => {
@@ -580,6 +662,74 @@ describeWithDatabase("tenant isolation", () => {
       readTenantExportLane(tx, scoped, lane.id)
     );
     expect(otherTenantStudio).toBeNull();
+  });
+
+  it("accepts only effective hashed legal versions and retains an isolated append-only record", async () => {
+    const effective = await withTenantTransaction(database, context(tenantA), (tx) =>
+      listEffectiveLegalDocuments(tx)
+    );
+    const synthetic = effective.find((document) => document.slug === "synthetic-integration-policy");
+    expect(synthetic).toMatchObject({ version: "synthetic-v1", contentHashSha256: "c".repeat(64) });
+    if (!synthetic) throw new Error("Synthetic effective policy was not seeded.");
+
+    await expect(withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      acceptLegalDocument(tx, scoped, {
+        legalDocumentId: "2be994a4-240a-48d0-ae9a-21d90c3dba6a",
+        version: "2026-08-29-draft.1",
+        contentHashSha256: "3df670e02f20feb0e760393773142dae4ebd069a82999481eb3136d089511d43"
+      })
+    )).rejects.toThrow("not effective");
+
+    const first = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      acceptLegalDocument(tx, scoped, {
+        legalDocumentId: synthetic.id,
+        version: synthetic.version,
+        contentHashSha256: synthetic.contentHashSha256
+      })
+    );
+    expect(first.duplicate).toBe(false);
+    const replay = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      acceptLegalDocument(tx, scoped, {
+        legalDocumentId: synthetic.id,
+        version: synthetic.version,
+        contentHashSha256: synthetic.contentHashSha256
+      })
+    );
+    expect(replay).toMatchObject({ duplicate: true, acceptance: { id: first.acceptance.id } });
+
+    const tenantAAcceptances = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      listActorLegalAcceptances(tx, scoped)
+    );
+    const tenantBAcceptances = await withTenantTransaction(database, context(tenantB), (tx, scoped) =>
+      listActorLegalAcceptances(tx, scoped)
+    );
+    expect(tenantAAcceptances.some((acceptance) => acceptance.id === first.acceptance.id)).toBe(true);
+    expect(tenantBAcceptances).toEqual([]);
+
+    await expect(withTenantTransaction(database, context(tenantA), (tx) =>
+      tx.insert(organizationLegalAcceptances).values({
+        organizationId: tenantA,
+        legalDocumentId: synthetic.id,
+        acceptedBy: "different_actor",
+        acceptedVersion: synthetic.version,
+        acceptedHashSha256: synthetic.contentHashSha256
+      })
+    )).rejects.toThrow();
+    await expect(withTenantTransaction(database, context(tenantA), (tx) =>
+      tx.update(organizationLegalAcceptances).set({ acceptanceSource: "api" }).where(
+        eq(organizationLegalAcceptances.id, first.acceptance.id)
+      )
+    )).rejects.toThrow();
+    await expect(withTenantTransaction(database, context(tenantA), (tx) =>
+      tx.insert(legalDocuments).values({
+        id: crypto.randomUUID(),
+        slug: `forbidden-legal-${crypto.randomUUID()}`,
+        version: "v1",
+        title: "Forbidden",
+        summary: "Application roles cannot publish legal documents.",
+        contentHashSha256: "d".repeat(64)
+      })
+    )).rejects.toThrow();
   });
 
   it("retains AI extraction source spans and requires a human decision before downstream use", async () => {
