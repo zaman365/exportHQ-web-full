@@ -1,3 +1,5 @@
+import { calculateExactCommercialScenario, money, type CostResponsibility } from "./money/index";
+
 export type ExportOperatingAccess = "public" | "member" | "full";
 export type ExportLifecycleStageId =
   | "opportunity"
@@ -56,6 +58,12 @@ export interface CommercialScenarioInput {
   estimatedDutyPercent: number;
   destinationTaxPercent: number;
   targetMarginPercent: number;
+  brokerageUsd?: number;
+  lastMileUsd?: number;
+  importerOfRecordUsd?: number;
+  dutyResponsibility?: CostResponsibility;
+  destinationTaxResponsibility?: CostResponsibility;
+  destinationTaxRecoverable?: boolean;
 }
 
 export interface CommercialScenarioResult {
@@ -167,54 +175,63 @@ export interface TrustPassport {
   shareId?: string;
 }
 
-const money = (value: number) => Math.round((Number.isFinite(value) ? value : 0) * 100) / 100;
 const nonNegative = (value: number) => Number.isFinite(value) && value > 0 ? value : 0;
-const rate = (value: number) => Math.min(100, Math.max(0, Number.isFinite(value) ? value : 0)) / 100;
 
 export function calculateCommercialScenario(input: CommercialScenarioInput): CommercialScenarioResult {
-  const warnings: string[] = [];
-  const units = nonNegative(input.units);
-  const quoteUnit = nonNegative(input.quoteUnitUsd);
-  if (!units) warnings.push("Add a positive sellable quantity.");
-  if (!quoteUnit) warnings.push("Add a positive quoted unit price.");
-
-  const goods = units * nonNegative(input.unitExFactoryUsd);
-  const packaging = units * nonNegative(input.unitPackagingUsd);
-  const base = goods + packaging + nonNegative(input.inlandUsd) + nonNegative(input.documentationUsd) + nonNegative(input.testingUsd);
-  const freight = input.incoterm === "FOB" ? 0 : nonNegative(input.freightUsd);
-  const insurance = input.incoterm === "FOB" ? 0 : (base + freight) * rate(input.insurancePercent);
-  const sellValue = units * quoteUnit;
-  const commission = sellValue * rate(input.commissionPercent);
-  const finance = sellValue * rate(input.financePercent);
-  const fxBuffer = (base + freight + insurance) * rate(input.fxBufferPercent);
-  const sellerCost = base + freight + insurance + commission + finance + fxBuffer;
-  const grossMargin = sellValue - sellerCost;
-  const grossMarginPercent = sellValue > 0 ? grossMargin / sellValue * 100 : 0;
-  const customsValue = input.incoterm === "FOB" ? sellValue + nonNegative(input.freightUsd) + (base + nonNegative(input.freightUsd)) * rate(input.insurancePercent) : sellValue;
-  const estimatedDuty = customsValue * rate(input.estimatedDutyPercent);
-  const destinationTax = (customsValue + estimatedDuty) * rate(input.destinationTaxPercent);
-  const landed = customsValue + estimatedDuty + destinationTax;
-  const breakEvenUnit = units > 0 ? sellerCost / units : 0;
-
-  if (grossMarginPercent < 0) warnings.push("The current quote is below the estimated seller cost.");
-  else if (grossMarginPercent < Math.max(0, input.targetMarginPercent)) warnings.push("The current margin is below the lane target.");
-  if (input.incoterm !== "FOB" && nonNegative(input.freightUsd) === 0) warnings.push("Add a freight assumption for this Incoterm.");
-  if (input.estimatedDutyPercent === 0) warnings.push("Confirm preferential duty and origin eligibility before relying on a zero-duty assumption.");
-  warnings.push("Destination duty and tax are estimates; confirm the HS code, valuation, preference, importer and current tariff.");
+  const units = BigInt(Math.round(nonNegative(input.units)));
+  const exact = calculateExactCommercialScenario({
+    incoterm: input.incoterm,
+    units,
+    unitExFactory: usd(input.unitExFactoryUsd),
+    unitPackaging: usd(input.unitPackagingUsd),
+    quoteUnit: usd(input.quoteUnitUsd),
+    inland: usd(input.inlandUsd),
+    documentation: usd(input.documentationUsd),
+    testing: usd(input.testingUsd),
+    freight: usd(input.freightUsd),
+    insuranceBps: percentToBps(input.insurancePercent),
+    commissionBps: percentToBps(input.commissionPercent),
+    financeBps: percentToBps(input.financePercent),
+    fxBufferBps: percentToBps(input.fxBufferPercent),
+    dutyBps: percentToBps(input.estimatedDutyPercent),
+    dutyResponsibility: input.dutyResponsibility ?? (input.incoterm === "DDP" ? "seller" : "buyer"),
+    destinationTaxBps: percentToBps(input.destinationTaxPercent),
+    destinationTaxResponsibility: input.destinationTaxResponsibility ?? "buyer",
+    destinationTaxRecoverable: input.destinationTaxRecoverable ?? true,
+    brokerage: usd(input.brokerageUsd ?? 0),
+    brokerageResponsibility: input.incoterm === "DDP" ? "seller" : "buyer",
+    lastMile: usd(input.lastMileUsd ?? 0),
+    lastMileResponsibility: input.incoterm === "DDP" ? "seller" : "buyer",
+    importerOfRecord: usd(input.importerOfRecordUsd ?? 0),
+    importerOfRecordResponsibility: input.incoterm === "DDP" ? "seller" : "buyer",
+    targetMarginBps: percentToBps(input.targetMarginPercent)
+  });
 
   return {
-    sellValueUsd: money(sellValue),
-    costBaseUsd: money(base),
-    sellerCostUsd: money(sellerCost),
-    grossMarginUsd: money(grossMargin),
-    grossMarginPercent: money(grossMarginPercent),
-    customsValueUsd: money(customsValue),
-    estimatedDutyUsd: money(estimatedDuty),
-    estimatedDestinationTaxUsd: money(destinationTax),
-    estimatedLandedValueUsd: money(landed),
-    breakEvenUnitUsd: money(breakEvenUnit),
-    warnings
+    sellValueUsd: toUsd(exact.sellValue.minor),
+    costBaseUsd: toUsd(exact.costBase.minor),
+    sellerCostUsd: toUsd(exact.sellerCost.minor),
+    grossMarginUsd: toUsd(exact.grossMargin.minor),
+    grossMarginPercent: exact.grossMarginBps / 100,
+    customsValueUsd: toUsd(exact.customsValue.minor),
+    estimatedDutyUsd: toUsd(exact.estimatedDuty.minor),
+    estimatedDestinationTaxUsd: toUsd(exact.estimatedDestinationTax.minor),
+    estimatedLandedValueUsd: toUsd(exact.estimatedLandedValue.minor),
+    breakEvenUnitUsd: toUsd(exact.breakEvenUnit.minor),
+    warnings: exact.warnings
   };
+}
+
+function usd(value: number) {
+  return money(BigInt(Math.round(nonNegative(value) * 100)), "USD");
+}
+
+function toUsd(minor: bigint): number {
+  return Number(minor) / 100;
+}
+
+function percentToBps(value: number): number {
+  return Math.round(Math.max(0, Number.isFinite(value) ? value : 0) * 100);
 }
 
 export function exportLaneProgress(lane: ExportLane): { completed: number; total: number; percent: number } {

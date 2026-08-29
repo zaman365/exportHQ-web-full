@@ -255,6 +255,9 @@ importers:
       '@exporthq/authorization':
         specifier: workspace:*
         version: link:../authorization
+      '@exporthq/domain':
+        specifier: workspace:*
+        version: link:../domain
       '@exporthq/platform':
         specifier: workspace:*
         version: link:../platform

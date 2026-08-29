@@ -1,11 +1,13 @@
 import { beforeAll, describe, expect, it } from "vitest";
-import { sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { createDatabase, type ExportHqDatabase } from "./index";
 import { readTenantContext, withPlatformTransaction, withTenantTransaction } from "./tenant";
 import { recordAuditEvent } from "./audit";
 import { grantOrganizationEntitlement, readOrganizationTier } from "./entitlements";
 import { saveCompanyProfile, readCompanyProfile } from "./repositories/company-profile";
 import { PostgresIdempotencyStore, PostgresRateLimitStore } from "./stores";
+import { createExportLane, listExportLanes, transitionStoredExportLane } from "./repositories/export-lanes";
+import { auditEvents, exportLaneStageEvents, organizationMemberships, products } from "./schema";
 
 /**
  * Cross-tenant isolation, proved against a real PostgreSQL with the migrations
@@ -67,6 +69,76 @@ describeWithDatabase("tenant isolation", () => {
       readCompanyProfile(tx, scoped)
     );
     expect(seenByA?.industry).toBe("Textiles");
+  });
+
+  it("keeps Export Lanes tenant-scoped and records controlled transitions", async () => {
+    const suffix = Date.now().toString();
+    const lane = await withTenantTransaction(database, context(tenantA), async (tx, scoped) => {
+      const [membership] = await tx.insert(organizationMemberships).values({
+        organizationId: tenantA,
+        clerkUserId: `user_lane_${suffix}`,
+        role: "org:member"
+      }).returning({ id: organizationMemberships.id });
+      const [product] = await tx.insert(products).values({
+        organizationId: tenantA,
+        sku: `LANE-${suffix}`,
+        name: "Synthetic lane product",
+        category: "Synthetic",
+        countryOfOrigin: "BD",
+        currency: "USD"
+      }).returning({ id: products.id });
+      if (!membership || !product) throw new Error("Synthetic lane prerequisites were not created.");
+      return createExportLane(tx, scoped, {
+        productId: product.id,
+        originCountryCode: "BD",
+        destinationCountryCode: "DE",
+        salesChannel: "wholesale",
+        buyerSegment: "synthetic importer",
+        route: "Chattogram-Hamburg",
+        incoterm: "FOB",
+        targetMarginBps: 1800,
+        currency: "USD",
+        ownerMembershipId: membership.id
+      });
+    });
+
+    const active = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      transitionStoredExportLane(tx, scoped, {
+        exportLaneId: lane.id,
+        expectedVersion: lane.version,
+        status: "active",
+        rationale: "Synthetic integration path"
+      })
+    );
+    expect(active.version).toBe(2);
+    expect(active.status).toBe("active");
+
+    const transitionEvidence = await withTenantTransaction(database, context(tenantA), async (tx) => {
+      const stageHistory = await tx.select().from(exportLaneStageEvents).where(and(
+        eq(exportLaneStageEvents.organizationId, tenantA),
+        eq(exportLaneStageEvents.exportLaneId, lane.id)
+      ));
+      const audit = await tx.select().from(auditEvents).where(and(
+        eq(auditEvents.organizationId, tenantA),
+        eq(auditEvents.entityId, lane.id)
+      ));
+      return { stageHistory, audit };
+    });
+    expect(transitionEvidence.stageHistory).toHaveLength(1);
+    expect(transitionEvidence.stageHistory[0]?.aggregateVersion).toBe(2);
+    expect(transitionEvidence.audit.map((event) => event.action)).toEqual(expect.arrayContaining([
+      "export_lane.created",
+      "export_lane.transitioned"
+    ]));
+
+    const visibleToA = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      listExportLanes(tx, scoped, { limit: 100 })
+    );
+    const visibleToB = await withTenantTransaction(database, context(tenantB), (tx, scoped) =>
+      listExportLanes(tx, scoped, { limit: 100 })
+    );
+    expect(visibleToA.items.some((item) => item.id === lane.id)).toBe(true);
+    expect(visibleToB.items.some((item) => item.id === lane.id)).toBe(false);
   });
 
   it("refuses a write aimed at another tenant even with a valid context", async () => {

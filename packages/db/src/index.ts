@@ -90,3 +90,16 @@ export {
 } from "./repositories/company-profile";
 
 export { readStaffAccess } from "./repositories/staff-access";
+
+export {
+  addExportLaneParticipant,
+  createExportLane,
+  ExportLaneNotFoundError,
+  listExportLanes,
+  readExportLane,
+  recordExportLaneDecision,
+  transitionStoredExportLane,
+  type CreateExportLaneInput,
+  type ExportLanePage,
+  type ExportLaneRecord
+} from "./repositories/export-lanes";

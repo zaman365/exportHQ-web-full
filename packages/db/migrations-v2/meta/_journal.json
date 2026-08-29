@@ -15,6 +15,13 @@
       "when": 1788003129258,
       "tag": "0001_security_envelope",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788025500000,
+      "tag": "0002_r1_export_lane",
+      "breakpoints": true
     }
   ]
 }
