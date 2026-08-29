@@ -18,6 +18,7 @@ import {
   legalHolds
 } from "../schema";
 import type { ExportHqTransaction, TenantContext } from "../tenant";
+import { recordPilotMilestoneEvent } from "./pilot";
 
 export interface EvidenceUploadIntentRecord {
   readonly id: string;
@@ -94,6 +95,14 @@ export async function createEvidenceUploadIntent(
     entityType: "document_version",
     entityId: documentVersionId,
     metadata: { category: input.category, mimeType: upload.mimeType, byteSize: upload.byteSize }
+  });
+  await recordPilotMilestoneEvent(tx, context, {
+    eventName: "upload_requested",
+    quantity: upload.byteSize,
+    success: true,
+    fieldType: upload.mimeType,
+    dedupeKey: `upload-requested:${intentId}`,
+    occurredAt: now
   });
   return {
     id: intentId,
@@ -263,6 +272,13 @@ export async function recordEvidenceScanResult(
     dedupeKey: `document-scan:${input.documentVersionId}:attempt:${input.attempt}:${input.state}`,
     payload: { documentVersionId: input.documentVersionId, state: input.state, attempt: input.attempt }
   });
+  if (input.state !== "scanning") await recordPilotMilestoneEvent(tx, context, {
+    eventName: input.state === "clean" ? "scan_completed" : "scan_failed",
+    quantity: input.attempt,
+    success: input.state === "clean",
+    outcomeCode: input.safeReasonCode ?? input.state,
+    dedupeKey: `scan-result:${input.documentVersionId}:attempt:${input.attempt}:${input.state}`
+  });
 }
 
 export async function linkCleanEvidence(
@@ -360,6 +376,12 @@ export async function recordEvidenceReviewDecision(
     aggregateId: input.documentVersionId,
     dedupeKey: `document-review:${input.documentVersionId}:${input.decision}`,
     payload: { documentVersionId: input.documentVersionId, decision: input.decision }
+  });
+  await recordPilotMilestoneEvent(tx, context, {
+    eventName: input.decision === "approved" ? "review_completed" : "review_failed",
+    success: input.decision === "approved",
+    outcomeCode: rationaleCode,
+    dedupeKey: `review-result:${input.documentVersionId}:${input.decision}`
   });
 }
 

@@ -6,3 +6,4 @@ Current local checkpoints:
 
 - `r0-local-2026-08-29/` — R0 engineering baseline.
 - `r1-local-2026-08-29/` — R1 tenant persistence, regulatory and AI-provenance database proof.
+- `r2-local-2026-08-29/` — R2 Private Alpha local engineering checkpoint.

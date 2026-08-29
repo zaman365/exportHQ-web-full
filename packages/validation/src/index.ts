@@ -26,6 +26,7 @@ export const organizationProfileSchema = z.object({
     website: z.url().optional().or(z.literal("")),
     country: z.enum(["Bangladesh", "Germany", "India", "Netherlands", "United Kingdom"]),
     timezone: z.enum(["Asia/Dhaka", "Europe/Berlin", "Europe/London", "Asia/Kolkata"]),
+    language: z.enum(["bn", "en"]),
     defaultCurrency: z.enum(["USD", "EUR", "GBP", "BDT"]),
     supportEmail: z.email()
   }),

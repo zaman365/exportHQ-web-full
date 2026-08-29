@@ -18,9 +18,12 @@ import {
   type WorkspaceFeature
 } from "@exporthq/authorization";
 import type { CustomerSession } from "@exporthq/auth";
+import { resolveLocale, translate } from "@exporthq/domain";
+import { cookies } from "next/headers";
 import { workspaceProjectionKind } from "../_lib/activation";
 import { WorkspaceAccountControl } from "./account-controls";
 import { ProjectionNotice } from "./demo-banner";
+import { setWorkspacePresentationPreference } from "../preferences/actions";
 import { MobileNavigation } from "./workspace-mobile-navigation";
 import { describeWorkspaceEntitlement, type WorkspaceAccessIndicator } from "./workspace-entitlements";
 import {
@@ -148,7 +151,7 @@ function WorkspaceEntitlementNotice({ active, session }: { active: WorkspaceDest
   </section>;
 }
 
-function WorkspaceTopbar({ active, session }: { active: WorkspaceDestination; session: CustomerSession }) {
+function WorkspaceTopbar({ active, session, locale, lowDataMode }: { active: WorkspaceDestination; session: CustomerSession; locale: "bn" | "en"; lowDataMode: boolean }) {
   const publicPreview = !session.userId;
   const tierName = session.isPlatformAdmin ? "Platform admin" : subscriptionCatalog[session.tier].name;
   return (
@@ -157,6 +160,10 @@ function WorkspaceTopbar({ active, session }: { active: WorkspaceDestination; se
       <a className="mobile-home" href={workspaceWebsiteUrl} target="_blank" rel="noreferrer" aria-label="Open the Export HQ homepage in a new tab"><House size={18} /></a>
       <Link href={workspaceHref("/learn", publicPreview)} className="search"><Search size={17} /><span>Search ExportPanel help…</span><kbd>⌘ K</kbd></Link>
       <div className="topbar__actions">
+        {!publicPreview && <div className="workspace-presentation-controls">
+          <form action={setWorkspacePresentationPreference} aria-label={translate(locale, "language.switch")}><button type="submit" name="locale" value={locale === "bn" ? "en" : "bn"}>{locale === "bn" ? "EN" : "বাংলা"}</button></form>
+          <form action={setWorkspacePresentationPreference}><button type="submit" name="lowDataMode" value={lowDataMode ? "false" : "true"} aria-pressed={lowDataMode}>{lowDataMode ? translate(locale, "data.standard_mode") : translate(locale, "data.low_mode")}</button></form>
+        </div>}
         <Link href={workspaceHref("/learn", publicPreview)} aria-label="Help"><CircleHelp size={19} /></Link>
         {publicPreview ? <div className="topbar__guest"><span><LockKeyhole size={13} /> Public sample</span><Link href="/sign-in">Sign in</Link><Link href="/sign-up">Create account</Link></div> : <><Link href="/inbox" aria-label="Inbox notifications" className="notification"><Bell size={19} /><span /></Link><WorkspaceAccountControl enabled={!session.isDemo} userName={session.userName ?? "ExportPanel member"} organizationName={session.organizationName ?? "Your business"} tierName={tierName} /></>}
       </div>
@@ -164,7 +171,7 @@ function WorkspaceTopbar({ active, session }: { active: WorkspaceDestination; se
   );
 }
 
-export function WorkspaceShell({
+export async function WorkspaceShell({
   active,
   children,
   contentId,
@@ -175,11 +182,16 @@ export function WorkspaceShell({
   contentId?: string;
   session: CustomerSession;
 }) {
+  const store = await cookies();
+  const locale = resolveLocale(store.get("exporthq_locale")?.value ?? session.locale, session.defaultTimezone === "Asia/Dhaka" ? "BD" : null);
+  const lowDataMode = store.get("exporthq_low_data")?.value == null
+    ? Boolean(session.lowDataMode)
+    : store.get("exporthq_low_data")?.value === "true";
   return (
     <div className="app-shell">
       <WorkspaceSidebar active={active} session={session} />
       <main>
-        <WorkspaceTopbar active={active} session={session} />
+        <WorkspaceTopbar active={active} session={session} locale={locale} lowDataMode={lowDataMode} />
         <div className="content" id={contentId}><WorkspaceEntitlementNotice active={active} session={session} />{children}</div>
         <footer className="legal-footer"><span>Export HQ · {session.userId ? "Private workspace" : "Public sample · no customer data"}</span><span><ShieldCheck size={14} /> <a href={`${workspaceWebsiteUrl}/legal/privacy`} target="_blank" rel="noreferrer">Privacy</a> · <a href={`${workspaceWebsiteUrl}/legal/security`} target="_blank" rel="noreferrer">Security</a> · {session.userId && <Link href="/legal-acceptances">Acceptances</Link>}</span></footer>
       </main>

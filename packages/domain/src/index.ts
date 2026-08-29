@@ -4,6 +4,8 @@ export * from "./export-readiness";
 export * from "./export-operating-system";
 export * from "./email-integration";
 export * from "./legal-documents";
+export * from "./i18n";
+export * from "./pilot";
 export * from "./money/index";
 export * from "./workflows/export-lane";
 export type TaskStatus =

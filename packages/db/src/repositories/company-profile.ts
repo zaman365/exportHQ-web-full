@@ -3,6 +3,7 @@ import { recordAuditEvent } from "../audit";
 import { enqueueOutboxEvent } from "../outbox";
 import { companyProfiles } from "../schema";
 import type { ExportHqTransaction, TenantContext } from "../tenant";
+import { recordPilotMilestoneEvent } from "./pilot";
 
 /**
  * Company profile and onboarding state.
@@ -26,6 +27,8 @@ export interface CompanyProfileRecord {
   readonly supportEmail: string | null;
   readonly defaultCurrency: string;
   readonly defaultTimezone: string;
+  readonly defaultLocale: "en" | "bn";
+  readonly lowDataMode: boolean;
   readonly exportStage: string | null;
   readonly primarySalesChannel: string | null;
   readonly marketStrategy: Record<string, unknown>;
@@ -50,6 +53,8 @@ export async function readCompanyProfile(
       supportEmail: companyProfiles.supportEmail,
       defaultCurrency: companyProfiles.defaultCurrency,
       defaultTimezone: companyProfiles.defaultTimezone,
+      defaultLocale: companyProfiles.defaultLocale,
+      lowDataMode: companyProfiles.lowDataMode,
       exportStage: companyProfiles.exportStage,
       primarySalesChannel: companyProfiles.primarySalesChannel,
       marketStrategy: companyProfiles.marketStrategy,
@@ -58,7 +63,8 @@ export async function readCompanyProfile(
     .from(companyProfiles)
     .where(eq(companyProfiles.organizationId, context.organizationId))
     .limit(1);
-  return row ?? null;
+  if (!row) return null;
+  return { ...row, defaultLocale: row.defaultLocale === "en" ? "en" : "bn" };
 }
 
 export interface CompanyProfileInput {
@@ -70,6 +76,8 @@ export interface CompanyProfileInput {
   readonly supportEmail?: string | null;
   readonly defaultCurrency?: string;
   readonly defaultTimezone?: string;
+  readonly defaultLocale?: "en" | "bn";
+  readonly lowDataMode?: boolean;
   readonly exportStage?: string | null;
   readonly primarySalesChannel?: string | null;
   readonly marketStrategy?: Record<string, unknown>;
@@ -87,6 +95,8 @@ export async function saveCompanyProfile(
   input: CompanyProfileInput
 ): Promise<void> {
   const now = new Date();
+  const [previous] = await tx.select({ id: companyProfiles.id }).from(companyProfiles)
+    .where(eq(companyProfiles.organizationId, context.organizationId)).limit(1);
   const values = {
     organizationId: context.organizationId,
     legalName: normalizedOptionalText(input.legalName),
@@ -97,16 +107,24 @@ export async function saveCompanyProfile(
     supportEmail: input.supportEmail ?? null,
     defaultCurrency: input.defaultCurrency ?? "USD",
     defaultTimezone: input.defaultTimezone ?? "Asia/Dhaka",
+    defaultLocale: input.defaultLocale ?? (input.originCountryCode === "BD" ? "bn" : "en"),
+    lowDataMode: input.lowDataMode ?? false,
     exportStage: input.exportStage ?? null,
     primarySalesChannel: input.primarySalesChannel ?? null,
     marketStrategy: input.marketStrategy ?? {},
     updatedAt: now
   };
+  const updateValues: Partial<typeof values> = { ...values };
+  if (input.defaultLocale === undefined) delete updateValues.defaultLocale;
+  if (input.lowDataMode === undefined) delete updateValues.lowDataMode;
 
   await tx
     .insert(companyProfiles)
     .values(values)
-    .onConflictDoUpdate({ target: companyProfiles.organizationId, set: values });
+    .onConflictDoUpdate({
+      target: companyProfiles.organizationId,
+      set: updateValues
+    });
 
   await recordAuditEvent(tx, context, {
     action: "company_profile.updated",
@@ -120,6 +138,44 @@ export async function saveCompanyProfile(
     aggregateId: context.organizationId,
     dedupeKey: `company-profile:${context.organizationId}:${now.toISOString()}`,
     payload: { fields: Object.keys(input).sort() }
+  });
+  await recordPilotMilestoneEvent(tx, context, {
+    eventName: "passport_started",
+    quantity: Object.keys(input).length,
+    success: true,
+    outcomeCode: previous ? "updated" : "created",
+    dedupeKey: `passport-started:${context.organizationId}`,
+    occurredAt: now
+  });
+}
+
+export async function updateCompanyPreferences(
+  tx: ExportHqTransaction,
+  context: TenantContext,
+  input: { readonly defaultLocale?: "en" | "bn"; readonly lowDataMode?: boolean }
+): Promise<void> {
+  if (input.defaultLocale === undefined && input.lowDataMode === undefined) {
+    throw new Error("At least one company preference is required.");
+  }
+  const now = new Date();
+  const [updated] = await tx.update(companyProfiles).set({
+    ...(input.defaultLocale === undefined ? {} : { defaultLocale: input.defaultLocale }),
+    ...(input.lowDataMode === undefined ? {} : { lowDataMode: input.lowDataMode }),
+    updatedAt: now
+  }).where(eq(companyProfiles.organizationId, context.organizationId)).returning({ id: companyProfiles.organizationId });
+  if (!updated) throw new Error("Complete the company profile before changing workspace preferences.");
+  await recordAuditEvent(tx, context, {
+    action: "company_profile.updated",
+    entityType: "company_profile",
+    entityId: context.organizationId,
+    metadata: { fields: Object.keys(input).filter((key) => input[key as keyof typeof input] !== undefined).sort() }
+  });
+  await enqueueOutboxEvent(tx, context, {
+    topic: "company_profile.preferences_updated",
+    aggregateType: "company_profile",
+    aggregateId: context.organizationId,
+    dedupeKey: `company-profile-preferences:${context.organizationId}:${now.toISOString()}`,
+    payload: { fields: Object.keys(input).filter((key) => input[key as keyof typeof input] !== undefined).sort() }
   });
 }
 
@@ -180,6 +236,13 @@ export async function completeOnboarding(
     aggregateId: context.organizationId,
     dedupeKey: `onboarding-mirror:${context.organizationId}:${onboardingVersion}`,
     payload: { onboardingVersion }
+  });
+  await recordPilotMilestoneEvent(tx, context, {
+    eventName: "passport_completed",
+    success: true,
+    measureFromParticipationStart: true,
+    dedupeKey: `passport-completed:${context.organizationId}:v${onboardingVersion}`,
+    occurredAt: now
   });
   return { changed: true, mirrorEventId };
 }

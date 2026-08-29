@@ -23,6 +23,7 @@ import {
   tasks
 } from "../schema";
 import type { ExportHqTransaction, TenantContext } from "../tenant";
+import { recordPilotMilestoneEvent } from "./pilot";
 
 export interface ReadinessEvidenceRecord {
   readonly id: string;
@@ -202,8 +203,14 @@ export async function saveReadinessAssessment(
   const [lane] = await tx.select({
     id: exportLanes.id,
     destinationCountryCode: exportLanes.destinationCountryCode,
-    salesChannel: exportLanes.salesChannel
-  }).from(exportLanes).where(and(
+    salesChannel: exportLanes.salesChannel,
+    productName: products.name,
+    productCategory: products.category,
+    hsCode: products.hsCode
+  }).from(exportLanes).innerJoin(products, and(
+    eq(products.organizationId, context.organizationId),
+    eq(products.id, exportLanes.productId)
+  )).where(and(
     eq(exportLanes.organizationId, context.organizationId),
     eq(exportLanes.id, input.exportLaneId),
     ne(exportLanes.status, "archived")
@@ -327,6 +334,40 @@ export async function saveReadinessAssessment(
     aggregateId: assessmentId,
     dedupeKey: `readiness:${assessmentId}:v${nextVersion}`,
     payload: { exportLaneId: input.exportLaneId, version: nextVersion, score }
+  });
+  await recordPilotMilestoneEvent(tx, context, {
+    eventName: "action_plan_ready",
+    exportLaneId: input.exportLaneId,
+    quantity: Object.keys(input.responses).length,
+    success: true,
+    measureFromParticipationStart: true,
+    dedupeKey: `action-plan-ready:${assessmentId}`,
+    occurredAt: now
+  });
+  const canonicalFields = [
+    [lane.productName, input.profile.productName],
+    [lane.productCategory, input.profile.productCategory],
+    [lane.hsCode ?? "", input.profile.hsCode]
+  ] as const;
+  const reusedCount = canonicalFields.filter(([canonical, entered]) => canonical.trim() && canonical.trim() === entered.trim()).length;
+  const reenteredCount = canonicalFields.filter(([canonical, entered]) => canonical.trim() && canonical.trim() !== entered.trim()).length;
+  if (reusedCount) await recordPilotMilestoneEvent(tx, context, {
+    eventName: "canonical_field_reused",
+    exportLaneId: input.exportLaneId,
+    quantity: reusedCount,
+    success: true,
+    fieldType: "readiness_profile",
+    dedupeKey: `canonical-reused:${assessmentId}:v${nextVersion}`,
+    occurredAt: now
+  });
+  if (reenteredCount) await recordPilotMilestoneEvent(tx, context, {
+    eventName: "canonical_field_reentered",
+    exportLaneId: input.exportLaneId,
+    quantity: reenteredCount,
+    success: false,
+    fieldType: "readiness_profile",
+    dedupeKey: `canonical-reentered:${assessmentId}:v${nextVersion}`,
+    occurredAt: now
   });
   const saved = await readReadinessAssessment(tx, context, assessmentId);
   if (!saved) throw new Error("Saved readiness assessment could not be read back.");

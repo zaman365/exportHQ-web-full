@@ -2,6 +2,7 @@ const approvedEvidenceTypes = ["application/pdf", "image/jpeg", "image/png"] as 
 export type ApprovedEvidenceType = typeof approvedEvidenceTypes[number];
 export type EvidenceCapabilityAction = "upload_quarantine" | "download_clean";
 export const maximumEvidenceBytes = 25 * 1024 * 1024;
+export const minimumEvidenceMultipartPartBytes = 5 * 1024 * 1024;
 
 export interface EvidenceCapabilityClaims {
   readonly version: 1;
@@ -41,6 +42,44 @@ export interface PrivateEvidenceBucket {
   delete(key: string): Promise<void>;
 }
 
+export interface EvidenceUploadedPart {
+  readonly partNumber: number;
+  readonly etag: string;
+}
+
+export interface PrivateEvidenceMultipartUpload {
+  readonly key: string;
+  readonly uploadId: string;
+  uploadPart(partNumber: number, value: ArrayBuffer): Promise<EvidenceUploadedPart>;
+  abort(): Promise<void>;
+  complete(parts: readonly EvidenceUploadedPart[]): Promise<EvidenceObjectMetadata>;
+}
+
+export interface MultipartPrivateEvidenceBucket extends PrivateEvidenceBucket {
+  createMultipartUpload(
+    key: string,
+    options: {
+      readonly httpMetadata: { readonly contentType: string; readonly contentDisposition: string };
+      readonly customMetadata: Readonly<Record<string, string>>;
+    }
+  ): Promise<PrivateEvidenceMultipartUpload>;
+  resumeMultipartUpload(key: string, uploadId: string): PrivateEvidenceMultipartUpload;
+}
+
+export interface EvidenceUploadPlan {
+  readonly strategy: "single" | "multipart";
+  readonly byteSize: number;
+  readonly partSize: number;
+  readonly partCount: number;
+  readonly clientPreparation: "none" | "reencode-image-if-smaller";
+}
+
+export interface ResumableEvidenceUploadSession extends EvidenceUploadPlan {
+  readonly strategy: "multipart";
+  readonly objectKey: string;
+  readonly uploadId: string;
+}
+
 export interface EvidenceVaultBuckets {
   readonly quarantine: PrivateEvidenceBucket;
   readonly clean: PrivateEvidenceBucket;
@@ -64,6 +103,35 @@ export function validateEvidenceUpload(input: {
     throw new Error("Evidence must be between 1 byte and 25 MB.");
   }
   if (!/^[a-f0-9]{64}$/i.test(input.sha256)) throw new Error("A valid SHA-256 checksum is required.");
+}
+
+export function planEvidenceUpload(input: {
+  readonly mimeType: string;
+  readonly byteSize: number;
+  readonly sha256: string;
+  readonly lowDataMode?: boolean;
+}): EvidenceUploadPlan {
+  const lowDataMode = input.lowDataMode === true;
+  validateEvidenceUpload(input);
+  const multipart = input.byteSize > minimumEvidenceMultipartPartBytes;
+  return {
+    strategy: multipart ? "multipart" : "single",
+    byteSize: input.byteSize,
+    partSize: multipart ? minimumEvidenceMultipartPartBytes : input.byteSize,
+    partCount: multipart ? Math.ceil(input.byteSize / minimumEvidenceMultipartPartBytes) : 1,
+    clientPreparation: lowDataMode && input.mimeType.startsWith("image/")
+      ? "reencode-image-if-smaller"
+      : "none"
+  };
+}
+
+export function expectedEvidencePartBytes(plan: EvidenceUploadPlan, partNumber: number): number {
+  if (!Number.isInteger(partNumber) || partNumber < 1 || partNumber > plan.partCount) {
+    throw new Error("Evidence upload part number is outside the upload plan.");
+  }
+  return partNumber === plan.partCount
+    ? plan.byteSize - plan.partSize * (plan.partCount - 1)
+    : plan.partSize;
 }
 
 export function assertEvidenceMagicBytes(mimeType: ApprovedEvidenceType, value: ArrayBuffer): void {
@@ -170,6 +238,85 @@ export class EvidenceVault {
     return { object, sha256: calculated };
   }
 
+  async beginResumableQuarantine(input: {
+    readonly organizationId: string;
+    readonly documentVersionId: string;
+    readonly objectKey: string;
+    readonly mimeType: string;
+    readonly byteSize: number;
+    readonly sha256: string;
+    readonly lowDataMode?: boolean;
+  }): Promise<ResumableEvidenceUploadSession> {
+    assertTenantEvidenceObjectKey(input.objectKey, input.organizationId);
+    const plan = planEvidenceUpload(input);
+    if (plan.strategy !== "multipart") throw new Error("This evidence file does not require a multipart upload.");
+    if (await this.buckets.quarantine.head(input.objectKey)) {
+      throw new Error("Evidence already exists at this quarantine key; request a new version before retrying.");
+    }
+    const bucket = multipartBucket(this.buckets.quarantine);
+    const upload = await bucket.createMultipartUpload(input.objectKey, {
+      httpMetadata: { contentType: input.mimeType, contentDisposition: "attachment" },
+      customMetadata: {
+        organizationId: input.organizationId,
+        documentVersionId: input.documentVersionId,
+        classification: "customer-confidential",
+        checksumSha256: input.sha256.toLowerCase()
+      }
+    });
+    return { ...plan, strategy: "multipart", objectKey: input.objectKey, uploadId: upload.uploadId };
+  }
+
+  async uploadResumableQuarantinePart(input: {
+    readonly session: ResumableEvidenceUploadSession;
+    readonly partNumber: number;
+    readonly bytes: ArrayBuffer;
+  }): Promise<EvidenceUploadedPart> {
+    const expectedBytes = expectedEvidencePartBytes(input.session, input.partNumber);
+    if (input.bytes.byteLength !== expectedBytes) {
+      throw new Error(`Evidence upload part ${input.partNumber} must contain exactly ${expectedBytes} bytes.`);
+    }
+    const upload = multipartBucket(this.buckets.quarantine)
+      .resumeMultipartUpload(input.session.objectKey, input.session.uploadId);
+    return upload.uploadPart(input.partNumber, input.bytes);
+  }
+
+  async completeResumableQuarantine(input: {
+    readonly organizationId: string;
+    readonly documentVersionId: string;
+    readonly mimeType: string;
+    readonly sha256: string;
+    readonly session: ResumableEvidenceUploadSession;
+    readonly parts: readonly EvidenceUploadedPart[];
+  }): Promise<StagedEvidenceObject> {
+    assertTenantEvidenceObjectKey(input.session.objectKey, input.organizationId);
+    validateCompletedParts(input.session, input.parts);
+    const upload = multipartBucket(this.buckets.quarantine)
+      .resumeMultipartUpload(input.session.objectKey, input.session.uploadId);
+    const completed = await upload.complete(input.parts);
+    if (completed.key !== input.session.objectKey || completed.size !== input.session.byteSize) {
+      await this.buckets.quarantine.delete(input.session.objectKey);
+      throw new Error("Completed quarantine object does not match the resumable upload plan.");
+    }
+    const stored = await this.buckets.quarantine.get(input.session.objectKey);
+    if (!stored) throw new Error("Completed quarantine object could not be read for integrity verification.");
+    const bytes = await stored.arrayBuffer();
+    const uploadInput = { mimeType: input.mimeType, byteSize: bytes.byteLength, sha256: input.sha256 };
+    validateEvidenceUpload(uploadInput);
+    assertEvidenceMagicBytes(uploadInput.mimeType, bytes);
+    const calculated = await sha256Hex(bytes);
+    if (calculated !== input.sha256.toLowerCase()) {
+      await this.buckets.quarantine.delete(input.session.objectKey);
+      throw new Error("Evidence checksum does not match the completed resumable upload.");
+    }
+    return { object: completed, sha256: calculated };
+  }
+
+  async abortResumableQuarantine(session: ResumableEvidenceUploadSession): Promise<void> {
+    const upload = multipartBucket(this.buckets.quarantine)
+      .resumeMultipartUpload(session.objectKey, session.uploadId);
+    await upload.abort();
+  }
+
   async promoteClean(input: {
     readonly organizationId: string;
     readonly objectKey: string;
@@ -212,6 +359,27 @@ export class EvidenceVault {
     if (!rejected) throw new Error("Rejected storage did not confirm the move.");
     await this.buckets.quarantine.delete(input.objectKey);
     return rejected;
+  }
+}
+
+function multipartBucket(bucket: PrivateEvidenceBucket): MultipartPrivateEvidenceBucket {
+  const candidate = bucket as Partial<MultipartPrivateEvidenceBucket>;
+  if (typeof candidate.createMultipartUpload !== "function" || typeof candidate.resumeMultipartUpload !== "function") {
+    throw new Error("The quarantine bucket does not support resumable multipart uploads.");
+  }
+  return bucket as MultipartPrivateEvidenceBucket;
+}
+
+function validateCompletedParts(session: ResumableEvidenceUploadSession, parts: readonly EvidenceUploadedPart[]): void {
+  if (parts.length !== session.partCount) throw new Error("All evidence upload parts are required before completion.");
+  const seen = new Set<number>();
+  for (const part of parts) {
+    if (!Number.isInteger(part.partNumber) || part.partNumber < 1 || part.partNumber > session.partCount) {
+      throw new Error("Evidence upload completion contains an invalid part number.");
+    }
+    if (seen.has(part.partNumber)) throw new Error("Evidence upload completion contains a duplicate part number.");
+    if (!part.etag.trim()) throw new Error("Evidence upload completion requires every provider ETag.");
+    seen.add(part.partNumber);
   }
 }
 

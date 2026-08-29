@@ -28,7 +28,24 @@ remaining production components.
 - A connected Export Studio built around one `ExportLane`: lifecycle progress, commercial economics, deal milestones, buyer cohorts, provider disclosures, finance readiness, SME clusters, shipment-to-proceeds checkpoints, lane-specific policy alerts, and a controlled Trust Passport projection.
 - Tenant-scoped Export Lane and readiness persistence with optimistic versions,
   customer/reviewer status separation, derived owned tasks, audit/outbox,
-  idempotent support requests and explicit pre-governance referral wording.
+  idempotent support requests, safe debounced autosave that preserves
+  expected-version conflicts, and explicit pre-governance referral wording.
+- An invitation-only, internal/synthetic Private Alpha workspace with an exact
+  hash-locked participation agreement, explicit data/support scope, named
+  support ownership, printable action pack and a truthful no-enrollment state.
+- A manually granted First Shipment Pass hypothesis (BDT 7,500/90 days) with
+  one-active-lane enforcement, at most three explicitly assigned editors,
+  editor-specific Launch authorization, audited extensions/reassignment and a
+  recorded 100% annual Launch conversion-credit reference. Public checkout is
+  not active.
+- First-class Bangla/English catalogs and workspace switch, Bangladesh BDT and
+  Asia/Dhaka defaults, a low-data presentation mode, smaller-image preparation
+  and a Cloudflare-compatible resumable evidence contract with fixed multipart
+  sizing, retryable parts and final magic-byte/SHA-256 verification.
+- Privacy-minimized Alpha funnel/outcome events attached to authoritative
+  Passport, lane, readiness, evidence, task, support and extraction transitions,
+  plus an operations-only outcome read model. No real cohort outcomes have been
+  recorded or inferred.
 - PostgreSQL-authoritative tenant profile, primary product, paid-workspace and
   Export Studio read models; versioned task transitions with explicit rationale
   and append-only status history; and production-tenant fixture boundaries that
@@ -44,7 +61,7 @@ remaining production components.
 - A primary Email Inbox beside the retained Actionable Inbox, with export-aware categories, related-record context, private drafts, email-to-follow-up conversion, provider setup guidance, plan/role gates, and tenant-scoped mail persistence contracts.
 - A versioned, transactional market catalog publisher and incremental PostgreSQL migration for country, product, opportunity, evidence, verification, and shortlist records.
 - Internal customer portfolio and scoped operator workspace over the same domain projection.
-- Unit and journey tests; 36 database-package tests, including 22
+- Unit and journey tests; 37 database-package tests, including 23
   real-PostgreSQL integration scenarios covering cross-tenant isolation,
   direct projection-write denial, webhook projection,
   regulatory freshness and publisher-write denial, human-gated AI provenance,
@@ -91,7 +108,7 @@ recorded.
 | Gate 2 — evidence vault          | In progress | Provider-neutral lifecycle and negative-path tests pass; production private R2, isolated scanner, lifecycle rules and inventory reconciliation are not provisioned, so uploads fail closed                              |
 | Gate 3 — production persistence  | In progress | Profile, primary product, paid dashboard, lane/readiness, tenant Studio and task center are PostgreSQL-authoritative; later-phase surfaces remain fail-closed behind preview adapters                                  |
 | Gate 4 — trust and integrations  | Not started | No reviewed provider or mail applications                                                                                                                                                                                |
-| Gate 5 — pilot and launch        | In progress | Builds, Worker smoke, Playwright, rate limits, redaction and sampled telemetry config pass locally; CSP enforcement, external monitoring/review and pilot evidence remain                                                |
+| Gate 5 — pilot and launch        | In progress | R2 internal Alpha contracts, bounded pass, Bangla/low-data UX and minimized metrics pass locally; CSP enforcement, external monitoring/review and evidence from 5–10 actual partners remain                            |
 
 No capability in this table may be described as live before its gate records evidence.
 

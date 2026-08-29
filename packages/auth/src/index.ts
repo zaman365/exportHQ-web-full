@@ -48,6 +48,12 @@ export interface CustomerSession {
   principal: CustomerPrincipal | null;
   isDemo: boolean;
   isPlatformAdmin: boolean;
+  /** PostgreSQL-authoritative organization defaults. A browser may override
+   * locale/low-data presentation for one signed-in person. */
+  locale?: "bn" | "en";
+  defaultCurrency?: string;
+  defaultTimezone?: string;
+  lowDataMode?: boolean;
   configurationMessage?: string;
 }
 
@@ -149,7 +155,11 @@ function demoCustomerSession(): CustomerSession {
     features: featuresForTier("managed"),
     principal,
     isDemo: true,
-    isPlatformAdmin: true
+    isPlatformAdmin: true,
+    locale: "en",
+    defaultCurrency: "USD",
+    defaultTimezone: "Asia/Dhaka",
+    lowDataMode: false
   };
 }
 

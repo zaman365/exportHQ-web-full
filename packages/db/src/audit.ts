@@ -65,6 +65,17 @@ export const auditableActions = [
   "legal_hold.applied",
   "legal_hold.released",
   "legal.accepted",
+  "pilot.invited",
+  "pilot.agreement_accepted",
+  "pilot.activated",
+  "pilot.pass_granted",
+  "pilot.pass_editor_assigned",
+  "pilot.pass_editor_revoked",
+  "pilot.pass_extended",
+  "pilot.pass_converted",
+  "pilot.support_case_created",
+  "pilot.support_work_logged",
+  "pilot.observation_recorded",
   "identity.reconciliation_requested"
 ] as const;
 

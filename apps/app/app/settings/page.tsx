@@ -74,7 +74,8 @@ export default async function SettingsPage() {
       website: profile?.website ?? "",
       country: countryNames[profile?.originCountryCode ?? ""] ?? "Bangladesh",
       timezone: profile?.defaultTimezone ?? "Asia/Dhaka",
-      defaultCurrency: profile?.defaultCurrency ?? "USD",
+      language: profile?.defaultLocale ?? "bn",
+      defaultCurrency: profile?.defaultCurrency ?? "BDT",
       supportEmail: profile?.supportEmail ?? fallbackEmail
     };
     initialPrimaryOffer = {
