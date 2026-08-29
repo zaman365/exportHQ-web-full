@@ -1,20 +1,26 @@
 "use server";
 
-import { getClerkClient } from "@exporthq/auth";
 import { resolveReadinessAccess } from "@exporthq/authorization";
+import {
+  ReadinessVersionConflictError,
+  requestReadinessProviderSupport,
+  saveReadinessAssessment
+} from "@exporthq/db";
+import { resolveActivationState, resolveCapability } from "@exporthq/platform";
 import {
   readinessProgressSchema,
   readinessReferralRequestSchema
 } from "@exporthq/validation";
 import { getWorkspaceSession } from "../_lib/session";
+import { runTenantCommand } from "../_lib/tenant";
 
 export type ReadinessActionResult = {
   ok: boolean;
   message: string;
   savedAt?: string;
+  assessmentId?: string;
+  assessmentVersion?: number;
 };
-
-type ExportPanelMetadata = { exportPanel?: Record<string, unknown> };
 
 export async function saveReadinessProgress(payload: string): Promise<ReadinessActionResult> {
   const session = await getWorkspaceSession();
@@ -37,25 +43,35 @@ export async function saveReadinessProgress(payload: string): Promise<ReadinessA
   if (session.isDemo) {
     return { ok: true, message: "Draft saved in this preview session.", savedAt };
   }
-
-  const client = getClerkClient();
-  const organization = await client.organizations.getOrganization({ organizationId: session.organizationId });
-  const privateMetadata = organization.privateMetadata as ExportPanelMetadata;
-  await client.organizations.updateOrganizationMetadata(session.organizationId, {
-    privateMetadata: {
-      ...privateMetadata,
-      exportPanel: {
-        ...(privateMetadata.exportPanel ?? {}),
-        readinessAssessment: {
-          ...parsed.data,
-          savedAt,
-          savedBy: session.userId
-        }
-      }
+  if (!parsed.data.exportLaneId) {
+    return { ok: false, message: "Create or select an Export Lane before saving readiness." };
+  }
+  try {
+    const persisted = await runTenantCommand(session, (tx, context) => saveReadinessAssessment(tx, context, {
+      ...(parsed.data.assessmentId ? { assessmentId: parsed.data.assessmentId } : {}),
+      ...(parsed.data.assessmentVersion ? { expectedVersion: parsed.data.assessmentVersion } : {}),
+      exportLaneId: parsed.data.exportLaneId as string,
+      currentSection: parsed.data.currentSection,
+      profile: parsed.data.profile,
+      responses: parsed.data.responses,
+      notes: parsed.data.notes
+    }));
+    if (!persisted.ran) {
+      return { ok: false, message: "Readiness storage is not activated. Nothing was saved to your business workspace." };
     }
-  });
-
-  return { ok: true, message: "Assessment saved to your business workspace.", savedAt };
+    return {
+      ok: true,
+      message: "Assessment saved to your protected business workspace.",
+      savedAt: persisted.value.savedAt,
+      assessmentId: persisted.value.assessmentId,
+      assessmentVersion: persisted.value.assessmentVersion
+    };
+  } catch (error) {
+    if (error instanceof ReadinessVersionConflictError) {
+      return { ok: false, message: "This assessment changed in another session. Reload it before saving again." };
+    }
+    return { ok: false, message: error instanceof Error ? error.message : "The readiness assessment could not be saved." };
+  }
 }
 
 export async function requestReadinessProviderMatch(payload: string): Promise<ReadinessActionResult> {
@@ -84,32 +100,29 @@ export async function requestReadinessProviderMatch(payload: string): Promise<Re
 
   const savedAt = new Date().toISOString();
   if (session.isDemo) {
-    return { ok: true, message: "Match request recorded for this preview.", savedAt };
+    return { ok: true, message: "Support request recorded for this preview; no provider match is promised.", savedAt };
   }
-
-  const client = getClerkClient();
-  const organization = await client.organizations.getOrganization({ organizationId: session.organizationId });
-  const privateMetadata = organization.privateMetadata as ExportPanelMetadata;
-  const exportPanel = privateMetadata.exportPanel ?? {};
-  const existing = Array.isArray(exportPanel.readinessReferrals) ? exportPanel.readinessReferrals.slice(-19) : [];
-  await client.organizations.updateOrganizationMetadata(session.organizationId, {
-    privateMetadata: {
-      ...privateMetadata,
-      exportPanel: {
-        ...exportPanel,
-        readinessReferrals: [
-          ...existing,
-          {
-            ...parsed.data,
-            id: `ref_${crypto.randomUUID()}`,
-            status: "requested",
-            requestedAt: savedAt,
-            requestedBy: session.userId
-          }
-        ]
-      }
+  const referral = resolveCapability("provider-referral");
+  const governanceReference = resolveActivationState().recorded.find(
+    (record) => record.gate === "gate-4-trust-and-integrations"
+  )?.evidenceReference;
+  const governed = referral.enabled && referral.mode === "production" && Boolean(governanceReference);
+  try {
+    const persisted = await runTenantCommand(session, (tx, context) => requestReadinessProviderSupport(tx, context, {
+      requestId: parsed.data.requestId,
+      assessmentId: parsed.data.assessmentId,
+      requirementId: parsed.data.requirementId,
+      providerCategory: parsed.data.providerCategory,
+      mode: governed ? "governed_referral" : "support_request",
+      ...(governed ? { governanceEvidenceReference: governanceReference as string } : {})
+    }));
+    if (!persisted.ran) {
+      return { ok: false, message: "Readiness storage is not activated. No support request was recorded." };
     }
-  });
-
-  return { ok: true, message: "Request received. ExportPanel will shortlist qualified matches.", savedAt };
+    return persisted.value.mode === "governed_referral"
+      ? { ok: true, message: "Referral request recorded for the governed operations queue.", savedAt }
+      : { ok: true, message: "Support request recorded. Provider matching is not activated, so no introduction or outcome is promised.", savedAt };
+  } catch (error) {
+    return { ok: false, message: error instanceof Error ? error.message : "The support request could not be recorded." };
+  }
 }

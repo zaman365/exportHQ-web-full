@@ -95,6 +95,9 @@ export const documentIntentSchema = z.object({
 
 export const readinessProgressSchema = z.object({
   version: z.literal(1),
+  assessmentId: z.uuid().optional(),
+  assessmentVersion: z.number().int().positive().optional(),
+  exportLaneId: z.uuid().optional(),
   currentSection: z.enum(["business", "registrations", "facility", "product", "market", "commercial", "delivery", "digital"]),
   profile: z.object({
     businessModel: z.enum(["manufacturer", "trader", "service"]),
@@ -112,13 +115,15 @@ export const readinessProgressSchema = z.object({
     fileName: z.string().trim().min(1).max(240),
     mimeType: z.enum(["application/pdf", "image/jpeg", "image/png"]),
     byteSize: z.number().int().positive().max(25 * 1024 * 1024),
-    status: z.enum(["staged", "under_review", "needs_action", "accepted"]),
+    status: z.enum(["staged", "under_review", "needs_action", "accepted", "rejected"]),
     feedback: z.string().trim().max(1000),
     addedAt: z.string().datetime()
   })).max(100)
 });
 
 export const readinessReferralRequestSchema = z.object({
+  requestId: z.uuid(),
+  assessmentId: z.uuid(),
   requirementId: z.string().min(1).max(100),
   providerCategory: z.enum([
     "corporate-legal", "tax-vat", "trade-registration", "factory-licensing", "environmental", "fire-safety",

@@ -40,6 +40,9 @@ import { exportPanelPath } from "../_lib/export-panel-paths";
 import { requestReadinessProviderMatch, saveReadinessProgress } from "./actions";
 
 type EvidenceItem = ReadinessProgressInput["evidence"][number];
+type ReadinessInitialProgress = Omit<ReadinessProgressInput, "evidence"> & {
+  readonly evidence: readonly EvidenceItem[];
+};
 type ProviderCatalog = Partial<Record<ReadinessProviderCategory, { label: string; description: string }>>;
 
 const sections: ReadonlyArray<{ id: ReadinessSectionId; label: string; description: string }> = [
@@ -62,13 +65,13 @@ const targetMarkets: ReadonlyArray<{ code: ReadinessProfile["targetMarketCode"];
   { code: "AE", label: "United Arab Emirates" }
 ];
 
-const statusOptions: ReadonlyArray<{ value: ReadinessStatus; label: string }> = [
+const statusOptions: ReadonlyArray<{ value: ReadinessStatus; label: string; reviewControlled?: boolean }> = [
   { value: "not_started", label: "Not checked" },
   { value: "in_progress", label: "In progress" },
-  { value: "evidence_added", label: "Evidence added" },
-  { value: "verified", label: "Verified / complete" },
+  { value: "evidence_added", label: "Evidence added", reviewControlled: true },
+  { value: "verified", label: "Verified / complete", reviewControlled: true },
   { value: "blocked", label: "Blocked" },
-  { value: "not_applicable", label: "Not applicable" }
+  { value: "not_applicable", label: "Not applicable", reviewControlled: true }
 ];
 
 const statusCredit: Readonly<Record<ReadinessStatus, number | null>> = {
@@ -153,7 +156,7 @@ function StatusPill({ value }: { value: ReadinessStatus }) {
 
 function AccessBanner({ access, tierName, verification }: { access: ReadinessAccess; tierName: string; verification: BusinessVerificationStatus }) {
   if (access === "full") {
-    return <section className="readiness-access readiness-access--full"><span><ShieldCheck size={19} /></span><div><strong>Full resolution layer active</strong><p>{verification === "verified" ? "Verified-business access" : `${tierName} access`} includes evidence checklists, blocker playbooks, document review and provider matching.</p></div><Link href="/verify-business">Trust & access <ArrowRight size={14} /></Link></section>;
+    return <section className="readiness-access readiness-access--full"><span><ShieldCheck size={19} /></span><div><strong>Full resolution layer active</strong><p>{verification === "verified" ? "Verified-business access" : `${tierName} access`} includes evidence checklists, blocker playbooks and transparent specialist-support requests. Provider introductions remain unavailable until referral governance is activated.</p></div><Link href="/verify-business">Trust & access <ArrowRight size={14} /></Link></section>;
   }
   if (access === "public") {
     return <section className="readiness-access"><span><Sparkles size={19} /></span><div><strong>You are exploring a public readiness sample</strong><p>Review one representative checkpoint in each of eight readiness areas. Create a free account to open the complete conditional assessment and save it to your business.</p></div><div><Link href="/sign-up">Create free account</Link><Link href="/sign-in">Sign in</Link></div></section>;
@@ -165,11 +168,13 @@ function ProviderDrawer({
   access,
   item,
   providerCatalog,
+  assessmentId,
   onClose
 }: {
   access: ReadinessAccess;
   item: ReadinessRequirementView;
   providerCatalog: ProviderCatalog;
+  assessmentId?: string | undefined;
   onClose: () => void;
 }) {
   const categories = item.fullResolution?.providerCategories ?? [];
@@ -179,12 +184,18 @@ function ProviderDrawer({
   const [message, setMessage] = useState("");
 
   function requestMatch() {
+    if (!assessmentId) {
+      setMessage("Save this lane assessment before requesting specialist support.");
+      return;
+    }
     if (!selected || !consent) {
       setMessage("Choose a specialist type and accept the referral disclosure.");
       return;
     }
     startTransition(async () => {
       const result = await requestReadinessProviderMatch(JSON.stringify({
+        requestId: crypto.randomUUID(),
+        assessmentId,
         requirementId: item.id,
         providerCategory: selected,
         consentToReferralDisclosure: true
@@ -194,7 +205,7 @@ function ProviderDrawer({
   }
 
   return <aside className="readiness-provider" aria-label={`Get help with ${item.title}`}>
-    <header><div><span><Handshake size={17} /></span><p>VERIFIED HELP PATH</p><h2>Find help for this blocker</h2></div><button type="button" onClick={onClose} aria-label="Close provider matching"><X size={18} /></button></header>
+    <header><div><span><Handshake size={17} /></span><p>SPECIALIST SUPPORT PATH</p><h2>Request help for this blocker</h2></div><button type="button" onClick={onClose} aria-label="Close provider support"><X size={18} /></button></header>
     {access !== "full" ? <div className="readiness-provider__locked"><LockKeyhole size={24} /><h3>{access === "public" ? "Create an account before requesting help" : "Provider matching unlocks with trust"}</h3><p>{access === "public" ? "A free account opens the complete assessment. Business verification or a paid plan then reveals qualified professional categories and match requests." : "Verify this business or activate a paid plan to see the relevant professional categories and request a qualified match."}</p><div>{access === "public" ? <><Link href="/sign-up">Create free account <ArrowRight size={14} /></Link><Link href="/sign-in">Sign in</Link></> : <><Link href="/verify-business">Verify business <ArrowRight size={14} /></Link><Link href="/plans">Compare plans</Link></>}</div></div> : <>
       <div className="readiness-provider__context"><small>BLOCKER</small><strong>{item.title}</strong><p>{item.memberSummary}</p></div>
       <div className="readiness-provider__list">
@@ -204,9 +215,9 @@ function ProviderDrawer({
           return <label className={selected === category ? "active" : ""} key={category}><input type="radio" name="provider" checked={selected === category} onChange={() => setSelected(category)} /><span><strong>{provider?.label ?? category}</strong><small>{provider?.description ?? "Qualified support for this readiness requirement."}</small></span><CheckCircle2 size={16} /></label>;
         })}
       </div>
-      <label className="readiness-provider__consent"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span><strong>Share this requirement for matching</strong><small>Export HQ may receive a disclosed referral commission if you engage a matched provider. Matches are screened, but you choose and contract with the provider.</small></span></label>
+      <label className="readiness-provider__consent"><input type="checkbox" checked={consent} onChange={(event) => setConsent(event.target.checked)} /><span><strong>Share this requirement with Export HQ operations</strong><small>This records a support request. Until referral governance is activated, no provider match, introduction, availability or outcome is promised.</small></span></label>
       {message && <p className="readiness-action-message" role="status">{message}</p>}
-      <button className="readiness-provider__request" type="button" onClick={requestMatch} disabled={pending}>{pending ? <LoaderCircle className="spin" size={15} /> : <Handshake size={15} />} Request verified matches <ArrowRight size={14} /></button>
+      <button className="readiness-provider__request" type="button" onClick={requestMatch} disabled={pending}>{pending ? <LoaderCircle className="spin" size={15} /> : <Handshake size={15} />} Request specialist support <ArrowRight size={14} /></button>
     </>}
   </aside>;
 }
@@ -215,29 +226,45 @@ export default function ReadinessClient({
   access,
   businessName,
   initialProgress,
+  laneOptions,
+  persistenceMode,
   profile,
   providerCatalog,
   requirements,
   tierName,
-  verification
+  verification,
+  selectedLaneId
 }: {
   access: ReadinessAccess;
   businessName: string;
-  initialProgress?: ReadinessProgressInput | undefined;
+  initialProgress?: ReadinessInitialProgress | undefined;
+  laneOptions: readonly {
+    id: string;
+    label: string;
+    productName: string;
+    productCategory: string;
+    hsCode: string;
+    destinationCountryCode: string;
+    salesChannel: string;
+  }[];
+  persistenceMode: "preview" | "tenant";
   profile: ReadinessProfile;
   providerCatalog: ProviderCatalog;
   requirements: readonly ReadinessRequirementView[];
   tierName: string;
   verification: BusinessVerificationStatus;
+  selectedLaneId?: string | undefined;
 }) {
   const storageKey = `exportpanel.readiness.v1.${businessName.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`;
   const [currentSection, setCurrentSection] = useState<ReadinessSectionId>(initialProgress?.currentSection ?? "business");
   const [responses, setResponses] = useState<Record<string, ReadinessStatus>>(initialProgress?.responses ?? {});
   const [notes, setNotes] = useState<Record<string, string>>(initialProgress?.notes ?? {});
-  const [evidence, setEvidence] = useState<EvidenceItem[]>(initialProgress?.evidence ?? []);
+  const [evidence, setEvidence] = useState<EvidenceItem[]>([...(initialProgress?.evidence ?? [])]);
+  const [assessmentId, setAssessmentId] = useState(initialProgress?.assessmentId);
+  const [assessmentVersion, setAssessmentVersion] = useState(initialProgress?.assessmentVersion);
   const [selectedId, setSelectedId] = useState("");
   const [providerItem, setProviderItem] = useState<ReadinessRequirementView | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const [loaded, setLoaded] = useState(persistenceMode === "tenant");
   const [saveMessage, setSaveMessage] = useState("");
   const [savedAt, setSavedAt] = useState<string | undefined>();
   const [isSaving, startSaving] = useTransition();
@@ -251,6 +278,10 @@ export default function ReadinessClient({
   const learningHref = (topic: string) => `/learn?topic=${topic}${isPublic ? "&access=public" : ""}`;
 
   useEffect(() => {
+    if (persistenceMode !== "preview") {
+      setLoaded(true);
+      return;
+    }
     try {
       const raw = localStorage.getItem(storageKey);
       if (raw) {
@@ -267,12 +298,12 @@ export default function ReadinessClient({
     } finally {
       setLoaded(true);
     }
-  }, [storageKey]);
+  }, [persistenceMode, storageKey]);
 
   useEffect(() => {
-    if (!loaded) return;
+    if (!loaded || persistenceMode !== "preview") return;
     localStorage.setItem(storageKey, JSON.stringify({ version: 1, currentSection, profile, responses, notes, evidence }));
-  }, [currentSection, evidence, loaded, notes, profile, responses, storageKey]);
+  }, [currentSection, evidence, loaded, notes, persistenceMode, profile, responses, storageKey]);
 
   useEffect(() => {
     if (!selected || selected.section === currentSection) return;
@@ -285,14 +316,30 @@ export default function ReadinessClient({
 
   function saveAssessment() {
     startSaving(async () => {
-      const result = await saveReadinessProgress(JSON.stringify({ version: 1, currentSection, profile, responses, notes, evidence }));
+      const result = await saveReadinessProgress(JSON.stringify({
+        version: 1,
+        ...(assessmentId ? { assessmentId } : {}),
+        ...(assessmentVersion ? { assessmentVersion } : {}),
+        ...(selectedLaneId ? { exportLaneId: selectedLaneId } : {}),
+        currentSection,
+        profile,
+        responses,
+        notes,
+        evidence
+      }));
       setSaveMessage(result.message);
       setSavedAt(result.savedAt);
+      if (result.assessmentId) setAssessmentId(result.assessmentId);
+      if (result.assessmentVersion) setAssessmentVersion(result.assessmentVersion);
     });
   }
 
   async function addEvidence(file: File) {
     if (!selected || access !== "full") return;
+    if (persistenceMode !== "preview") {
+      setSaveMessage("Private evidence upload is not activated yet. The file was not stored in this browser or sent to Export HQ.");
+      return;
+    }
     if (!["application/pdf", "image/jpeg", "image/png"].includes(file.type)) {
       setSaveMessage("Use a PDF, JPEG or PNG file.");
       return;
@@ -323,6 +370,10 @@ export default function ReadinessClient({
   }
 
   async function openEvidence(item: EvidenceItem) {
+    if (persistenceMode !== "preview") {
+      setSaveMessage("Authorized evidence download will become available only through the private vault.");
+      return;
+    }
     const file = await getEvidenceFile(item.id);
     if (!file) {
       setSaveMessage("The file is not stored on this device. Its review record remains in the workspace.");
@@ -334,6 +385,10 @@ export default function ReadinessClient({
   }
 
   async function removeEvidence(item: EvidenceItem) {
+    if (persistenceMode !== "preview") {
+      setSaveMessage("Workspace evidence can be changed only through the versioned private-vault workflow.");
+      return;
+    }
     await deleteEvidenceFile(item.id).catch(() => undefined);
     setEvidence((current) => current.filter((candidate) => candidate.id !== item.id));
   }
@@ -357,6 +412,7 @@ export default function ReadinessClient({
         {access === "public" && <input type="hidden" name="access" value="public" />}
         {access === "member" && <input type="hidden" name="access" value="basic" />}
         {access === "member" && <input type="hidden" name="business" value={businessName} />}
+        {persistenceMode === "tenant" && <label><span>Export Lane</span><select name="lane" defaultValue={selectedLaneId ?? ""} disabled={!laneOptions.length}><option value="">{laneOptions.length ? "Select a lane" : "Create an Export Lane first"}</option>{laneOptions.map((lane) => <option value={lane.id} key={lane.id}>{lane.label}</option>)}</select></label>}
         <label><span>Business model</span><select name="businessModel" defaultValue={profile.businessModel}><option value="manufacturer">Manufacturer</option><option value="trader">Trader / merchant exporter</option><option value="service">Service exporter</option></select></label>
         <label><span>Product category</span><select name="productCategory" defaultValue={profile.productCategory}><option value="apparel">Apparel & textiles</option><option value="leather">Leather & footwear</option><option value="jute">Jute products</option><option value="food">Food & agro</option><option value="engineering">Engineering goods</option><option value="software">Software / services</option><option value="other">Other</option></select></label>
         <label><span>Product / service</span><input name="productName" defaultValue={profile.productName} maxLength={180} /></label>
@@ -407,11 +463,11 @@ export default function ReadinessClient({
       {selected && <aside className="readiness-detail" aria-label={`${selected.title} details`}>
         <header><div><small>{selected.priority} checkpoint</small><h2>{selected.title}</h2></div><button type="button" aria-label="Close details" onClick={() => setSelectedId("")}><X size={17} /></button></header>
         <div className="readiness-detail__body">
-          <section className="readiness-detail__check"><p>WHAT ExportPanel IS CHECKING</p><strong>{selected.checkpoint}</strong><label><span>Your position</span><select value={responses[selected.id] ?? "not_started"} onChange={(event) => updateStatus(selected.id, event.target.value as ReadinessStatus)}>{statusOptions.map((option) => <option value={option.value} key={option.value}>{option.label}</option>)}</select></label></section>
+          <section className="readiness-detail__check"><p>WHAT ExportPanel IS CHECKING</p><strong>{selected.checkpoint}</strong><label><span>Your position</span><select value={responses[selected.id] ?? "not_started"} onChange={(event) => updateStatus(selected.id, event.target.value as ReadinessStatus)}>{statusOptions.map((option) => <option value={option.value} key={option.value} disabled={persistenceMode === "tenant" && option.reviewControlled}>{option.label}{persistenceMode === "tenant" && option.reviewControlled ? " · review controlled" : ""}</option>)}</select></label></section>
           <div className="readiness-detail__paths"><Link href={learningHref(selected.learnTopic)}><BookOpenCheck size={16} /><span><small>KNOWLEDGE PATH</small><strong>Understand and solve it yourself</strong></span><ArrowRight size={14} /></Link><button type="button" onClick={() => setProviderItem(selected)}><Handshake size={16} /><span><small>HELP PATH</small><strong>Find a qualified specialist</strong></span>{access !== "full" ? <LockKeyhole size={13} /> : <ArrowRight size={14} />}</button></div>
           {selected.fullResolution ? <>
             <section className="readiness-playbook"><p>RESOLUTION PLAYBOOK</p><ol>{selected.fullResolution.resolution.map((step, index) => <li key={step}><span>{index + 1}</span><p>{step}</p></li>)}</ol></section>
-            <section className="readiness-evidence"><div><p>EVIDENCE ExportPanel EXPECTS</p><HintButton topic="readiness-product-file" /></div><ul>{selected.fullResolution.evidence.map((item) => <li key={item}><FileText size={14} />{item}</li>)}</ul><input ref={fileInput} hidden type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => { const file = event.target.files?.[0]; if (file) void addEvidence(file); event.target.value = ""; }} /><button type="button" onClick={() => fileInput.current?.click()}><Upload size={14} /> Add PDF or image <small>max 25 MB</small></button><span className="readiness-evidence__privacy"><ShieldCheck size={12} /> File stays in protected browser staging; review metadata syncs when you save.</span></section>
+            <section className="readiness-evidence"><div><p>EVIDENCE ExportPanel EXPECTS</p><HintButton topic="readiness-product-file" /></div><ul>{selected.fullResolution.evidence.map((item) => <li key={item}><FileText size={14} />{item}</li>)}</ul><input ref={fileInput} hidden type="file" accept="application/pdf,image/jpeg,image/png" onChange={(event) => { const file = event.target.files?.[0]; if (file) void addEvidence(file); event.target.value = ""; }} /><button type="button" onClick={() => fileInput.current?.click()} disabled={persistenceMode === "tenant"}><Upload size={14} /> {persistenceMode === "tenant" ? "Private vault not activated" : "Add PDF or image"} <small>max 25 MB</small></button><span className="readiness-evidence__privacy"><ShieldCheck size={12} /> {persistenceMode === "tenant" ? "Files are not staged in browser storage. Upload stays disabled until quarantine, scanning and authorized download are activated." : "Synthetic preview file stays on this device and is never treated as reviewed evidence."}</span></section>
             {evidence.filter((item) => item.requirementId === selected.id).map((item) => <article className="readiness-file" key={item.id}><span><FileCheck2 size={17} /></span><div><strong>{item.fileName}</strong><small>{formatBytes(item.byteSize)} · {item.status.replaceAll("_", " ")}</small><p>{item.feedback}</p><div><button type="button" onClick={() => void openEvidence(item)}>Open</button><button type="button" onClick={() => void removeEvidence(item)}>Remove</button></div></div></article>)}
           </> : <section className="readiness-locked"><LockKeyhole size={22} /><p>{isPublic ? "ACCOUNT + TRUST LAYERS" : "FULL RESOLUTION LAYER"}</p><h3>Open the exact steps, evidence and expert route</h3><ul><li><Check size={13} /> Requirement-specific resolution plan</li><li><Check size={13} /> Document checklist and evidence review</li><li><Check size={13} /> Qualified lawyer, bank, lab or agency matching</li></ul><div>{isPublic ? <><Link href="/sign-up">Create free account <ArrowRight size={14} /></Link><Link href="/sign-in">Sign in</Link></> : <><Link href="/verify-business">Verify business <ArrowRight size={14} /></Link><Link href="/plans">Upgrade</Link></>}</div></section>}
           {isPublic ? <section className="readiness-notes"><p>PRIVATE WORKING NOTE</p><div className="readiness-note-lock"><LockKeyhole size={16} /><span><strong>Create an account to keep private notes</strong><small>Notes belong to your business workspace and are never included in the public sample.</small></span></div></section> : <section className="readiness-notes"><p>PRIVATE WORKING NOTE</p><textarea value={notes[selected.id] ?? ""} onChange={(event) => setNotes((current) => ({ ...current, [selected.id]: event.target.value.slice(0, 1000) }))} placeholder="Record the owner, gap, response from an authority, or next follow-up…" /></section>}
@@ -420,9 +476,9 @@ export default function ReadinessClient({
       </aside>}
     </div>
 
-    {isPublic ? <footer className="readiness-savebar readiness-savebar--public"><div><span className={loaded ? "is-ready" : ""}><span />{loaded ? "Sample progress saved on this device" : "Loading sample…"}</span><small>Create an account for the full checklist and secure workspace saving.</small></div><Link href="/sign-up"><Save size={15} /> Create account to continue</Link></footer> : <footer className="readiness-savebar"><div><span className={loaded ? "is-ready" : ""}><span />{loaded ? "Autosaved on this device" : "Loading saved draft…"}</span>{savedAt && <small><Clock3 size={12} /> Workspace saved {new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(new Date(savedAt))}</small>}{saveMessage && <small role="status">{saveMessage}</small>}</div><button type="button" onClick={saveAssessment} disabled={isSaving}>{isSaving ? <LoaderCircle className="spin" size={15} /> : <Save size={15} />} Save & continue later</button></footer>}
+    {isPublic ? <footer className="readiness-savebar readiness-savebar--public"><div><span className={loaded ? "is-ready" : ""}><span />{loaded ? "Sample progress saved on this device" : "Loading sample…"}</span><small>Create an account for the full checklist and secure workspace saving.</small></div><Link href="/sign-up"><Save size={15} /> Create account to continue</Link></footer> : <footer className="readiness-savebar"><div><span className={loaded ? "is-ready" : ""}><span />{persistenceMode === "tenant" ? "Protected workspace persistence" : loaded ? "Synthetic preview draft on this device" : "Loading preview draft…"}</span>{savedAt && <small><Clock3 size={12} /> Workspace saved {new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit" }).format(new Date(savedAt))}</small>}{saveMessage && <small role="status">{saveMessage}</small>}</div><button type="button" onClick={saveAssessment} disabled={isSaving || (persistenceMode === "tenant" && !selectedLaneId)}>{isSaving ? <LoaderCircle className="spin" size={15} /> : <Save size={15} />} Save & continue later</button></footer>}
 
-    {providerItem && <><button className="readiness-provider-backdrop" type="button" aria-label="Close provider matching" onClick={() => setProviderItem(null)} /><ProviderDrawer access={access} item={providerItem} providerCatalog={providerCatalog} onClose={() => setProviderItem(null)} /></>}
+    {providerItem && <><button className="readiness-provider-backdrop" type="button" aria-label="Close provider support" onClick={() => setProviderItem(null)} /><ProviderDrawer access={access} assessmentId={assessmentId} item={providerItem} providerCatalog={providerCatalog} onClose={() => setProviderItem(null)} /></>}
     <footer className="readiness-method"><span>Bangladesh Export Readiness v1.0 · rules reviewed 25 Aug 2026</span><span>Decision support; official authority and qualified professional advice remain controlling.</span></footer>
   </div>;
 }

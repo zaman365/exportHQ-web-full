@@ -19,7 +19,21 @@ import {
   readBusinessVerificationCase,
   transitionBusinessVerificationCase
 } from "./repositories/business-verification";
-import { auditEvents, documentUploadIntents, exportLaneStageEvents, organizationMemberships, products } from "./schema";
+import {
+  readReadinessAssessment,
+  requestReadinessProviderSupport,
+  saveReadinessAssessment
+} from "./repositories/readiness";
+import {
+  auditEvents,
+  documentUploadIntents,
+  exportLaneStageEvents,
+  organizationMemberships,
+  products,
+  readinessProviderReferrals,
+  readinessResponses,
+  tasks
+} from "./schema";
 
 /**
  * Cross-tenant isolation, proved against a real PostgreSQL with the migrations
@@ -250,6 +264,131 @@ describeWithDatabase("tenant isolation", () => {
     );
     expect(otherTenantCase).toBeNull();
     expect(otherTenantIntents.some((record) => record.id === intent.id)).toBe(false);
+  });
+
+  it("persists one lane-scoped readiness assessment with optimistic conflicts, tasks and support requests", async () => {
+    const suffix = crypto.randomUUID().slice(0, 8);
+    const lane = await withTenantTransaction(database, context(tenantA), async (tx, scoped) => {
+      const [membership] = await tx.insert(organizationMemberships).values({
+        organizationId: tenantA,
+        clerkUserId: `user_readiness_${suffix}`,
+        role: "org:member"
+      }).returning({ id: organizationMemberships.id });
+      const [product] = await tx.insert(products).values({
+        organizationId: tenantA,
+        sku: `READY-${suffix}`,
+        name: "Synthetic readiness product",
+        category: "apparel",
+        countryOfOrigin: "BD",
+        currency: "USD"
+      }).returning({ id: products.id });
+      if (!membership || !product) throw new Error("Synthetic readiness prerequisites were not created.");
+      return createExportLane(tx, scoped, {
+        productId: product.id,
+        originCountryCode: "BD",
+        destinationCountryCode: "DE",
+        salesChannel: "wholesale",
+        buyerSegment: "synthetic importer",
+        route: "Chattogram-Hamburg",
+        incoterm: "FOB",
+        targetMarginBps: 1800,
+        currency: "USD",
+        ownerMembershipId: membership.id
+      });
+    });
+    const profile = {
+      businessModel: "manufacturer" as const,
+      productCategory: "apparel" as const,
+      productName: "Synthetic readiness product",
+      hsCode: "620520",
+      targetMarketCode: "DE" as const,
+      salesChannel: "wholesale" as const
+    };
+    const created = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      saveReadinessAssessment(tx, scoped, {
+        exportLaneId: lane.id,
+        currentSection: "business",
+        profile,
+        responses: { "bd-entity-registration": "blocked", "bd-trade-license": "in_progress" },
+        notes: { "bd-entity-registration": "Synthetic mismatch to resolve" }
+      })
+    );
+    expect(created.assessmentVersion).toBe(1);
+    expect(created.exportLaneId).toBe(lane.id);
+    expect(created.score).toBeGreaterThanOrEqual(0);
+
+    await expect(withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      saveReadinessAssessment(tx, scoped, {
+        assessmentId: created.assessmentId,
+        expectedVersion: created.assessmentVersion,
+        exportLaneId: lane.id,
+        currentSection: "business",
+        profile,
+        responses: { "bd-entity-registration": "verified" },
+        notes: {}
+      })
+    )).rejects.toThrow("controlled evidence/review workflow");
+
+    const updated = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      saveReadinessAssessment(tx, scoped, {
+        assessmentId: created.assessmentId,
+        expectedVersion: created.assessmentVersion,
+        exportLaneId: lane.id,
+        currentSection: "registrations",
+        profile,
+        responses: { "bd-entity-registration": "in_progress", "bd-trade-license": "in_progress" },
+        notes: { "bd-entity-registration": "Synthetic owner assigned" }
+      })
+    );
+    expect(updated.assessmentVersion).toBe(2);
+    await expect(withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      saveReadinessAssessment(tx, scoped, {
+        assessmentId: created.assessmentId,
+        expectedVersion: 1,
+        exportLaneId: lane.id,
+        currentSection: "business",
+        profile,
+        responses: { "bd-entity-registration": "blocked" },
+        notes: {}
+      })
+    )).rejects.toThrow("version conflict");
+
+    const requestId = crypto.randomUUID();
+    const support = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      requestReadinessProviderSupport(tx, scoped, {
+        requestId,
+        assessmentId: updated.assessmentId,
+        requirementId: "bd-entity-registration",
+        providerCategory: "corporate-legal",
+        mode: "support_request"
+      })
+    );
+    expect(support.mode).toBe("support_request");
+    const supportRetry = await withTenantTransaction(database, context(tenantA), (tx, scoped) =>
+      requestReadinessProviderSupport(tx, scoped, {
+        requestId,
+        assessmentId: updated.assessmentId,
+        requirementId: "bd-entity-registration",
+        providerCategory: "corporate-legal",
+        mode: "support_request"
+      })
+    );
+    expect(supportRetry.id).toBe(support.id);
+
+    const internal = await withTenantTransaction(database, context(tenantA), async (tx) => ({
+      responses: await tx.select().from(readinessResponses).where(eq(readinessResponses.assessmentId, updated.assessmentId)),
+      tasks: await tx.select().from(tasks).where(eq(tasks.exportLaneId, lane.id)),
+      referrals: await tx.select().from(readinessProviderReferrals).where(eq(readinessProviderReferrals.assessmentId, updated.assessmentId))
+    }));
+    expect(internal.responses).toHaveLength(2);
+    expect(internal.tasks).toHaveLength(2);
+    expect(internal.referrals).toHaveLength(1);
+    expect(internal.referrals[0]?.matchedProviderId).toBeNull();
+
+    const otherTenant = await withTenantTransaction(database, context(tenantB), (tx, scoped) =>
+      readReadinessAssessment(tx, scoped, updated.assessmentId)
+    );
+    expect(otherTenant).toBeNull();
   });
 
   it("refuses a write aimed at another tenant even with a valid context", async () => {

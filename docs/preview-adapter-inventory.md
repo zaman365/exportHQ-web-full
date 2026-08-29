@@ -12,7 +12,7 @@
 | Location | State held | Replaced by |
 | --- | --- | --- |
 | `apps/app/app/studio/studio-client.tsx` | Lane economics scenario, milestones, buyer cohorts, cluster interest | Export Lane repositories |
-| `apps/app/app/readiness/readiness-client.tsx` | Readiness assessment draft, notes, evidence references | `readiness_assessments`, `readiness_responses` |
+| `apps/app/app/readiness/readiness-client.tsx` | Labelled public/demo draft only; authenticated tenant mode never reads or writes browser storage | Tenant mode replaced by `readiness_assessments`, `readiness_responses`, derived `tasks`, audit and outbox in R1 |
 | `apps/app/app/_components/collaboration-data.ts` | Team profiles, departments, role changes, conversations | `organization_teams`, `organization_conversations`, `organization_messages` |
 | `apps/app/app/_components/workflow-data.ts` | Workflow records | Task and blueprint repositories |
 | `apps/app/app/settings/settings-client.tsx` | Workspace settings draft | `company_profiles` |
@@ -32,8 +32,8 @@ use below is replaced by PostgreSQL at Gate 1.
 | `packages/auth/src/index.ts` | `onboardingComplete`, `businessVerification` on `publicMetadata` |
 | `apps/app/app/onboarding/actions.ts` | Onboarding completion, company and first-product state |
 | `apps/app/app/settings/actions.ts` | Profile settings, company, first product, market strategy |
-| `apps/app/app/readiness/actions.ts` | Readiness profile and responses |
-| `apps/app/app/verify-business/actions.ts` | Verification status and the submitted request |
+| `apps/app/app/readiness/actions.ts` | Replaced in R1 by lane-scoped PostgreSQL assessment/support-request commands; no Clerk metadata write remains |
+| `apps/app/app/verify-business/actions.ts` | Replaced in R1 by versioned PostgreSQL verification cases; no Clerk metadata write remains |
 
 ## Fixture-backed projections
 

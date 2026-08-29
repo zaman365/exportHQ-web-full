@@ -26,13 +26,16 @@ remaining production components.
 - Guided company → product → market → evidence → readiness experience.
 - A country-product market intelligence system with a limited public homepage preview, searchable member rankings, source-linked full research for verified or subscribed businesses, free business-verification requests, and tenant-scoped shortlists.
 - A connected Export Studio built around one `ExportLane`: lifecycle progress, commercial economics, deal milestones, buyer cohorts, provider disclosures, finance readiness, SME clusters, shipment-to-proceeds checkpoints, lane-specific policy alerts, and a controlled Trust Passport projection.
+- Tenant-scoped Export Lane and readiness persistence with optimistic versions,
+  customer/reviewer status separation, derived owned tasks, audit/outbox,
+  idempotent support requests and explicit pre-governance referral wording.
 - Dedicated Buyers and Requirements routes: a searchable, stage-aware illustrative buyer-development pipeline and a source-aware conditional control register linked back to opportunities, readiness, learning, evidence, and qualified-help paths.
 - A public opportunity-to-payment acquisition story, a limited ExportPanel Export Studio preview, and plan language aligned to the Basic → verified/paid → Scale/Managed trust ladder.
 - A dedicated Export operations Learning Center category with contextual hints for lanes, economics, deals, buyer trust, provider matching, finance, shipment, policy, and clusters.
 - A primary Email Inbox beside the retained Actionable Inbox, with export-aware categories, related-record context, private drafts, email-to-follow-up conversion, provider setup guidance, plan/role gates, and tenant-scoped mail persistence contracts.
 - A versioned, transactional market catalog publisher and incremental PostgreSQL migration for country, product, opportunity, evidence, verification, and shortlist records.
 - Internal customer portfolio and scoped operator workspace over the same domain projection.
-- Unit and journey tests; 29 real-PostgreSQL integration tests covering
+- Unit and journey tests; 32 real-PostgreSQL integration tests covering
   cross-tenant isolation, direct projection-write denial, webhook projection,
   dead-lettering and concurrent durable controls; desktop/mobile Playwright;
   and CI definitions for quality, database, Worker artifact, E2E, security and
@@ -66,7 +69,7 @@ recorded.
 | Gate 0 — ownership and freeze    | In progress | Development authorized; protected `main`, 8 required checks, 6 milestones and the 22-item R0/R1 backlog exist; all six roles are assigned; deferred external policy approvals still block affected production activation |
 | Gate 1 — identity and PostgreSQL | In progress | Frankfurt Neon projects/migrations/locked roles, initial Clerk configuration and hosted CI are evidenced; live credentials/Hyperdrive, webhook secret/delivery, Billing/MFA/journeys and recovery approvals remain       |
 | Gate 2 — evidence vault          | Not started | R2 not provisioned; uploads fail closed                                                                                                                                                                                  |
-| Gate 3 — production persistence  | Not started | Preview adapters still back customer workflows                                                                                                                                                                           |
+| Gate 3 — production persistence  | In progress | Lane/readiness and verification drafts are PostgreSQL-authoritative; Studio, team, task-center and other preview adapters remain                                                                                         |
 | Gate 4 — trust and integrations  | Not started | No reviewed provider or mail applications                                                                                                                                                                                |
 | Gate 5 — pilot and launch        | In progress | Builds, Worker smoke, Playwright, rate limits, redaction and sampled telemetry config pass locally; CSP enforcement, external monitoring/review and pilot evidence remain                                                |
 

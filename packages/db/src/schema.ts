@@ -886,6 +886,10 @@ export const readinessAssessments = pgTable("readiness_assessments", {
   submittedAt: timestamp("submitted_at", { withTimezone: true }),
   ...timestamps
 }, (table) => [
+  uniqueIndex("readiness_assessments_org_id_unique").on(table.organizationId, table.id),
+  uniqueIndex("readiness_assessments_active_lane_unique")
+    .on(table.organizationId, table.exportLaneId)
+    .where(sql`${table.exportLaneId} is not null and ${table.status} <> 'archived'`),
   index("readiness_assessments_org_updated_idx").on(table.organizationId, table.updatedAt),
   check("readiness_assessments_score_check", sql`${table.score} between 0 and 100`)
 ]);
@@ -903,6 +907,7 @@ export const readinessResponses = pgTable("readiness_responses", {
   verifiedAt: timestamp("verified_at", { withTimezone: true }),
   ...timestamps
 }, (table) => [
+  uniqueIndex("readiness_responses_org_id_unique").on(table.organizationId, table.id),
   uniqueIndex("readiness_responses_assessment_requirement_unique").on(table.assessmentId, table.requirementKey),
   index("readiness_responses_org_status_idx").on(table.organizationId, table.status)
 ]);
@@ -947,11 +952,14 @@ export const serviceProviderProfiles = pgTable("service_provider_profiles", {
 
 export const readinessProviderReferrals = pgTable("readiness_provider_referrals", {
   id: uuid("id").primaryKey().defaultRandom(),
+  requestKey: uuid("request_key").notNull().unique(),
   organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
   exportLaneId: uuid("export_lane_id").references(() => exportLanes.id, { onDelete: "cascade" }),
   assessmentId: uuid("assessment_id").notNull().references(() => readinessAssessments.id, { onDelete: "cascade" }),
   requirementKey: text("requirement_key").notNull(),
   providerCategory: text("provider_category").notNull(),
+  requestMode: text("request_mode").notNull().default("support_request"),
+  governanceEvidenceReference: text("governance_evidence_reference"),
   matchedProviderId: uuid("matched_provider_id").references(() => serviceProviderProfiles.id, { onDelete: "set null" }),
   status: providerReferralStatus("status").notNull().default("requested"),
   requestedBy: text("requested_by").notNull(),
@@ -963,7 +971,12 @@ export const readinessProviderReferrals = pgTable("readiness_provider_referrals"
   ...timestamps
 }, (table) => [
   index("readiness_provider_referrals_org_status_idx").on(table.organizationId, table.status),
-  index("readiness_provider_referrals_provider_idx").on(table.matchedProviderId)
+  index("readiness_provider_referrals_provider_idx").on(table.matchedProviderId),
+  index("readiness_provider_referrals_assessment_requirement_idx").on(table.organizationId, table.assessmentId, table.requirementKey),
+  check("readiness_provider_referrals_mode_check", sql`
+    (${table.requestMode} = 'support_request' and ${table.governanceEvidenceReference} is null and ${table.matchedProviderId} is null)
+    or (${table.requestMode} = 'governed_referral' and ${table.governanceEvidenceReference} is not null)
+  `)
 ]);
 
 export const tasks = pgTable("tasks", {
@@ -980,7 +993,12 @@ export const tasks = pgTable("tasks", {
   relatedEntityType: text("related_entity_type"),
   relatedEntityId: uuid("related_entity_id"),
   ...timestamps
-}, (table) => [index("tasks_org_status_idx").on(table.organizationId, table.status)]);
+}, (table) => [
+  index("tasks_org_status_idx").on(table.organizationId, table.status),
+  uniqueIndex("tasks_readiness_response_unique")
+    .on(table.organizationId, table.relatedEntityType, table.relatedEntityId)
+    .where(sql`${table.relatedEntityType} = 'readiness_response'`)
+]);
 
 export const auditEvents = pgTable("audit_events", {
   id: uuid("id").primaryKey().defaultRandom(),
