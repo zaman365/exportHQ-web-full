@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { getClerkClient } from "@exporthq/auth";
+import type { CustomerSession } from "@exporthq/auth";
 import {
   featuresForTier,
   permissionsForTier,
@@ -13,9 +13,16 @@ import {
   type ReadinessProductCategory,
   type ReadinessProfile
 } from "@exporthq/domain";
-import { readinessProgressSchema, type ReadinessProgressInput } from "@exporthq/validation";
+import {
+  listReadinessLaneOptions,
+  readLatestReadinessAssessment,
+  type ReadinessAssessmentRecord,
+  type ReadinessLaneOption
+} from "@exporthq/db";
+import type { ReadinessProgressInput } from "@exporthq/validation";
 import { WorkspaceShell } from "../_components/workspace-shell";
 import { getWorkspaceFeatureSession } from "../_lib/session";
+import { runTenantCommand } from "../_lib/tenant";
 import ReadinessClient from "./readiness-client";
 
 export const metadata: Metadata = {
@@ -34,6 +41,7 @@ type Query = {
   hsCode?: string;
   market?: string;
   salesChannel?: string;
+  lane?: string;
 };
 
 const businessModels: readonly ReadinessBusinessModel[] = ["manufacturer", "trader", "service"];
@@ -45,7 +53,7 @@ function includes<T extends string>(values: readonly T[], value: string | undefi
   return Boolean(value && values.includes(value as T));
 }
 
-function profileFromQuery(query: Query, saved?: ReadinessProgressInput): ReadinessProfile {
+function profileFromQuery(query: Query, saved?: Pick<ReadinessProgressInput, "profile">): ReadinessProfile {
   const baseline: ReadinessProfile = saved?.profile ?? {
     businessModel: "manufacturer",
     productCategory: "apparel",
@@ -64,13 +72,23 @@ function profileFromQuery(query: Query, saved?: ReadinessProgressInput): Readine
   };
 }
 
-async function loadSavedProgress(organizationId: string | null, isDemo: boolean): Promise<ReadinessProgressInput | undefined> {
-  if (!organizationId || isDemo) return undefined;
-  const client = getClerkClient();
-  const organization = await client.organizations.getOrganization({ organizationId });
-  const metadata = organization.privateMetadata as { exportPanel?: { readinessAssessment?: unknown } };
-  const parsed = readinessProgressSchema.safeParse(metadata.exportPanel?.readinessAssessment);
-  return parsed.success ? parsed.data : undefined;
+async function loadTenantWorkspace(
+  session: CustomerSession,
+  requestedLaneId: string | undefined
+): Promise<{ saved?: ReadinessAssessmentRecord; lanes: readonly ReadinessLaneOption[]; selectedLaneId?: string }> {
+  if (!session.organizationId || session.isDemo) return { lanes: [] };
+  const persisted = await runTenantCommand(session, async (tx, context) => {
+    const lanes = await listReadinessLaneOptions(tx, context);
+    const requested = requestedLaneId && lanes.some((lane) => lane.id === requestedLaneId) ? requestedLaneId : undefined;
+    const saved = await readLatestReadinessAssessment(tx, context, requested);
+    const selectedLaneId = saved?.exportLaneId ?? requested ?? lanes[0]?.id;
+    return {
+      ...(saved ? { saved } : {}),
+      lanes,
+      ...(selectedLaneId ? { selectedLaneId } : {})
+    };
+  });
+  return persisted.ran ? persisted.value : { lanes: [] };
 }
 
 export default async function ReadinessPage({ searchParams }: { searchParams: Promise<Query> }) {
@@ -101,8 +119,30 @@ export default async function ReadinessPage({ searchParams }: { searchParams: Pr
     businessVerification: session.businessVerification,
     tier: session.tier
   });
-  const saved = session.userId ? await loadSavedProgress(session.organizationId, session.isDemo) : undefined;
-  const profile = profileFromQuery(query, saved);
+  const tenantWorkspace = session.userId ? await loadTenantWorkspace(session, query.lane) : { lanes: [] };
+  const selectedLane = tenantWorkspace.lanes.find((lane) => lane.id === tenantWorkspace.selectedLaneId);
+  const laneBaseline = selectedLane && includes(marketCodes, selectedLane.destinationCountryCode)
+    && includes(salesChannels, selectedLane.salesChannel)
+    ? {
+        version: 1 as const,
+        currentSection: "business" as const,
+        profile: {
+          businessModel: "manufacturer" as const,
+          productCategory: includes(productCategories, selectedLane.productCategory.toLowerCase())
+            ? selectedLane.productCategory.toLowerCase() as ReadinessProductCategory
+            : "other" as const,
+          productName: selectedLane.productName,
+          hsCode: selectedLane.hsCode,
+          targetMarketCode: selectedLane.destinationCountryCode,
+          salesChannel: selectedLane.salesChannel
+        },
+        responses: {},
+        notes: {},
+        evidence: []
+      } satisfies ReadinessProgressInput
+    : undefined;
+  const saved = tenantWorkspace.saved;
+  const profile = profileFromQuery(query, saved ?? laneBaseline);
   const requirements = readinessRequirementViews(access, profile);
   const providerCatalog = access === "full" ? readinessProviderCatalog : {};
 
@@ -112,11 +152,14 @@ export default async function ReadinessPage({ searchParams }: { searchParams: Pr
         access={access}
         businessName={session.organizationName ?? `${profile.productName} export preview`}
         initialProgress={saved}
+        laneOptions={tenantWorkspace.lanes}
+        persistenceMode={session.isDemo || !session.userId ? "preview" : "tenant"}
         profile={profile}
         providerCatalog={providerCatalog}
         requirements={requirements}
         tierName={subscriptionCatalog[session.tier].name}
         verification={session.businessVerification}
+        selectedLaneId={tenantWorkspace.selectedLaneId}
       />
     </WorkspaceShell>
   );

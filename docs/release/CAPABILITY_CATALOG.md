@@ -6,8 +6,9 @@ Status language is centrally constrained to `Live`, `Pilot`, `Preview` and `Plan
 | --- | --- | --- | --- |
 | Public website and safe product tour | Live | Public/synthetic content only | Deployed artifact and public-content review |
 | Clerk identity boundary | Pilot | Production instance exists; complete method/MFA/reconciliation evidence is pending | Gate 1 |
-| PostgreSQL customer persistence | Preview | Schema and partial repositories exist; no provisioned production database | Gate 1 |
-| Export Lane, readiness and Studio | Preview | Domain logic and synthetic/local adapters; not production tenant authority | Gate 3 |
+| PostgreSQL customer persistence | Preview | Frankfurt Neon projects and tenant repositories exist; live application credentials, Hyperdrive and remaining Gate 1 evidence are not active | Gate 1 |
+| Export Lane and readiness records | Preview | Tenant-scoped repositories, optimistic versions, audit/outbox, derived tasks and non-owner RLS tests exist; production activation and one complete synthetic journey remain | Gate 3 |
+| Export Studio projections | Preview | Commercial and operating projections still use labelled synthetic/local adapters | Gate 3 |
 | Evidence vault | Planned | Upload/download fail closed; no R2 quarantine/scanner | Gate 2 |
 | Business verification | Preview | Submission UX exists; trusted evidence review is not active | Gate 4 |
 | Buyer/provider/mail/bank/freight/government adapters | Planned | Illustrative or disconnected only | Gate 4 plus adapter-specific evidence |

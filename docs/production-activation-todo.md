@@ -138,6 +138,9 @@ Gate 5: one real pilot Export Lane and controlled launch
       <br>The application role tests prove transaction-local context is discarded on commit.
 - [ ] Implement PostgreSQL repositories for every currently modeled command and query.
 - [ ] Replace Clerk organization metadata as storage for onboarding, readiness and profile state.
+      <br>Onboarding, readiness and verification-case writes are now
+      PostgreSQL-authoritative. Workspace Settings/profile drafts and remaining
+      identity mirrors still need removal or bounded post-commit reconciliation.
 - [ ] Make privileged changes, membership changes, evidence state changes and business decisions
       write append-only audit events in the same transaction.
 - [x] Add idempotency for webhooks and retryable commands.
@@ -220,6 +223,9 @@ Gate 5: one real pilot Export Lane and controlled launch
 
 - [ ] Persist company profile, onboarding, products, markets, channels and readiness state in
       tenant-scoped PostgreSQL repositories.
+      <br>Lane-scoped readiness responses now persist with optimistic versions,
+      derived tasks, audit/outbox and non-owner isolation; the broader profile,
+      product, market and channel settings path remains open.
 - [ ] Persist tasks, ownership, waiting states, decisions, ideas, notifications and Attention
       Center state with audit events.
 - [ ] Persist requirements, evidence feedback, document links and review decisions.
@@ -381,7 +387,7 @@ A checkbox above may be closed only when the component has:
 | Gate 0 — ownership and freeze    | In progress | Development authorized and owners named; deferred policy/reviewer approvals block activation          |
 | Gate 1 — identity and PostgreSQL | In progress | Neon/Clerk foundation and CI evidenced; secrets, Hyperdrive, Billing/MFA/journeys and recovery remain |
 | Gate 2 — private evidence vault  | Not started | Real evidence must not be accepted                                                                    |
-| Gate 3 — production persistence  | Not started | Preview adapters remain in customer workflows                                                         |
+| Gate 3 — production persistence  | In progress | Readiness/verification persistence is authoritative; other preview adapters remain                     |
 | Gate 4 — trust and integrations  | Not started | External capabilities cannot be called live                                                           |
 | Gate 5 — pilot and launch        | In progress | CSP, rate limits and redaction shipped; report-only                                                   |
 
