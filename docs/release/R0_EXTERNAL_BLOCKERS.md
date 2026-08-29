@@ -5,15 +5,17 @@ start until the remaining R0 evidence is created in the systems that own it.
 
 ## Founder and governance
 
-- Name the product, technical, data, identity, security and operations owners.
+- Mohammed Maniruzzaman is named as product, technical, data, identity,
+  security and operations owner for the single-founder R0 period. Independent
+  reviewer and approval separation remain required.
 - Approve classification, retention/deletion, telemetry and incident policies.
 - Create the directive's issues and milestones and assign named accountable
   owners/reviewers. The authenticated GitHub UI has protected `main` with PR,
   approval, CODEOWNERS, latest-push approval, conversation-resolution,
   linear-history and no-bypass controls. All eight successful hosted contexts
   are now required and branches must be current before merge. Six phase
-  milestones and all 22 directive R0/R1 issues exist; every issue deliberately
-  records owner/reviewer as blocking rather than inventing a person. See
+  milestones and all 22 directive R0/R1 issues exist; every issue is assigned
+  to `@zaman365` with its accountable role, while reviewer remains blocking. See
   [`evidence/r0-hosted-ci-2026-08-29/`](evidence/r0-hosted-ci-2026-08-29/).
 - Pull request [#1](https://github.com/zaman365/exportHQ-web-full/pull/1) is the
   hosted R0 evidence candidate. It cannot merge until another write-capable
@@ -25,9 +27,12 @@ start until the remaining R0 evidence is created in the systems that own it.
   least-privilege role shells are provisioned and verified. A named human must
   finalize LOGIN credentials through the protected bootstrap, then connect the
   application role to Cloudflare Hyperdrive without exposing the connection
-  string. See [`evidence/r0-neon-2026-08-29/`](evidence/r0-neon-2026-08-29/).
-- The Clerk domain, ExportPanel paths, email/password and email-code methods,
-  and reviewed webhook endpoint are configured. A named human must transfer the
+  string. A non-expiring production snapshot and isolated PITR drill branch now
+  prove restored schema and fail-closed application-role access. Scheduled
+  backups and an independent encrypted export remain open. See
+  [`evidence/r0-provider-recovery-2026-08-29/`](evidence/r0-provider-recovery-2026-08-29/).
+- The Clerk domain, ExportPanel paths, invite-only access, email/password and
+  email-code methods, and reviewed webhook endpoint are configured. A named human must transfer the
   webhook signing secret directly into Cloudflare and prove a live delivery.
   Phone/SMS, MFA, richer roles and Billing remain plan/payment-gated; staff
   allowlist and recovery-policy evidence also remain open. See

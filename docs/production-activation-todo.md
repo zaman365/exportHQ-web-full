@@ -48,10 +48,12 @@ Gate 5: one real pilot Export Lane and controlled launch
 > [`preview-adapter-inventory.md`](preview-adapter-inventory.md),
 > [`data-classification.md`](data-classification.md),
 > [`incident-response.md`](incident-response.md),
-> [`production-ownership.md`](production-ownership.md). The gate stays open
-> because the owner rows are unnamed and the policies are drafted, not approved.
+> [`production-ownership.md`](production-ownership.md). On 2026-08-29 Mohammed
+> Maniruzzaman was assigned to all six roles for the single-founder R0 period.
+> The gate stays open because the policies and independent reviews remain
+> unapproved.
 
-- [ ] Name the product owner, technical lead, data owner, identity owner, security owner and
+- [x] Name the product owner, technical lead, data owner, identity owner, security owner and
       operations owner.
 - [ ] Convert every section below into tracked work with one owner, target milestone and
       dependency list.
@@ -82,8 +84,9 @@ Gate 5: one real pilot Export Lane and controlled launch
 > `ins_3IRabAnEQBciVzmSDLT4Qhzb5go` on `export-hq.com` is live with
 > Organizations enabled. On 2026-08-29, the custom domain/DNS/SSL and
 > ExportPanel paths were verified, email/password and email-code methods were
-> inspected, and the reviewed webhook endpoint was registered. Blocked:
-> Billing is not enabled, phone/SMS and MFA are plan-gated, custom roles remain
+> inspected, the reviewed webhook endpoint was registered, and production
+> access was restricted to invite-only. Blocked: Billing is not enabled,
+> phone/SMS and MFA are plan-gated, custom roles remain
 > at the 2-role ceiling, and the webhook signing secret/live delivery test
 > still require a named human secret owner. See
 > [`release/evidence/r0-clerk-2026-08-29/`](release/evidence/r0-clerk-2026-08-29/).
@@ -141,6 +144,10 @@ Gate 5: one real pilot Export Lane and controlled launch
       recording every inbound delivery including ignored ones.
 - [ ] Prove migrations on a production-shaped staging database with rollback/forward-fix steps.
 - [ ] Configure automated backups, point-in-time recovery and an independent encrypted export.
+      <br>A non-expiring manual production snapshot and isolated point-in-time
+      drill branch were created on 2026-08-29. The restored catalog and
+      fail-closed application-role RLS check passed. Scheduled snapshots,
+      independent encrypted export and approved recovery targets remain open.
 - [x] Perform and document a synthetic local restore drill.
       <br>R0 local evidence records restored row counts and RLS behavior; production
       PITR remains required; the protected hosted workflow now also proves
@@ -368,14 +375,14 @@ A checkbox above may be closed only when the component has:
 
 ## Progress summary
 
-| Gate                             | State       | Blocking outcome                              |
-| -------------------------------- | ----------- | --------------------------------------------- |
-| Gate 0 — ownership and freeze    | In progress | Protected backlog/CI exists; owners and approvals remain unnamed |
+| Gate                             | State       | Blocking outcome                                                                                      |
+| -------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
+| Gate 0 — ownership and freeze    | In progress | Protected backlog/CI exists; owners and approvals remain unnamed                                      |
 | Gate 1 — identity and PostgreSQL | In progress | Neon/Clerk foundation and CI evidenced; secrets, Hyperdrive, Billing/MFA/journeys and recovery remain |
-| Gate 2 — private evidence vault  | Not started | Real evidence must not be accepted            |
-| Gate 3 — production persistence  | Not started | Preview adapters remain in customer workflows |
-| Gate 4 — trust and integrations  | Not started | External capabilities cannot be called live   |
-| Gate 5 — pilot and launch        | In progress | CSP, rate limits and redaction shipped; report-only |
+| Gate 2 — private evidence vault  | Not started | Real evidence must not be accepted                                                                    |
+| Gate 3 — production persistence  | Not started | Preview adapters remain in customer workflows                                                         |
+| Gate 4 — trust and integrations  | Not started | External capabilities cannot be called live                                                           |
+| Gate 5 — pilot and launch        | In progress | CSP, rate limits and redaction shipped; report-only                                                   |
 
 Update this table only from recorded gate evidence. The checklist is intentionally conservative:
 finishing Export HQ means making the operating promises true, not merely changing labels or

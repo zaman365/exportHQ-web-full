@@ -5,29 +5,31 @@
 
 ## Accountable owners
 
-Names are deliberately left blank. Filling them is a business decision, and an
-invented owner is worse than a visibly missing one: it makes an unaccountable
-programme look accountable.
+On 2026-08-29 the founder instructed that the programme roles be named. The
+authenticated Export HQ provider and repository accounts identify the founder
+as Mohammed Maniruzzaman (`@zaman365`). During the single-founder R0 period he
+temporarily occupies all six roles. This records accountability; it does not
+replace independent pull-request, security or legal review.
 
-| Role | Accountable for | Owner |
-| --- | --- | --- |
-| Product owner | Scope, sequencing, and what may be described as live | _unnamed_ |
-| Technical lead | Architecture, migrations, rollback, deployment | _unnamed_ |
-| Data owner | Classification, retention, legal hold, customer export | _unnamed_ |
-| Identity owner | Clerk instance, roles, MFA, session policy | _unnamed_ |
-| Security owner | Threat model, review findings, incident response | _unnamed_ |
-| Operations owner | Verification queue, publishing, provider coordination, support | _unnamed_ |
+| Role             | Accountable for                                                | Owner                 |
+| ---------------- | -------------------------------------------------------------- | --------------------- |
+| Product owner    | Scope, sequencing, and what may be described as live           | Mohammed Maniruzzaman |
+| Technical lead   | Architecture, migrations, rollback, deployment                 | Mohammed Maniruzzaman |
+| Data owner       | Classification, retention, legal hold, customer export         | Mohammed Maniruzzaman |
+| Identity owner   | Clerk instance, roles, MFA, session policy                     | Mohammed Maniruzzaman |
+| Security owner   | Threat model, review findings, incident response               | Mohammed Maniruzzaman |
+| Operations owner | Verification queue, publishing, provider coordination, support | Mohammed Maniruzzaman |
 
 ## Gate ownership
 
-| Gate | Primary owner | Supporting |
-| --- | --- | --- |
-| Gate 0 — ownership and freeze | Product owner | All |
-| Gate 1 — identity and PostgreSQL | Identity owner | Technical lead, data owner |
-| Gate 2 — evidence vault | Data owner | Security owner, technical lead |
-| Gate 3 — production persistence | Technical lead | Product owner |
-| Gate 4 — trust and integrations | Operations owner | Product owner, security owner |
-| Gate 5 — pilot and launch | Product owner | All |
+| Gate                             | Primary owner    | Supporting                     |
+| -------------------------------- | ---------------- | ------------------------------ |
+| Gate 0 — ownership and freeze    | Product owner    | All                            |
+| Gate 1 — identity and PostgreSQL | Identity owner   | Technical lead, data owner     |
+| Gate 2 — evidence vault          | Data owner       | Security owner, technical lead |
+| Gate 3 — production persistence  | Technical lead   | Product owner                  |
+| Gate 4 — trust and integrations  | Operations owner | Product owner, security owner  |
+| Gate 5 — pilot and launch        | Product owner    | All                            |
 
 ## Standing decisions
 

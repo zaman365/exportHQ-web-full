@@ -13,6 +13,7 @@
     "typecheck": "turbo typecheck",
     "test": "turbo test",
     "test:e2e": "playwright test",
+    "uptime:production": "node scripts/production-uptime.mjs",
     "db:generate": "pnpm --filter @exporthq/db generate",
     "db:migrate": "pnpm --filter @exporthq/db migrate",
     "db:checksum": "pnpm --filter @exporthq/db migration:checksum",

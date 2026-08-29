@@ -86,7 +86,13 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm dlx wrangler@4.127.1 deploy --config dist/server/wrangler.json
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          SOURCE_SHA: ${{ inputs.source_sha }}
+        run: >-
+          pnpm dlx wrangler@4.127.1 deploy
+          --config dist/server/wrangler.json
+          --tag "$RELEASE_TAG"
+          --message "Export HQ $RELEASE_TAG ($SOURCE_SHA)"
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ inputs.release_tag }}
