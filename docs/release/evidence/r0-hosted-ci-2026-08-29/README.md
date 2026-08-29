@@ -36,7 +36,9 @@ Classic branch protection rule `82442735` applies to `main` and enforces:
 - no bypass, including administrators; no force push and no deletion.
 
 The exception is limited to GitHub collaboration. CODEOWNERS remains advisory,
-and independent security, privacy/legal and release approvals remain R0 gates.
+and independent security, privacy/legal and release approvals remain production
+activation gates. The founder authorized continued R1-R6 development with
+those reviews explicitly deferred.
 
 Dependency graph, Dependabot alerts/security updates, private vulnerability
 reporting, secret protection/push protection and CodeQL are enabled.
@@ -56,4 +58,5 @@ blocking where required.
 ## Remaining gate items
 
 - R0 still needs provider-secret handoffs, production recovery/attestation and
-  legal/privacy/security/business approvals before phase advancement.
+  deferred legal/privacy/security/release approvals before affected production
+  activation. They no longer block fail-closed R1-R6 development.

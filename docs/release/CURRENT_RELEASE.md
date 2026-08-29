@@ -1,6 +1,7 @@
 # Current release authority
 
-- Status: R0 Recovery — external Alpha prohibited
+- Status: R0 engineering baseline accepted — R1-R6 development authorized;
+  production activation and external Alpha prohibited
 - Canonical repository: `https://github.com/zaman365/exportHQ-web-full`
 - Canonical branch: `main`
 - Audited baseline and current starting SHA: `2c3c1a38056e324444ace9ab6787097e66c2b6af`
@@ -39,5 +40,8 @@ Evidence belongs under `docs/release/evidence/<version-or-gate>/` and must inclu
 
 Local repository evidence is recorded in
 [`evidence/r0-local-2026-08-29/README.md`](evidence/r0-local-2026-08-29/README.md).
-It does not close the provider or human-approval items listed in
-[`R0_EXTERNAL_BLOCKERS.md`](R0_EXTERNAL_BLOCKERS.md), so R1 remains blocked.
+The founder authorization in
+[`R0_FOUNDER_DEVELOPMENT_AUTHORIZATION.md`](R0_FOUNDER_DEVELOPMENT_AUTHORIZATION.md)
+allows R1-R6 development to continue. Provider and deferred human-review items
+in [`R0_EXTERNAL_BLOCKERS.md`](R0_EXTERNAL_BLOCKERS.md) still block the affected
+production activation and any external Alpha claim.

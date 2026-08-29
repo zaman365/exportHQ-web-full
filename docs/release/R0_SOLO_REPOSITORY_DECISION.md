@@ -22,7 +22,9 @@ The following repository controls remain mandatory:
 
 CODEOWNERS remains an advisory ownership map. This exception does not waive or
 satisfy security, privacy/legal, incident-response, rollback, business or
-release approvals. Those decisions require attributable human evidence in
+release approvals. Deferred independent decisions remain production-activation
+gates under the founder development authorization and require attributable
+human evidence in
 [`R0_APPROVALS.md`](R0_APPROVALS.md).
 
 Revisit this exception before admitting another repository contributor or real
