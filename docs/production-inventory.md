@@ -4,13 +4,14 @@
 - **Rule:** No production resource may exist without a row here. A row with an
   unnamed owner is treated as an open Gate 0 finding, not as an activated resource.
 
-## Verified on 2026-08-26
+## Verified on 2026-08-29
 
 These were read directly from the Cloudflare and Clerk consoles.
 
 | Resource | Identifier | State | Owner |
 | --- | --- | --- | --- |
 | Cloudflare account | `48dd3aa43c937cea4bbb1840184461cc` (zaman.ase365@gmail.com) | Active | _unnamed_ |
+| Public-site Worker | `exporthq-web-full` | Active; owns `export-hq.com`; GitHub build connected to the canonical repository | _unnamed_ |
 | Worker | `exporthq-app` | Deployed | _unnamed_ |
 | Worker route | `export-hq.com/ExportPanel*` (zone `export-hq.com`) | Active | _unnamed_ |
 | Clerk application | `app_3IRaL4aCvvYhwQqcWobdU1UDeJj` ("Export HQ") | Active | _unnamed_ |
@@ -19,8 +20,10 @@ These were read directly from the Cloudflare and Clerk consoles.
 | Clerk Billing | **Not enabled** — plan keys `launch`/`scale`/`managed` do not exist | Blocked | _unnamed_ |
 | Clerk webhooks | **None configured** | Blocked | _unnamed_ |
 | Clerk custom roles | 2 of 2 used (`org:admin`, `org:member`) | At plan ceiling | _unnamed_ |
-| Neon PostgreSQL | **Not provisioned** | Blocked | _unnamed_ |
-| R2 evidence buckets | **Not provisioned** | Blocked | _unnamed_ |
+| Neon development project | `exporthq-development-eu` (`late-morning-49181333`) | Provisioned in AWS `eu-central-1`; migrations and separated roles pending | _unnamed_ |
+| Neon staging project | `exporthq-staging-eu` (`young-wildflower-06976535`) | Provisioned in AWS `eu-central-1`; migrations and separated roles pending | _unnamed_ |
+| Neon production project | `exporthq-production-eu` (`icy-mode-97605326`) | Provisioned in AWS `eu-central-1`; migrations, separated roles, Hyperdrive and recovery evidence pending | _unnamed_ |
+| R2 evidence buckets | **Not provisioned**; account activation is waiting for billing completion by an account owner | Blocked | _unnamed_ |
 | Sentry / PostHog | **Not provisioned** | Blocked | _unnamed_ |
 
 ## Secrets
