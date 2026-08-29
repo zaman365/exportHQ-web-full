@@ -15,6 +15,10 @@ on:
         description: Signed SemVer tag pointing to source_sha
         required: true
         type: string
+      evidence_manifest:
+        description: Signed-tree path docs/release/evidence/<release>/ga-manifest.json
+        required: true
+        type: string
       deploy:
         description: Promote the downloaded artifact to Cloudflare
         required: true
@@ -68,6 +72,18 @@ jobs:
         with: { version: 11.22.0 }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
+      - name: Verify General Availability evidence manifest
+        env:
+          EVIDENCE_MANIFEST: ${{ inputs.evidence_manifest }}
+          EXPECTED_SHA: ${{ inputs.source_sha }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          case "$EVIDENCE_MANIFEST" in
+            docs/release/evidence/*/ga-manifest.json) ;;
+            *) echo "Evidence manifest must be a ga-manifest.json inside docs/release/evidence/<release>" >&2; exit 1 ;;
+          esac
+          test -f "$EVIDENCE_MANIFEST"
+          node --experimental-strip-types scripts/verify-ga-evidence.mjs "$EVIDENCE_MANIFEST"
       - uses: actions/download-artifact@v4
         with:
           name: exporthq-worker-${{ inputs.source_sha }}
@@ -75,8 +91,21 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           run-id: ${{ inputs.source_run_id }}
       - name: Verify tested artifact checksum
-        working-directory: release-artifact
-        run: sha256sum --check exporthq-worker-${{ inputs.source_sha }}.sha256
+        env:
+          EVIDENCE_MANIFEST: ${{ inputs.evidence_manifest }}
+          EXPECTED_SHA: ${{ inputs.source_sha }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          cd release-artifact
+          sha256sum --check exporthq-worker-${EXPECTED_SHA}.sha256
+          EXPECTED_ARTIFACT_SHA256="$(sha256sum exporthq-worker-${EXPECTED_SHA}.tgz | cut -d ' ' -f 1)"
+          cd ..
+          export EXPECTED_ARTIFACT_SHA256
+          node --experimental-strip-types scripts/verify-ga-evidence.mjs "$EVIDENCE_MANIFEST"
+      - name: Include the verified GA manifest in the immutable release record
+        env:
+          EVIDENCE_MANIFEST: ${{ inputs.evidence_manifest }}
+        run: cp "$EVIDENCE_MANIFEST" release-artifact/ga-manifest.json
       - name: Extract without rebuilding
         working-directory: release-artifact
         run: tar -xzf exporthq-worker-${{ inputs.source_sha }}.tgz

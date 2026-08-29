@@ -48,8 +48,14 @@ The current R3 Private Beta engineering checkpoint is recorded in
 [`evidence/r3-local-2026-08-29/README.md`](evidence/r3-local-2026-08-29/README.md).
 The current R4 Public Beta engineering checkpoint is recorded in
 [`evidence/r4-local-2026-08-29/README.md`](evidence/r4-local-2026-08-29/README.md).
+The R5 GA-control and R6 post-GA contract checkpoint is recorded in
+[`evidence/r5-r6-local-2026-08-29/README.md`](evidence/r5-r6-local-2026-08-29/README.md).
 The founder authorization in
 [`R0_FOUNDER_DEVELOPMENT_AUTHORIZATION.md`](R0_FOUNDER_DEVELOPMENT_AUTHORIZATION.md)
 allows R1-R6 development to continue. Provider and deferred human-review items
 in [`R0_EXTERNAL_BLOCKERS.md`](R0_EXTERNAL_BLOCKERS.md) still block the affected
 production activation and any external Alpha claim.
+
+The founder confirmation is the attributable business authorization for
+continued development. It does not fill the independent-review fields in the
+R5 manifest. The pending manifest fails closed, while R6 remains Planned.

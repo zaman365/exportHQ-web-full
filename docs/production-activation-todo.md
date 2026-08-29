@@ -38,6 +38,8 @@ Gate 3: replace preview persistence and prove isolation
 Gate 4: operational trust workflows and reviewed integrations
     ↓
 Gate 5: one real pilot Export Lane and controlled launch
+    ↓
+Gate 6: independently assured General Availability
 ```
 
 ## Gate 0 — programme ownership and safety freeze
@@ -371,6 +373,26 @@ Gate 5: one real pilot Export Lane and controlled launch
 - Production rollback, support and incident ownership are active.
 - The implementation-status document matches deployed reality.
 
+## Gate 6 — independently assured General Availability
+
+The executable checklist and hosted release-candidate workflow are defined in
+[`release/R5_GENERAL_AVAILABILITY.md`](release/R5_GENERAL_AVAILABILITY.md). The
+founder development authorization allows implementation to continue but cannot
+complete an independent-review field.
+
+- [x] Add an exact-SHA, signed-tag RC observation workflow and retained report.
+- [x] Add a machine-verifiable GA manifest and make immutable promotion depend on it.
+- [ ] Complete seven continuous days in production-like staging; restart after any material change.
+- [ ] Retain independent security, privacy/legal, business, recovery and rollback approvals.
+- [ ] Prove the recovery objectives, release materials, required user journeys and real outcome floor.
+- [ ] Record the passing manifest under the signed release tree and activate broad launch only from it.
+
+**Gate 6 exit evidence**
+
+- The exact signed release passes the R5 manifest without placeholder, skipped or waived evidence.
+- The deployment records the immutable manifest reference and reports `broad-launch` as enabled.
+- R6 capabilities remain separately gated and do not become active with GA automatically.
+
 ## Definition of done for every component
 
 A checkbox above may be closed only when the component has:
@@ -397,6 +419,7 @@ A checkbox above may be closed only when the component has:
 | Gate 3 — production persistence  | In progress | Readiness/verification persistence is authoritative; other preview adapters remain                     |
 | Gate 4 — trust and integrations  | Not started | External capabilities cannot be called live                                                           |
 | Gate 5 — pilot and launch        | In progress | CSP, rate limits and redaction shipped; report-only                                                   |
+| Gate 6 — General Availability    | Not started | Controls exist; soak, independent assurance, recovery, immutable release and outcome floor remain     |
 
 Update this table only from recorded gate evidence. The checklist is intentionally conservative:
 finishing Export HQ means making the operating promises true, not merely changing labels or

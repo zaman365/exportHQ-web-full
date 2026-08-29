@@ -34,6 +34,7 @@ approval.
 | Gate 3 — production persistence  | Technical lead   | Product owner                  |
 | Gate 4 — trust and integrations  | Operations owner | Product owner, security owner  |
 | Gate 5 — pilot and launch        | Product owner    | All                            |
+| Gate 6 — General Availability    | Product owner    | Technical, security, data and operations owners plus independent reviewers |
 
 ## Standing decisions
 

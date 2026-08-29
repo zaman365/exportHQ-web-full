@@ -33,6 +33,12 @@ export async function GET(): Promise<Response> {
         requiredGate: capability.requiredGate,
         missingGates: capability.missingGates,
         missingEvidence: capability.missingEvidence
+      })),
+      postGaCapabilities: report.postGaCapabilities.map((capability) => ({
+        capability: capability.capability,
+        enabled: capability.enabled,
+        status: capability.status,
+        missingEvidence: capability.missingEvidence
       }))
     }),
     { headers: { "content-type": "application/json", "cache-control": "no-store" } }

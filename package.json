@@ -15,6 +15,7 @@
     "test:e2e": "playwright test",
     "performance:budget": "node scripts/check-public-beta-budgets.mjs",
     "uptime:production": "node scripts/production-uptime.mjs",
+    "release:verify-ga": "node --experimental-strip-types scripts/verify-ga-evidence.mjs",
     "db:generate": "pnpm --filter @exporthq/db generate",
     "db:migrate": "pnpm --filter @exporthq/db migrate",
     "db:checksum": "pnpm --filter @exporthq/db migration:checksum",

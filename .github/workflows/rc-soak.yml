@@ -1,0 +1,65 @@
+name: rc-soak-observation
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_sha:
+        description: Exact release-candidate commit SHA
+        required: true
+        type: string
+      release_tag:
+        description: Signed SemVer release-candidate tag
+        required: true
+        type: string
+      staging_origin:
+        description: Production-like staging origin running the candidate artifact
+        required: true
+        type: string
+      deployment_reference:
+        description: Immutable staging deployment/version reference for this SHA
+        required: true
+        type: string
+      observation_day:
+        description: UTC soak day number (1 through 7 or later)
+        required: true
+        type: number
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    environment: release-candidate
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag }}
+          fetch-depth: 0
+      - name: Verify signed candidate identity
+        env:
+          EXPECTED_SHA: ${{ inputs.source_sha }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          OBSERVATION_DAY: ${{ inputs.observation_day }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          echo "$RELEASE_TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+$'
+          git verify-tag "$RELEASE_TAG"
+          test "$OBSERVATION_DAY" -ge 1
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Run synthetic production-like observation
+        env:
+          EXPORTHQ_PRODUCTION_ORIGIN: ${{ inputs.staging_origin }}
+          EXPORTHQ_UPTIME_OUTPUT: rc-soak-observation.json
+          EXPORTHQ_OBSERVED_SOURCE_SHA: ${{ inputs.source_sha }}
+          EXPORTHQ_OBSERVED_RELEASE_TAG: ${{ inputs.release_tag }}
+          EXPORTHQ_DEPLOYMENT_REFERENCE: ${{ inputs.deployment_reference }}
+          EXPORTHQ_OBSERVATION_DAY: ${{ inputs.observation_day }}
+        run: node scripts/production-uptime.mjs
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rc-soak-${{ inputs.source_sha }}-day-${{ inputs.observation_day }}-${{ github.run_id }}
+          if-no-files-found: error
+          retention-days: 90
+          path: rc-soak-observation.json

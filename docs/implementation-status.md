@@ -76,6 +76,16 @@ remaining production components.
   Billing is deliberately not used. Provider credentials, commercial/legal/
   security/tax approval, production delivery and real outcome evidence remain
   gates rather than inferred implementation status.
+- An R5 General Availability control plane with a seven-day release-candidate
+  observation workflow, exact signed-tag/SHA/deployment binding, executable
+  evidence manifest validation, independent-review separation, RPO/RTO limits,
+  real-outcome floors and immutable-artifact promotion. The pending manifest
+  fails by design; no GA, soak or independent-assurance outcome is claimed.
+- R6 post-GA safety contracts for programme aggregates, partner data rights,
+  tenant-local shipment learning, reviewable repeat-order drafts and evidenced
+  native-mobile need, plus runtime decisions for nine Planned capabilities.
+  Every R6 capability requires an immutable GA release and its own evidence;
+  none is active.
 - Dedicated Buyers and Requirements routes: a searchable, stage-aware illustrative buyer-development pipeline and a source-aware conditional control register linked back to opportunities, readiness, learning, evidence, and qualified-help paths.
 - A public opportunity-to-payment acquisition story, a limited ExportPanel Export Studio preview, and plan language aligned to the Basic → verified/paid → Scale/Managed trust ladder.
 - A dedicated Export operations Learning Center category with contextual hints for lanes, economics, deals, buyer trust, provider matching, finance, shipment, policy, and clusters.
@@ -133,6 +143,7 @@ recorded.
 | Gate 3 — production persistence  | In progress | Profile, primary product, paid dashboard, lane/readiness, tenant Studio and task center are PostgreSQL-authoritative; later-phase surfaces remain fail-closed behind preview adapters                                  |
 | Gate 4 — trust and integrations  | Not started | No reviewed provider or mail applications                                                                                                                                                                                |
 | Gate 5 — pilot and launch        | In progress | R2 internal Alpha contracts, bounded pass, Bangla/low-data UX and minimized metrics pass locally; CSP enforcement, external monitoring/review and evidence from 5–10 actual partners remain                            |
+| Gate 6 — General Availability    | Not started | Executable manifest and hosted RC observation workflow exist; seven-day production-like soak, independent assurance, recovery targets, immutable release record and GA outcome floor remain unproved                |
 
 No capability in this table may be described as live before its gate records evidence.
 

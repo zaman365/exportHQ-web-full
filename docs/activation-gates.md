@@ -36,6 +36,7 @@ Three properties make this safe to operate:
 | `gate-3-production-persistence` | Production persistence replacing preview adapters |
 | `gate-4-trust-and-integrations` | Operational trust and reviewed integrations |
 | `gate-5-pilot-and-launch` | Security hardening and controlled pilot |
+| `gate-6-general-availability` | Independently assured General Availability |
 
 ## Capabilities and their gates
 
@@ -50,10 +51,15 @@ Three properties make this safe to operate:
 | `provider-referral` | Gate 4 | Sharing customer data with a provider |
 | `live-external-adapter` | Gate 4 | Calling a government, bank or carrier adapter |
 | `real-exporter-onboarding` | Gate 3 | Onboarding a real exporter's data |
-| `broad-launch` | Gate 5 | Removing the controlled-pilot constraint |
+| `broad-launch` | Gate 6 plus an immutable `EXPORTHQ_GA_RELEASE_EVIDENCE` reference | Removing the controlled-pilot constraint |
 
 Outside production every capability resolves to `synthetic` mode: journeys and
 automated tests run, and callers are told the data is not real.
+
+Gate 6 is additionally protected by the executable contract in
+[`release/R5_GENERAL_AVAILABILITY.md`](release/R5_GENERAL_AVAILABILITY.md). A
+gate entry by itself cannot make `broad-launch` effective without a
+`ga-release://<tag>/<sha>/<manifest-hash>` reference.
 
 ## Checking a deployment
 

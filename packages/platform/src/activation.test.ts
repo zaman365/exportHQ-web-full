@@ -76,6 +76,25 @@ describe("capability activation", () => {
     }).enabled).toBe(true);
   });
 
+  it("keeps broad launch closed until Gate 6 and an immutable GA record both exist", () => {
+    const pilotGates = activationGateIds.slice(0, 6).map((gate, index) => `${gate}=REC-${index}`).join(",");
+    expect(resolveCapability("broad-launch", {
+      ...production,
+      EXPORTHQ_ACTIVATION_GATES_PASSED: pilotGates
+    }).enabled).toBe(false);
+
+    const allGates = activationGateIds.map((gate, index) => `${gate}=REC-${index}`).join(",");
+    expect(resolveCapability("broad-launch", {
+      ...production,
+      EXPORTHQ_ACTIVATION_GATES_PASSED: allGates
+    }).missingEvidence).toContain("ga-release-evidence");
+    expect(resolveCapability("broad-launch", {
+      ...production,
+      EXPORTHQ_ACTIVATION_GATES_PASSED: allGates,
+      EXPORTHQ_GA_RELEASE_EVIDENCE: `ga-release://v1.0.0/${"a".repeat(40)}/${"b".repeat(64)}`
+    }).enabled).toBe(true);
+  });
+
   it("treats an unlabelled NODE_ENV=production build as production", () => {
     expect(resolveCapability("document-upload", { NODE_ENV: "production" }).enabled).toBe(false);
   });

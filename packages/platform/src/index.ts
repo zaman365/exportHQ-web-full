@@ -29,6 +29,17 @@ export {
 } from "./activation";
 
 export {
+  isImmutableGaEvidenceReference,
+  parsePostGaCapabilityEvidence,
+  postGaActivationReport,
+  postGaCapabilities,
+  resolvePostGaCapability,
+  type PostGaCapability,
+  type PostGaCapabilityDecision,
+  type RecordedPostGaCapability
+} from "./post-ga";
+
+export {
   analyticsPropertyAllowlist,
   filterAnalyticsProperties,
   redactEmailAddress,

@@ -53,6 +53,9 @@ agent. Each is set with `wrangler secret put <NAME>` by a named human owner.
 | `EXPORTHQ_CSP_MODE`                     | `enforce` or `report-only`. Defaults to report-only until Gate 5.                                   |
 | `EXPORTHQ_CSP_REPORT_URI`               | Where CSP violation reports are collected.                                                          |
 | `EXPORTHQ_EVIDENCE_ORIGINS`             | Origins permitted to serve signed evidence.                                                         |
+| `EXPORTHQ_GA_RELEASE_EVIDENCE`           | Immutable `ga-release://<tag>/<sha>/<manifest-hash>` record; required for broad launch and all R6 capabilities. |
+| `EXPORTHQ_POST_GA_CAPABILITY_EVIDENCE`   | Exact `capability=post-ga://<capability>/<evidence-hash>` records for independently activated R6 scope. |
+| `EXPORTHQ_NATIVE_MOBILE_PWA_NEED_EVIDENCE` | Immutable PWA usage-gap evidence required in addition to native-mobile capability review.          |
 | `NEXT_PUBLIC_CLERK_FRONTEND_API_ORIGIN` | Clerk Frontend API origin allowed by the CSP.                                                       |
 
 ## Known blockers

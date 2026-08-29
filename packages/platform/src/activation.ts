@@ -18,7 +18,8 @@ export const activationGateIds = [
   "gate-2-evidence-vault",
   "gate-3-production-persistence",
   "gate-4-trust-and-integrations",
-  "gate-5-pilot-and-launch"
+  "gate-5-pilot-and-launch",
+  "gate-6-general-availability"
 ] as const;
 
 export type ActivationGateId = (typeof activationGateIds)[number];
@@ -59,6 +60,11 @@ export const activationGates: readonly ActivationGateDefinition[] = [
     id: "gate-5-pilot-and-launch",
     title: "Security hardening and controlled pilot",
     exitEvidence: "One auditable pilot Export Lane, an independent security review, and active rollback ownership."
+  },
+  {
+    id: "gate-6-general-availability",
+    title: "Independently assured General Availability",
+    exitEvidence: "A passing GA manifest binds the seven-day soak, independent reviews, recovery, immutable release and real outcome floor."
   }
 ];
 
@@ -94,7 +100,7 @@ const capabilityRequirements: Readonly<Record<ProductionCapability, ActivationGa
   "live-external-adapter": "gate-4-trust-and-integrations",
   "self-service-billing": "gate-5-pilot-and-launch",
   "real-exporter-onboarding": "gate-3-production-persistence",
-  "broad-launch": "gate-5-pilot-and-launch"
+  "broad-launch": "gate-6-general-availability"
 };
 
 export interface RecordedGate {
@@ -184,9 +190,13 @@ export function resolveCapability(
   const state = resolveActivationState(source);
   const required = activationGateIds.slice(0, gateIndex(requiredGate) + 1);
   const missingGates = required.filter((gate) => !state.effective.includes(gate));
-  const missingEvidence = capability === "self-service-billing" && !source.EXPORTHQ_BILLING_ACTIVATION_EVIDENCE?.trim()
-    ? ["billing-activation-evidence"]
-    : [];
+  const missingEvidence: string[] = [];
+  if (capability === "self-service-billing" && !source.EXPORTHQ_BILLING_ACTIVATION_EVIDENCE?.trim()) {
+    missingEvidence.push("billing-activation-evidence");
+  }
+  if (capability === "broad-launch" && !/^ga-release:\/\/v\d+\.\d+\.\d+\/[0-9a-f]{40}\/[0-9a-f]{64}$/i.test(source.EXPORTHQ_GA_RELEASE_EVIDENCE ?? "")) {
+    missingEvidence.push("ga-release-evidence");
+  }
 
   if (!isProductionRuntime(source)) {
     return {
