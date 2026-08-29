@@ -12,17 +12,20 @@
 
 The authoritative resource inventory is [`../production-inventory.md`](../production-inventory.md). The expected sources are:
 
-| Surface | Source | Deployment |
-| --- | --- | --- |
-| Public website | `apps/web` on canonical `main` artifact | `https://export-hq.com` |
-| ExportPanel | `apps/app` on the same tested SHA | `https://export-hq.com/ExportPanel` |
-| Operations | `apps/ops` on the same tested SHA | Internal; not approved for customer data |
+| Surface        | Source                                  | Deployment                               |
+| -------------- | --------------------------------------- | ---------------------------------------- |
+| Public website | `apps/web` on canonical `main` artifact | `https://export-hq.com`                  |
+| ExportPanel    | `apps/app` on the same tested SHA       | `https://export-hq.com/ExportPanel`      |
+| Operations     | `apps/ops` on the same tested SHA       | Internal; not approved for customer data |
 
 `exportHQ-web-full1` is not a release or deployment source.
 
 ## Accountable roles
 
-The founder must name the people occupying the roles in [`../production-ownership.md`](../production-ownership.md). Until then Gate 0 remains open. Code changes may improve controls, but no release may represent those roles as filled.
+Mohammed Maniruzzaman occupies all six roles in
+[`../production-ownership.md`](../production-ownership.md) for the single-founder
+R0 period. Role assignment does not satisfy the separate independent-review,
+security-review or legal-approval gates.
 
 ## Capability status
 
