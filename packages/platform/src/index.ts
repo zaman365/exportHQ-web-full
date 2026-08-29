@@ -156,3 +156,19 @@ export {
   type ResumableEvidenceUploadSession,
   type StagedEvidenceObject
 } from "./evidence-vault/index";
+
+export {
+  assertApprovedMailboxSend,
+  assertMailboxProviderReviewed,
+  type ApprovedMailboxSend,
+  type MailboxProviderAdapter,
+  type MailboxProviderMessage,
+  type MailboxProviderReviewEvidence
+} from "./mailbox-provider/index";
+
+export {
+  assertR3BillingAdapter,
+  reconciliationVariance,
+  type BillingProviderAdapter,
+  type BillingProviderWebhookEnvelope
+} from "./billing-provider/index";

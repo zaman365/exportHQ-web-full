@@ -99,6 +99,41 @@
       "when": 1788029674972,
       "tag": "0013_r2_pilot_editor_tenant_key",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1788030976838,
+      "tag": "0014_r3_private_beta_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1788031172540,
+      "tag": "0015_r3_provider_event_tenant_key",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1788031789110,
+      "tag": "0016_r3_owner_cancellation",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1788032089589,
+      "tag": "0017_r3_source_candidates",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1788032194674,
+      "tag": "0018_r3_buyer_verification_guard",
+      "breakpoints": true
     }
   ]
 }

@@ -17,7 +17,12 @@ export type Permission =
   | "team:view"
   | "team:message"
   | "team:manage"
-  | "billing:manage";
+  | "subscription:self_service"
+  | "billing:view"
+  | "billing:admin"
+  | "invoice:view"
+  | "payment:manage"
+  | "data:export";
 
 export type SubscriptionTier = "preview" | "explore" | "launch" | "scale" | "managed";
 export type BusinessVerificationStatus = "unverified" | "pending" | "verified";
@@ -189,19 +194,22 @@ const permissionCatalog: Readonly<Record<SubscriptionTier, readonly Permission[]
   launch: [
     "company:view", "company:manage", "products:view", "products:manage",
     "compliance:view", "documents:view", "documents:manage", "readiness:view", "readiness:manage", "tasks:view", "tasks:manage",
-    "email:view", "email:send", "email:manage"
+    "email:view", "email:send", "email:manage",
+    "subscription:self_service", "billing:view", "invoice:view", "data:export"
   ],
   scale: [
     "company:view", "company:manage", "products:view", "products:manage",
     "compliance:view", "compliance:manage", "documents:view", "documents:manage",
     "readiness:view", "readiness:manage", "tasks:view", "tasks:manage", "email:view", "email:send", "email:manage",
-    "team:view", "team:message", "team:manage", "billing:manage"
+    "team:view", "team:message", "team:manage",
+    "subscription:self_service", "billing:view", "billing:admin", "invoice:view", "payment:manage", "data:export"
   ],
   managed: [
     "company:view", "company:manage", "products:view", "products:manage",
     "compliance:view", "compliance:manage", "documents:view", "documents:manage",
     "readiness:view", "readiness:manage", "tasks:view", "tasks:manage", "email:view", "email:send", "email:manage",
-    "team:view", "team:message", "team:manage", "billing:manage"
+    "team:view", "team:message", "team:manage",
+    "subscription:self_service", "billing:view", "billing:admin", "invoice:view", "payment:manage", "data:export"
   ]
 };
 
@@ -301,11 +309,12 @@ export function permissionsForOrganizationRole(input: {
   if (role === "external") return new Set();
 
   const deniedByRole: Readonly<Record<Exclude<OrganizationAccessRole, "owner" | "admin" | "external">, ReadonlySet<Permission>>> = {
-    executive: new Set(["billing:manage", "team:manage"]),
-    department_lead: new Set(["billing:manage", "team:manage", "company:manage", "email:manage"]),
-    manager: new Set(["billing:manage", "team:manage", "company:manage", "compliance:manage", "products:manage", "email:manage"]),
+    executive: new Set(["subscription:self_service", "billing:admin", "payment:manage", "data:export", "team:manage"]),
+    department_lead: new Set(["subscription:self_service", "billing:admin", "payment:manage", "data:export", "team:manage", "company:manage", "email:manage"]),
+    manager: new Set(["subscription:self_service", "billing:view", "billing:admin", "invoice:view", "payment:manage", "data:export", "team:manage", "company:manage", "compliance:manage", "products:manage", "email:manage"]),
     member: new Set([
-      "billing:manage", "team:manage", "company:manage", "compliance:manage",
+      "subscription:self_service", "billing:view", "billing:admin", "invoice:view", "payment:manage", "data:export",
+      "team:manage", "company:manage", "compliance:manage",
       "products:manage", "documents:manage", "readiness:manage", "email:manage"
     ]),
     viewer: new Set([...ceiling].filter((permission) => !permission.endsWith(":view")))

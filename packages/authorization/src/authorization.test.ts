@@ -97,10 +97,16 @@ describe("subscription entitlements", () => {
 
     expect(ownerPermissions.has("team:manage")).toBe(true);
     expect(ownerPermissions.has("team:message")).toBe(true);
-    expect(ownerPermissions.has("billing:manage")).toBe(true);
+    expect(ownerPermissions.has("subscription:self_service")).toBe(true);
+    expect(ownerPermissions.has("billing:admin")).toBe(true);
+    expect(ownerPermissions.has("invoice:view")).toBe(true);
+    expect(ownerPermissions.has("payment:manage")).toBe(true);
+    expect(ownerPermissions.has("data:export")).toBe(true);
     expect(leadPermissions.has("tasks:manage")).toBe(true);
     expect(leadPermissions.has("company:manage")).toBe(false);
     expect(leadPermissions.has("team:manage")).toBe(false);
+    expect(leadPermissions.has("billing:view")).toBe(true);
+    expect(leadPermissions.has("subscription:self_service")).toBe(false);
     expect(managerPermissions.has("documents:manage")).toBe(true);
     expect(managerPermissions.has("team:message")).toBe(true);
     expect(managerPermissions.has("email:send")).toBe(true);
@@ -151,6 +157,9 @@ describe("subscription entitlements", () => {
     expect(permissionsForTier("scale").has("team:view")).toBe(true);
     expect(permissionsForTier("scale").has("team:message")).toBe(true);
     expect(permissionsForTier("launch").has("email:send")).toBe(true);
+    expect(permissionsForTier("launch").has("subscription:self_service")).toBe(true);
+    expect(permissionsForTier("launch").has("invoice:view")).toBe(true);
+    expect(permissionsForTier("launch").has("payment:manage")).toBe(false);
     expect(emailAccountLimitForTier("explore")).toBe(0);
     expect(emailAccountLimitForTier("launch")).toBe(1);
     expect(emailAccountLimitForTier("scale")).toBe(5);

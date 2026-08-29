@@ -8,7 +8,7 @@ const organizationPermissions = new Set<Permission>([
   "compliance:view", "compliance:manage", "documents:view", "documents:manage",
   "readiness:view", "readiness:manage", "tasks:view", "tasks:manage",
   "email:view", "email:send", "email:manage", "team:view", "team:message",
-  "team:manage", "billing:manage"
+  "team:manage", "subscription:self_service", "billing:view", "billing:admin", "invoice:view", "payment:manage", "data:export"
 ]);
 
 function permissions(values: readonly string[]): ReadonlySet<Permission> {
