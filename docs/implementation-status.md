@@ -29,6 +29,10 @@ remaining production components.
 - Tenant-scoped Export Lane and readiness persistence with optimistic versions,
   customer/reviewer status separation, derived owned tasks, audit/outbox,
   idempotent support requests and explicit pre-governance referral wording.
+- PostgreSQL-authoritative tenant profile, primary product, paid-workspace and
+  Export Studio read models; versioned task transitions with explicit rationale
+  and append-only status history; and production-tenant fixture boundaries that
+  keep illustrative browser state inside labelled preview adapters.
 - A versioned regulatory source/rule registry and tenant-scoped lane-impact
   projection that excludes stale, inactive, unreviewed and superseded material;
   plus immutable AI extraction proposals with provider/model/prompt/rule
@@ -40,7 +44,7 @@ remaining production components.
 - A primary Email Inbox beside the retained Actionable Inbox, with export-aware categories, related-record context, private drafts, email-to-follow-up conversion, provider setup guidance, plan/role gates, and tenant-scoped mail persistence contracts.
 - A versioned, transactional market catalog publisher and incremental PostgreSQL migration for country, product, opportunity, evidence, verification, and shortlist records.
 - Internal customer portfolio and scoped operator workspace over the same domain projection.
-- Unit and journey tests; 34 database-package tests, including 20
+- Unit and journey tests; 35 database-package tests, including 21
   real-PostgreSQL integration scenarios covering cross-tenant isolation,
   direct projection-write denial, webhook projection,
   regulatory freshness and publisher-write denial, human-gated AI provenance,
@@ -76,7 +80,7 @@ recorded.
 | Gate 0 — ownership and freeze    | In progress | Development authorized; protected `main`, 8 required checks, 6 milestones and the 22-item R0/R1 backlog exist; all six roles are assigned; deferred external policy approvals still block affected production activation |
 | Gate 1 — identity and PostgreSQL | In progress | Frankfurt Neon projects/migrations/locked roles, initial Clerk configuration and hosted CI are evidenced; live credentials/Hyperdrive, webhook secret/delivery, Billing/MFA/journeys and recovery approvals remain       |
 | Gate 2 — evidence vault          | Not started | R2 not provisioned; uploads fail closed                                                                                                                                                                                  |
-| Gate 3 — production persistence  | In progress | Lane/readiness and verification drafts are PostgreSQL-authoritative; Studio, team, task-center and other preview adapters remain                                                                                         |
+| Gate 3 — production persistence  | In progress | Profile, primary product, paid dashboard, lane/readiness, tenant Studio and task center are PostgreSQL-authoritative; later-phase surfaces remain fail-closed behind preview adapters                                  |
 | Gate 4 — trust and integrations  | Not started | No reviewed provider or mail applications                                                                                                                                                                                |
 | Gate 5 — pilot and launch        | In progress | Builds, Worker smoke, Playwright, rate limits, redaction and sampled telemetry config pass locally; CSP enforcement, external monitoring/review and pilot evidence remain                                                |
 
@@ -106,12 +110,12 @@ Before accepting real customer data:
 1. finalize the locked Frankfurt Neon role credentials through a protected human session and connect the application role to Hyperdrive;
 2. record staging restore, production PITR and independent encrypted-export evidence;
 3. transfer the registered Clerk webhook secret directly into Cloudflare and configure invitations, role templates, staff allowlists, MFA and Billing policy;
-4. continue replacing the remaining preview-backed modeled commands; onboarding and the reviewed identity projection are already database-authoritative;
+4. continue replacing the remaining preview-backed modeled commands; onboarding, profile/product settings, the reviewed identity projection, paid dashboard, tenant Studio and task center are already database-authoritative;
 5. provision private EU R2, signed upload intents, quarantine, malware scanning, checksums, and authorized download logging;
 6. retain the required green GitHub database, Playwright, security and Worker checks; add R2 object-enumeration and signed-file isolation once Gate 2 exists;
 7. enforce the production CSP after Clerk/R2 exercise; connect external error monitoring if approved; retain the existing redaction/analytics allowlist and execute scheduled backup/restore drills.
 8. apply the market intelligence migration, publish the reviewed starter catalog, and connect verification approval to the trusted operations workflow.
-9. replace Export Studio preview persistence with tenant-scoped PostgreSQL repositories and audited commands;
+9. extend the PostgreSQL-authoritative tenant Studio from its R1 lane/task/regulatory summary into later-phase economics, buyer, provider, shipment and proceeds commands only as those gates are implemented;
 10. activate reviewed adapters for buyer data, provider credentialing, banks, laboratories, freight, shipment events, policy sources, and proceeds reconciliation before representing any of them as live.
 11. activate reviewed mail-provider applications, encrypted token storage, organization-scoped message repositories, Gmail Pub/Sub, Microsoft Graph subscriptions, Yahoo/Apple/Zoho/custom IMAP workers, MIME parsing, attachment scanning, delivery monitoring, revocation, and recovery before connecting customer mailboxes.
 

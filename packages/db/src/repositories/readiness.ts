@@ -1,4 +1,4 @@
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import {
   EXPORT_READINESS_METHOD_VERSION,
   calculateReadinessScore,
@@ -19,6 +19,7 @@ import {
   readinessEvidenceReviews,
   readinessProviderReferrals,
   readinessResponses,
+  taskStatusHistory,
   tasks
 } from "../schema";
 import type { ExportHqTransaction, TenantContext } from "../tenant";
@@ -465,17 +466,45 @@ async function upsertDerivedTask(
           : "todo";
   const dueAt = existing?.dueAt ?? new Date(now.getTime() + 14 * 24 * 60 * 60_000);
   if (existing) {
-    await tx.update(tasks).set({
+    const [updated] = await tx.update(tasks).set({
       exportLaneId: input.exportLaneId,
       title: `Resolve: ${input.title}`,
       description: "Close this lane readiness checkpoint and attach approved evidence when required.",
       status: taskStatus,
       dueAt: taskStatus === "completed" ? existing.dueAt : dueAt,
+      version: sql`${tasks.version} + 1`,
       updatedAt: now
-    }).where(and(eq(tasks.organizationId, context.organizationId), eq(tasks.id, existing.id)));
+    }).where(and(eq(tasks.organizationId, context.organizationId), eq(tasks.id, existing.id)))
+      .returning({ id: tasks.id, version: tasks.version });
+    if (!updated) throw new Error("Derived readiness task update did not return a row.");
+    if (existing.status !== taskStatus) {
+      await tx.insert(taskStatusHistory).values({
+        organizationId: context.organizationId,
+        taskId: existing.id,
+        fromStatus: existing.status,
+        toStatus: taskStatus,
+        taskVersion: updated.version,
+        rationale: "Derived from the reviewed readiness response state.",
+        changedBy: context.actorId,
+        createdAt: now
+      });
+      await recordAuditEvent(tx, context, {
+        action: "task.status_changed",
+        entityType: "task",
+        entityId: existing.id,
+        metadata: { fromStatus: existing.status, toStatus: taskStatus, version: updated.version, authority: "readiness_response" }
+      });
+      await enqueueOutboxEvent(tx, context, {
+        topic: "task.status_changed",
+        aggregateType: "task",
+        aggregateId: existing.id,
+        dedupeKey: `task:${existing.id}:v${updated.version}`,
+        payload: { fromStatus: existing.status, toStatus: taskStatus, version: updated.version }
+      });
+    }
     return;
   }
-  await tx.insert(tasks).values({
+  const [created] = await tx.insert(tasks).values({
     organizationId: context.organizationId,
     exportLaneId: input.exportLaneId,
     title: `Resolve: ${input.title}`,
@@ -487,6 +516,20 @@ async function upsertDerivedTask(
     status: taskStatus,
     relatedEntityType: "readiness_response",
     relatedEntityId: input.responseId
+  }).returning({ id: tasks.id });
+  if (!created) throw new Error("Derived readiness task creation did not return a row.");
+  await recordAuditEvent(tx, context, {
+    action: "task.created",
+    entityType: "task",
+    entityId: created.id,
+    metadata: { authority: "readiness_response", exportLaneId: input.exportLaneId }
+  });
+  await enqueueOutboxEvent(tx, context, {
+    topic: "task.created",
+    aggregateType: "task",
+    aggregateId: created.id,
+    dedupeKey: `task:${created.id}:v1`,
+    payload: { status: taskStatus, version: 1 }
   });
 }
 

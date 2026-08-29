@@ -299,6 +299,8 @@ export const emailAttachments = pgTable("email_attachments", {
 export const companyProfiles = pgTable("company_profiles", {
   id: uuid("id").primaryKey().defaultRandom(),
   organizationId: uuid("organization_id").notNull().unique().references(() => organizations.id, { onDelete: "cascade" }),
+  legalName: text("legal_name"),
+  tradingName: text("trading_name"),
   registrationNumber: text("registration_number"),
   originCountryCode: text("origin_country_code").notNull(),
   industry: text("industry").notNull(),
@@ -315,6 +317,7 @@ export const companyProfiles = pgTable("company_profiles", {
   activatedAt: timestamp("activated_at", { withTimezone: true }),
   supportEmail: text("support_email"),
   defaultCurrency: text("default_currency").notNull().default("USD"),
+  defaultTimezone: text("default_timezone").notNull().default("Asia/Dhaka"),
   exportStage: text("export_stage"),
   primarySalesChannel: text("primary_sales_channel"),
   marketStrategy: jsonb("market_strategy").$type<Record<string, unknown>>().notNull().default({}),
@@ -1175,12 +1178,31 @@ export const tasks = pgTable("tasks", {
   status: taskStatus("status").notNull().default("todo"),
   relatedEntityType: text("related_entity_type"),
   relatedEntityId: uuid("related_entity_id"),
+  version: integer("version").notNull().default(1),
   ...timestamps
 }, (table) => [
+  uniqueIndex("tasks_org_id_unique").on(table.organizationId, table.id),
   index("tasks_org_status_idx").on(table.organizationId, table.status),
   uniqueIndex("tasks_readiness_response_unique")
     .on(table.organizationId, table.relatedEntityType, table.relatedEntityId)
     .where(sql`${table.relatedEntityType} = 'readiness_response'`)
+]);
+
+export const taskStatusHistory = pgTable("task_status_history", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  organizationId: uuid("organization_id").notNull().references(() => organizations.id, { onDelete: "cascade" }),
+  taskId: uuid("task_id").notNull().references(() => tasks.id, { onDelete: "cascade" }),
+  fromStatus: taskStatus("from_status").notNull(),
+  toStatus: taskStatus("to_status").notNull(),
+  taskVersion: integer("task_version").notNull(),
+  rationale: text("rationale").notNull(),
+  changedBy: text("changed_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow()
+}, (table) => [
+  uniqueIndex("task_status_history_task_version_unique").on(table.taskId, table.taskVersion),
+  index("task_status_history_org_task_idx").on(table.organizationId, table.taskId, table.createdAt),
+  check("task_status_history_version_check", sql`${table.taskVersion} >= 2`),
+  check("task_status_history_rationale_check", sql`char_length(trim(${table.rationale})) > 0`)
 ]);
 
 export const auditEvents = pgTable("audit_events", {

@@ -5,10 +5,9 @@ import {
   resolveMarketIntelligenceAccess,
   subscriptionCatalog
 } from "@exporthq/authorization";
-import { marketOpportunityViews } from "@exporthq/domain";
+import { TenantSurfacePending } from "../_components/tenant-surface-pending";
 import { WorkspaceShell } from "../_components/workspace-shell";
 import { getWorkspaceFeatureSession } from "../_lib/session";
-import OpportunitiesClient from "./opportunities-client";
 
 export const metadata: Metadata = {
   title: "Market opportunities — ExportPanel",
@@ -40,6 +39,11 @@ export default async function OpportunitiesPage({ searchParams }: { searchParams
     businessVerification: session.businessVerification,
     tier: session.tier
   });
+  if (session.userId && !session.isDemo) return <WorkspaceShell active={params.view === "countries" ? "markets" : "opportunities"} session={session}><TenantSurfacePending phase="Reviewed catalog pending" title="Tenant market intelligence is not published" description="The versioned catalog tables exist, but no reviewed production starter catalog has been activated for customer decisions." /></WorkspaceShell>;
+  const [{ marketOpportunityViews }, { default: OpportunitiesClient }] = await Promise.all([
+    import("@exporthq/domain"),
+    import("./opportunities-client")
+  ]);
 
   return (
     <WorkspaceShell active={params.view === "countries" ? "markets" : "opportunities"} session={session}>

@@ -43,6 +43,7 @@ export interface OrganizationSettings {
 }
 
 export interface PrimaryOfferSettings {
+  id?: string;
   name: string;
   category: string;
   internalReference: string;

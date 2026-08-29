@@ -1,7 +1,6 @@
 "use server";
 
-import { getClerkClient } from "@exporthq/auth";
-import { saveCompanyProfile } from "@exporthq/db";
+import { saveCompanyProfile, savePrimaryProduct } from "@exporthq/db";
 import { organizationProfileSchema } from "@exporthq/validation";
 import { getWorkspaceSession } from "../_lib/session";
 import { runTenantCommand } from "../_lib/tenant";
@@ -37,56 +36,33 @@ export async function saveOrganizationProfile(payload: string): Promise<Organiza
   /* Authoritative path: the profile and its audit event commit together in the
      tenant database. The identity-provider metadata below is the documented
      preview adapter and is mirrored only until Gate 3 removes it. */
-  await runTenantCommand(session, (tx, context) =>
-    saveCompanyProfile(tx, context, {
+  const persisted = await runTenantCommand(session, async (tx, context) => {
+    await saveCompanyProfile(tx, context, {
+      legalName: profile.legalName,
+      tradingName: profile.tradingName,
       originCountryCode: countryCodes[profile.country] ?? "BD",
       industry: primaryOffer.category || "Unspecified",
       website: profile.website || null,
       supportEmail: profile.supportEmail,
       defaultCurrency: profile.defaultCurrency,
+      defaultTimezone: profile.timezone,
       exportStage: marketStrategy.currentExportStage || null,
       primarySalesChannel: marketStrategy.primarySalesChannel || null,
       marketStrategy
-    })
-  );
-
-  const client = getClerkClient();
-  const organization = await client.organizations.getOrganization({ organizationId: session.organizationId });
-  const privateMetadata = organization.privateMetadata as { exportPanel?: Record<string, unknown> };
-  const exportPanel = privateMetadata.exportPanel ?? {};
-  const existingCompany = typeof exportPanel.company === "object" && exportPanel.company ? exportPanel.company as Record<string, unknown> : {};
-  const existingProduct = typeof exportPanel.firstProduct === "object" && exportPanel.firstProduct ? exportPanel.firstProduct as Record<string, unknown> : {};
-  await client.organizations.updateOrganization(session.organizationId, { name: profile.tradingName });
-  await client.organizations.updateOrganizationMetadata(session.organizationId, {
-    privateMetadata: {
-      ...privateMetadata,
-      exportPanel: {
-        ...exportPanel,
-        profileSettings: profile,
-        company: {
-          ...existingCompany,
-          legalName: profile.legalName,
-          tradingName: profile.tradingName,
-          originCountry: countryCodes[profile.country],
-          website: profile.website
-        },
-        firstProduct: {
-          ...existingProduct,
-          name: primaryOffer.name,
-          category: primaryOffer.category,
-          sku: primaryOffer.internalReference || null,
-          hsCode: primaryOffer.hsCode || null,
-          composition: primaryOffer.specification,
-          targetMarketCode: marketStrategy.primaryMarket || null,
-          profileDetailsComplete: Boolean(primaryOffer.hsCode && primaryOffer.specification)
-        },
-        marketStrategy,
-        stage: marketStrategy.currentExportStage || null,
-        salesChannel: marketStrategy.primarySalesChannel || null,
-        profileUpdatedAt: new Date().toISOString(),
-        profileUpdatedBy: session.userId
-      }
-    }
+    });
+    return savePrimaryProduct(tx, context, {
+      ...(primaryOffer.id ? { id: primaryOffer.id } : {}),
+      name: primaryOffer.name,
+      category: primaryOffer.category || "Other",
+      internalReference: primaryOffer.internalReference,
+      hsCode: primaryOffer.hsCode,
+      specification: primaryOffer.specification,
+      countryOfOrigin: countryCodes[profile.country] ?? "BD",
+      currency: profile.defaultCurrency
+    });
   });
+  if (!persisted.ran) {
+    return { ok: false, message: "Protected workspace storage is not activated. Nothing was saved." };
+  }
   return { ok: true, message: "Organization, offer, and market direction saved." };
 }
