@@ -15,6 +15,7 @@ import {
   customerBillingInvoices,
   organizationEntitlements
 } from "../schema";
+import { normalizeEmailAddress } from "./validation";
 import type { ExportHqTransaction, TenantContext } from "../tenant";
 
 export interface BillingCatalogPriceRecord {
@@ -348,9 +349,7 @@ function optionalText(value: string | null | undefined): string | null {
 }
 
 function email(value: string): string {
-  const normalized = value.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) throw new Error("A valid billing email is required.");
-  return normalized;
+  return normalizeEmailAddress(value, "A valid billing email is required.");
 }
 
 function money(value: number): number {

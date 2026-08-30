@@ -1,0 +1,14 @@
+title = "Export HQ secret-scanning configuration"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+
+  [[rules.allowlists]]
+  description = "Deterministic evidence-vault unit-test signing key"
+  condition = "AND"
+  regexTarget = "line"
+  regexes = ['''const secret = "synthetic-test-secret-at-least-32-bytes-long"''']
+  paths = ['''packages/platform/src/evidence-vault/index\.test\.ts''']

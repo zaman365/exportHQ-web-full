@@ -17,6 +17,7 @@ import {
   outboundEmailDeliveries,
   outboundEmailDrafts
 } from "../schema";
+import { normalizeEmailAddress } from "./validation";
 import type { ExportHqTransaction, TenantContext } from "../tenant";
 
 export async function registerReviewedMailboxConnection(
@@ -342,9 +343,7 @@ function optionalText(value: string | null | undefined): string | null {
 }
 
 function email(value: string): string {
-  const normalized = value.trim().toLowerCase();
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) throw new Error("A valid email address is required.");
-  return normalized;
+  return normalizeEmailAddress(value, "A valid email address is required.");
 }
 
 function sha256(value: string, label: string): string {

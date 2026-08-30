@@ -20,7 +20,9 @@ const organizationId = "3f2504e0-4f89-41d3-9a0c-0305e82c3301";
 const documentId = "6ba7b810-9dad-41d1-80b4-00c04fd430c8";
 const documentVersionId = "d9428888-122b-4f22-b6a9-6e0c490aeac4";
 const capabilityId = "794b9f30-aeec-4ba5-b3ae-0d91b9f86331";
-const secret = "synthetic-test-secret-at-least-32-bytes-long";
+// Deterministic test-only input. The exact line/path is narrowly allowlisted in
+// .gitleaks.toml so the historical test commit is not mistaken for a live key.
+const secret = "synthetic-test-secret-at-least-32-bytes-long"; // gitleaks:allow
 
 class MemoryBucket implements PrivateEvidenceBucket {
   readonly objects = new Map<string, { bytes: ArrayBuffer; metadata: EvidenceObjectMetadata }>();
