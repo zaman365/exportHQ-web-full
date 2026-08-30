@@ -35,7 +35,7 @@ jobs:
       EXPORTHQ_TEST_BACKUP_PATH: /tmp/exporthq-test.backup
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with: { version: 11.22.0 }
       - uses: actions/setup-node@v4
         with:

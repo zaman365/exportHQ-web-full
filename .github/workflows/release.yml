@@ -68,7 +68,7 @@ jobs:
             if (run.data.head_sha !== process.env.EXPECTED_SHA) {
               core.setFailed(`Source run SHA ${run.data.head_sha} does not match the signed tag SHA`);
             }
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with: { version: 11.22.0 }
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
