@@ -1,0 +1,39 @@
+{
+  "checkedAt": "2026-08-30T08:58:33.577Z",
+  "origin": "https://export-hq.com",
+  "sourceSha": "eb0bc02cfcd953c98e0c54e99f48bf453f4f7934",
+  "releaseTag": "synthetic-r1-r6-eb0bc02c",
+  "deploymentReference": "cc7ae089-c7bf-4c55-83a4-207b36536514",
+  "observationDay": 0,
+  "passed": false,
+  "checks": [
+    {
+      "path": "/",
+      "startedAt": "2026-08-30T08:58:32.388Z",
+      "durationMs": 229,
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/ExportPanel/preview",
+      "startedAt": "2026-08-30T08:58:32.618Z",
+      "durationMs": 230,
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/ExportPanel/plans",
+      "startedAt": "2026-08-30T08:58:32.848Z",
+      "durationMs": 455,
+      "status": 200,
+      "passed": true
+    },
+    {
+      "path": "/ExportPanel/api/webhooks/clerk",
+      "startedAt": "2026-08-30T08:58:33.303Z",
+      "durationMs": 274,
+      "status": 503,
+      "passed": false
+    }
+  ]
+}
