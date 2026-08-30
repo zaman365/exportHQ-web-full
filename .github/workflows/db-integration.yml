@@ -34,7 +34,7 @@ jobs:
       EXPORTHQ_TEST_RESTORE_DATABASE_URL: postgres://exporthq_migration:migration_test@127.0.0.1:5432/exporthq_restore_test
       EXPORTHQ_TEST_BACKUP_PATH: /tmp/exporthq-test.backup
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with: { version: 11.22.0 }
       - uses: actions/setup-node@v4
