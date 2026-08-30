@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, BookOpenCheck, CheckCircle2, Compass, PackagePlus, Sparkles } from "lucide-react";
+import { ArrowRight, BookOpenCheck, CheckCircle2, Compass, LayoutDashboard, PackagePlus, Sparkles } from "lucide-react";
 import type { CustomerSession } from "@exporthq/auth";
 
 export function ExploreHome({ session }: { session: CustomerSession }) {
@@ -24,6 +24,7 @@ export function ExploreHome({ session }: { session: CustomerSession }) {
       <section className="explore-grid">
         <article><span><BookOpenCheck size={20} /></span><p>AVAILABLE NOW</p><h2>Learn how ExportPanel works</h2><small>Use the Learning Center to understand scores, evidence, workflows, and roles before subscribing.</small><Link href={`/learn${publicQuery}`}>Open Learning Center <ArrowRight size={14} /></Link></article>
         <article><span><Compass size={20} /></span><p>AVAILABLE NOW</p><h2>{isPublic ? "Sample your readiness route" : "Build your readiness score"}</h2><small>{isPublic ? "Check one representative requirement in every readiness area. Create an account to open the complete conditional checklist and save it to a business." : "Complete the conditional checkpoints, identify blockers and save the assessment. The exact solution and provider layer remains trust-gated."}</small><Link href={`/readiness${publicQuery}`}>Start assessment <ArrowRight size={14} /></Link></article>
+        <article><span><LayoutDashboard size={20} /></span><p>EDITABLE EXAMPLES</p><h2>Shape your command center</h2><small>Try managed-work, requirement and accountable-team starter modules. Reorder, hide and customize them without affecting business records.</small><Link href="/preview/dashboard">Open editable dashboard <ArrowRight size={14} /></Link></article>
         <article className="locked"><span><Sparkles size={20} /></span><p>SCALE + MANAGED</p><h2>Coordinate the whole operation</h2><small>Add Attention Center, Blueprints, team controls, audit, export, and specialist execution.</small><Link href="/plans">Compare expanded access <ArrowRight size={14} /></Link></article>
       </section>
     </div>

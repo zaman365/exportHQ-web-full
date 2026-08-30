@@ -4,6 +4,7 @@ import { ArrowRight, Clock3, FileText, Package, Plus, ShieldAlert } from "lucide
 import Link from "next/link";
 import { Badge, Card, Progress } from "@exporthq/ui";
 import { ExploreHome } from "./_components/explore-home";
+import { DashboardStarterWorkspace } from "./_components/dashboard-starter-workspace";
 import { HintButton } from "./_components/hint-button";
 import { WorkspaceShell } from "./_components/workspace-shell";
 import { getWorkspaceFeatureSession } from "./_lib/session";
@@ -65,7 +66,8 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
   if (!persisted.ran) {
     return <WorkspaceShell active="dashboard" session={session}>
       <section className="welcome"><div><p>HOME / DASHBOARD</p><h1>Your protected workspace</h1><span>Customer records are unavailable until tenant PostgreSQL activation is complete.</span></div></section>
-      <Card className="managed-card"><div className="managed-card__head"><span className="icon-box"><ShieldAlert size={18} /></span><Badge tone="warning">Fail closed</Badge></div><h2>No illustrative company data is shown</h2><p>Nothing has been loaded from browser storage, Clerk metadata, or the public sample. Your business records will appear after protected persistence is available.</p><footer><Link href="/preview/dashboard">Open the labelled public sample <ArrowRight size={14} /></Link></footer></Card>
+      <Card className="managed-card"><div className="managed-card__head"><span className="icon-box"><ShieldAlert size={18} /></span><Badge tone="warning">Fail closed</Badge></div><h2>No illustrative company data is shown as your tenant record</h2><p>Nothing has been loaded into your protected record from browser storage, Clerk metadata, or the public sample. The editable starter sandbox below stays visibly separate until protected persistence is available.</p><footer><Link href="/preview/dashboard">Open the complete labelled sample <ArrowRight size={14} /></Link></footer></Card>
+      <DashboardStarterWorkspace mode="workspace" storageScope={session.organizationId ?? session.userId ?? "workspace"} />
     </WorkspaceShell>;
   }
 
@@ -131,5 +133,6 @@ export default async function CommandCenterPage({ searchParams }: { searchParams
       <section className="module-section" id="documents"><div className="section-head"><div><p>DOCUMENT VAULT</p><h2>Recent document records <HintButton topic="document-vault" /></h2></div><Link href="/readiness" className="button button--secondary">Open evidence workflow</Link></div><div className="document-list">{dashboard.documents.length ? dashboard.documents.map((document) => <div key={document.id}><span className="file-icon"><FileText size={17} /></span><span><strong>{document.name}</strong><small>{document.category} · {document.linkedEntityType}</small></span><Badge tone={document.status === "approved" ? "success" : document.status === "rejected" ? "danger" : "info"}>{document.status.replaceAll("_", " ")}</Badge></div>) : <p>No document metadata exists for this organization.</p>}</div></section>
       <section className="module-section" id="activity"><div className="section-head"><div><p>SHARED ACTIVITY</p><h2>Latest auditable updates <HintButton topic="shared-activity" /></h2></div></div><div className="activity-list">{dashboard.activity.length ? dashboard.activity.map((item) => <div key={item.id}><span><strong>{item.actorLabel}</strong><p>{item.action}</p><small>{new Intl.DateTimeFormat("en-GB", { dateStyle: "medium", timeStyle: "short", timeZone: "Asia/Dhaka" }).format(new Date(item.at))}</small></span></div>) : <p>No audited activity yet.</p>}</div></section>
     </div>
+    <DashboardStarterWorkspace mode="workspace" storageScope={session.organizationId ?? session.userId ?? "workspace"} />
   </WorkspaceShell>;
 }

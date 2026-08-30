@@ -15,6 +15,21 @@ describe("production tenant fixture authority", () => {
     }
   });
 
+  it("restores dashboard examples through an explicitly isolated starter sandbox", () => {
+    const dashboard = source("page.tsx");
+    const preview = source("preview/dashboard/page.tsx");
+    const starter = source("_components/dashboard-starter-workspace.tsx");
+
+    expect(dashboard).toContain("DashboardStarterWorkspace");
+    expect(preview).toContain("DashboardStarterWorkspace");
+    expect(starter).not.toContain("demoSnapshot");
+    expect(starter).toContain("These examples are saved only in this browser");
+    expect(starter).toContain("excluded from customer records, scores, evidence, staffing claims and audit history");
+    expect(starter).toContain("Source locked");
+    expect(starter).toContain("No people assigned");
+    expect(starter).toContain("Reset examples");
+  });
+
   it("checks the real-tenant branch before loading every preview-only module", () => {
     for (const path of [
       "attention/page.tsx",

@@ -13,6 +13,7 @@ export * from "./general-availability";
 export * from "./post-ga";
 export * from "./billing-catalog";
 export * from "./companion-workflows";
+export * from "./dashboard-starters";
 export * from "./money/index";
 export * from "./workflows/export-lane";
 export type TaskStatus =

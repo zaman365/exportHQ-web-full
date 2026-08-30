@@ -291,6 +291,10 @@ Production must fail closed when identity configuration is missing. Local demo m
 
 Home is the command center; Dashboard is part of Home, not a separate disconnected concept. It should show export health, needs-you count, evidence/readiness progress, managed work, product × market readiness, requirements needing attention, recent documents, and shared activity. Every summary should lead to the underlying record or next action.
 
+Home may also expose a clearly labelled starter sandbox so people can see, reorder, hide, and customize example managed work, requirement follow-ups, and accountable-team roles before authoritative tenant records exist. Starter records remain `example` until the person explicitly customizes a browser-only draft or copies one through an authorized tenant command. Examples and browser-only drafts never affect export health, task counts, readiness/evidence state, managed-service claims, staff assignments, or audit history. They must not request confidential information.
+
+Managed-work examples use roles rather than fictional named specialists and never claim that Export HQ has accepted or started work. Requirement templates keep maintained jurisdiction, publisher, source URL, and source-review metadata locked while allowing the user to customize planning fields such as evidence to prepare, owner role, date, and internal note. Accountable-team examples describe roles until real members or explicitly granted Export HQ specialists are assigned. Resetting the starter sandbox must never delete authoritative tenant records.
+
 ### 9.2 Attention Center
 
 Attention Center ranks operational signals so important work stays visible. Each signal must include:
@@ -686,6 +690,7 @@ Build the commercial spine before multiplying integrations.
 - Company/profile settings with optional product, market, channel, and verification detail.
 - Team directory, position hierarchy, department creation, dedicated channels, direct and Export HQ conversations, role-gated mutations, and organization-scoped persistence contracts.
 - Primary Email Inbox and selectable Actionable Inbox UX, provider catalog, email-to-action conversion, tier/role policy, Learning Center guidance, and tenant-scoped persistence/validation contracts.
+- A labelled, editable Home starter sandbox for managed work, requirement follow-ups, and accountable-team roles. Its browser-only drafts are isolated from tenant metrics, evidence, staffing claims, and audit history; regulatory provenance remains catalog-controlled.
 - Clerk session boundary, organization-aware authorization, admin allowlist design, database schema, RLS envelope, and tests.
 - Reproducible PostgreSQL 17 baseline and checksum manifest; non-owner application,
   read-only support, migration and read-only backup role bootstrap; exhaustive RLS;
