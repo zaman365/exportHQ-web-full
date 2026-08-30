@@ -23,7 +23,6 @@ describe("production tenant fixture authority", () => {
       "create/page.tsx",
       "decisions/page.tsx",
       "ideas/page.tsx",
-      "inbox/page.tsx",
       "opportunities/page.tsx",
       "requirements/page.tsx",
       "studio/page.tsx",
@@ -37,6 +36,20 @@ describe("production tenant fixture authority", () => {
       expect(tenantGuard, `${path} must guard real tenants`).toBeGreaterThan(-1);
       expect(previewLoad, `${path} must defer preview imports`).toBeGreaterThan(tenantGuard);
     }
+  });
+
+  it("keeps the labelled Inbox preview visible while live mailbox operations remain disconnected", () => {
+    const page = source("inbox/page.tsx");
+    const emailInbox = source("inbox/email-inbox.tsx");
+
+    expect(page).not.toContain("TenantSurfacePending");
+    expect(page).not.toContain("session.userId && !session.isDemo");
+    expect(page).toContain('import("./inbox-client")');
+    expect(emailInbox).toContain("Illustrative mailbox preview");
+    expect(emailInbox).toContain("No provider is connected and no private email is being read.");
+    expect(emailInbox).toContain("Archive is disabled in the preview because no provider mailbox is connected.");
+    expect(emailInbox).toContain("Attachment download stays disabled until private storage, scanning, and authorization are active.");
+    expect(emailInbox).toContain('disabled title="No live mailbox is connected"');
   });
 
   it("confines direct demoSnapshot imports to preview adapters", () => {
