@@ -3,6 +3,9 @@ name: db-integration
 on:
   pull_request:
     paths:
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - "packages/db/**"
       - "packages/auth/**"
       - "packages/authorization/**"
