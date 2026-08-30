@@ -3,6 +3,9 @@ name: cloudflare-build
 on:
   pull_request:
     paths:
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - "apps/app/**"
       - "packages/**"
       - "scripts/cloudflare-smoke.mjs"

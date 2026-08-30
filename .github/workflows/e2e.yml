@@ -3,6 +3,9 @@ name: e2e
 on:
   pull_request:
     paths:
+      - "package.json"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
       - "apps/app/**"
       - "packages/**"
       - "e2e/**"
