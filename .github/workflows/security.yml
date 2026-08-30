@@ -36,7 +36,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - if: github.event_name == 'pull_request'
-        uses: actions/dependency-review-action@v4
+        uses: actions/dependency-review-action@v5
       - run: pnpm audit --audit-level high
       - run: pnpm licenses list --prod --json > licenses.json
       - run: node scripts/check-license-policy.mjs licenses.json
