@@ -1,15 +1,8 @@
 name: db-integration
 
 on:
+  # `postgres` is required by branch protection, so it must report on every PR.
   pull_request:
-    paths:
-      - "package.json"
-      - "pnpm-lock.yaml"
-      - "pnpm-workspace.yaml"
-      - "packages/db/**"
-      - "packages/auth/**"
-      - "packages/authorization/**"
-      - ".github/workflows/db-integration.yml"
   push:
     branches: [main]
 
