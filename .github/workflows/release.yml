@@ -48,7 +48,7 @@ jobs:
           echo "$RELEASE_TAG" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+([+-][0-9A-Za-z.-]+)?$'
           git verify-tag "$RELEASE_TAG"
       - name: Verify source workflow and conclusion
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         env:
           EXPECTED_SHA: ${{ inputs.source_sha }}
           SOURCE_RUN_ID: ${{ inputs.source_run_id }}
