@@ -12,7 +12,7 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "@clerk/backend": "3.16.4",
+    "@clerk/backend": "3.16.12",
     "@exporthq/authorization": "workspace:*",
     "@exporthq/platform": "workspace:*"
   },
