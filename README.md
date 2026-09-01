@@ -4,6 +4,10 @@ Export HQ is a managed export operating system: one shared workspace where expor
 
 The canonical system-wide business logic is maintained in [`docs/BUSINESS_LOGIC.md`](docs/BUSINESS_LOGIC.md). Read it before changing journeys, access rules, onboarding, monetization, or product behavior.
 
+Resume production activation and phased delivery from
+[`Next ToDo's.md`](Next%20ToDo%27s.md). It records the reconciled live state,
+blockers, free-tier operating plan, execution order, and required R0–R6 evidence.
+
 ## Canonical repository and deployment source
 
 - Canonical repository: `https://github.com/zaman365/exportHQ-web-full`
